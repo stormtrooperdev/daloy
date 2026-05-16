@@ -1,8 +1,18 @@
+import { getDocsSearchSections } from "@/lib/docs-search";
+import { DocsSearch } from "../../components/docs-search";
 import { DocsSidebar } from "../../components/docs-sidebar";
 
-export default function DocsLayout({ children }: { children: React.ReactNode }) {
+export default async function DocsLayout({ children }: { children: React.ReactNode }) {
+  const searchSections = await getDocsSearchSections();
+
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8">
+      <div className="pt-6 lg:pt-8">
+        <div className="max-w-xl">
+          <DocsSearch sections={searchSections} />
+        </div>
+      </div>
+
       <div className="py-6 lg:hidden">
         <details className="docs-nav-disclosure overflow-hidden rounded-xl border border-border bg-background/95 shadow-sm backdrop-blur">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">

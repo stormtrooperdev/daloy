@@ -1,0 +1,78 @@
+export type DocsNavItem = { title: string; href: string };
+export type DocsNavSection = { title: string; items: DocsNavItem[] };
+
+export const docsNav: DocsNavSection[] = [
+  {
+    title: "Get started",
+    items: [
+      { title: "Introduction", href: "/docs" },
+      { title: "Installation", href: "/docs/installation" },
+      { title: "Scaffold a project", href: "/docs/scaffolder" },
+      { title: "CLI inspector", href: "/docs/cli" },
+      { title: "Getting started", href: "/docs/getting-started" },
+    ],
+  },
+  {
+    title: "Core concepts",
+    items: [
+      { title: "Routing", href: "/docs/routing" },
+      { title: "Validation", href: "/docs/validation" },
+      { title: "Plugins & encapsulation", href: "/docs/plugins" },
+      { title: "Errors & problem+json", href: "/docs/errors" },
+      { title: "File uploads (multipart)", href: "/docs/multipart" },
+    ],
+  },
+  {
+    title: "Contracts & clients",
+    items: [
+      { title: "OpenAPI generation", href: "/docs/openapi" },
+      { title: "Typed clients (Hey API)", href: "/docs/typed-client" },
+      { title: "Streaming (SSE & NDJSON)", href: "/docs/streaming" },
+      { title: "Tracing (OpenTelemetry)", href: "/docs/tracing" },
+      { title: "Testing & contract tests", href: "/docs/testing" },
+    ],
+  },
+  {
+    title: "Architecture",
+    items: [
+      { title: "Modular monolith", href: "/docs/architecture/modular-monolith" },
+    ],
+  },
+  {
+    title: "Data access",
+    items: [
+      { title: "ORM overview", href: "/docs/orm" },
+      { title: "Prisma", href: "/docs/orm/prisma" },
+      { title: "Drizzle ORM", href: "/docs/orm/drizzle" },
+      { title: "TypeORM", href: "/docs/orm/typeorm" },
+      { title: "Sequelize", href: "/docs/orm/sequelize" },
+      { title: "Supabase platform", href: "/docs/orm/supabase" },
+      { title: "ODM overview", href: "/docs/odm" },
+      { title: "Mongoose", href: "/docs/odm/mongoose" },
+      { title: "Ottoman", href: "/docs/odm/ottoman" },
+    ],
+  },
+  {
+    title: "Production",
+    items: [
+      { title: "Security", href: "/docs/security" },
+      { title: "CSRF protection", href: "/docs/security/csrf" },
+      { title: "Sessions", href: "/docs/security/session" },
+      { title: "Redis rate-limit store", href: "/docs/security/rate-limit-redis" },
+      { title: "Supply-chain security", href: "/docs/security/supply-chain" },
+      { title: "Adapters & runtimes", href: "/docs/adapters" },
+      { title: "Deployment", href: "/docs/deployment" },
+    ],
+  },
+  {
+    title: "Tutorials",
+    items: [
+      { title: "Build a bookstore API", href: "/docs/tutorials/bookstore" },
+      { title: "Large fake REST demo", href: "/docs/tutorials/fake-rest-api" },
+    ],
+  },
+  {
+    title: "Reference",
+    items: [{ title: "API reference", href: "/docs/api-reference" }],
+  },
+];
