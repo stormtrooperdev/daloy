@@ -1,14 +1,14 @@
-import { dirname } from "node:path";
-import { execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { dirname } from "node:path"
+import { execSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const FALLBACK_CORE_PACKAGE_VERSION = "0.9.1";
+const FALLBACK_CORE_PACKAGE_VERSION = "0.11.0"
 
 function getPublishedCorePackageVersion() {
   if (process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION) {
-    return process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION;
+    return process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION
   }
 
   try {
@@ -16,9 +16,9 @@ function getPublishedCorePackageVersion() {
       cwd: __dirname,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+    }).trim()
   } catch {
-    return FALLBACK_CORE_PACKAGE_VERSION;
+    return FALLBACK_CORE_PACKAGE_VERSION
   }
 }
 
@@ -38,8 +38,8 @@ const nextConfig = {
       // /docs. External links and bookmarks pointing at /docs/introduction
       // should land on the same page instead of 404ing.
       { source: "/docs/introduction", destination: "/docs", permanent: true },
-    ];
+    ]
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

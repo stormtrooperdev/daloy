@@ -191,7 +191,7 @@ export default function HomePage() {
               <span aria-hidden>·</span>
               <span>strict TypeScript 6</span>
               <span aria-hidden>·</span>
-              <span>Node 20.10+, Bun, Deno, Cloudflare, Vercel</span>
+              <span>Node 24.15+, Bun, Deno, Cloudflare, Vercel</span>
             </div>
           </div>
         </div>

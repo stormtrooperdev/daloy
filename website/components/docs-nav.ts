@@ -1,5 +1,5 @@
-export type DocsNavItem = { title: string; href: string };
-export type DocsNavSection = { title: string; items: DocsNavItem[] };
+export type DocsNavItem = { title: string; href: string }
+export type DocsNavSection = { title: string; items: DocsNavItem[] }
 
 export const docsNav: DocsNavSection[] = [
   {
@@ -28,6 +28,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "OpenAPI generation", href: "/docs/openapi" },
       { title: "Typed clients (Hey API)", href: "/docs/typed-client" },
       { title: "Streaming (SSE & NDJSON)", href: "/docs/streaming" },
+      { title: "WebSocket primitives", href: "/docs/websocket" },
       { title: "Tracing (OpenTelemetry)", href: "/docs/tracing" },
       { title: "Testing & contract tests", href: "/docs/testing" },
     ],
@@ -35,7 +36,10 @@ export const docsNav: DocsNavSection[] = [
   {
     title: "Architecture",
     items: [
-      { title: "Modular monolith", href: "/docs/architecture/modular-monolith" },
+      {
+        title: "Modular monolith",
+        href: "/docs/architecture/modular-monolith",
+      },
     ],
   },
   {
@@ -92,7 +96,10 @@ export const docsNav: DocsNavSection[] = [
       { title: "Security", href: "/docs/security" },
       { title: "CSRF protection", href: "/docs/security/csrf" },
       { title: "Sessions", href: "/docs/security/session" },
-      { title: "Redis rate-limit store", href: "/docs/security/rate-limit-redis" },
+      {
+        title: "Redis rate-limit store",
+        href: "/docs/security/rate-limit-redis",
+      },
       { title: "Supply-chain security", href: "/docs/security/supply-chain" },
       { title: "Adapters & runtimes", href: "/docs/adapters" },
       { title: "Deployment", href: "/docs/deployment" },
@@ -109,4 +116,4 @@ export const docsNav: DocsNavSection[] = [
     title: "Reference",
     items: [{ title: "API reference", href: "/docs/api-reference" }],
   },
-];
+]

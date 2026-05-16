@@ -1,5 +1,10 @@
 export { App } from "./app.js";
-export type { AppOptions, IntrospectedRoute, PluginInstalledEvent, ShutdownEvent } from "./app.js";
+export type {
+  AppOptions,
+  IntrospectedRoute,
+  PluginInstalledEvent,
+  ShutdownEvent,
+} from "./app.js";
 
 export type {
   RouteDefinition,
@@ -166,3 +171,35 @@ export type {
   TracingStartSpanOptions,
   TracingTracer,
 } from "./tracing.js";
+
+export {
+  defineWebSocket,
+  WebSocketRegistry,
+  WebSocketProtocolError,
+  WS_GUID,
+  WS_READY_STATE,
+  WS_OPCODE,
+  WS_CLOSE_CODE,
+  WS_MAX_CONTROL_PAYLOAD,
+  computeAcceptKey,
+  parseSubprotocols,
+  validateSelectedSubprotocol,
+  validateUpgrade,
+  parseFrame,
+  encodeFrame,
+  encodeClosePayload,
+  decodeClosePayload,
+  encodeSendPayload,
+  FrameSink,
+  FRAME_INCOMPLETE,
+} from "./websocket.js";
+export type {
+  WebSocketConnection,
+  WebSocketContext,
+  WebSocketHandler,
+  WebSocketRouteEntry,
+  HandshakeResult,
+  ParsedFrame,
+  MessageEvent as WebSocketMessageEvent,
+  FrameSinkEvents,
+} from "./websocket.js";

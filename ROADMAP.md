@@ -96,7 +96,7 @@ design issue before implementation.
 
 - [x] **Plugin lifecycle events** (`onPluginInstalled`, `onShutdown`) for observability plugins.
 - [x] **Edge-friendly session primitive**: signed-cookie (`__Host-` prefix, HMAC-SHA256, key rotation) with a pluggable `SessionStore` (default in-memory, KV/Redis-friendly) exposed as `ctx.state.session`.
-- [→] **WebSocket primitives** with adapter coverage for Node and Bun — moved to `0.11.0`.
+- [x] **WebSocket primitives** with adapter coverage for Node and Bun — shipped in `0.11.0`.
 
 ---
 
@@ -112,7 +112,7 @@ cleanly before any new feature work. Both are `1.0.0` gates.
 
 ## Then — `0.11.0` ("real-time")
 
-- [ ] **WebSocket primitives** with adapter coverage for Node and Bun.
+- [x] **WebSocket primitives** with adapter coverage for Node and Bun — runtime-agnostic RFC 6455 frame protocol in `src/websocket.ts`, typed `app.ws(path, handler)` registration, `defineWebSocket()` helper, and adapter wiring for `@daloyjs/core/node` and `@daloyjs/core/bun`. Bun uses the native `Bun.serve` `websocket` config; Node uses an HTTP upgrade listener (only installed when WS routes exist) with a streaming `FrameSink` parser, auto-PONG, and graceful close. Subpath export `@daloyjs/core/websocket` re-exports the primitives for custom adapters.
 
 ---
 

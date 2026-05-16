@@ -1,0 +1,705 @@
+/**
+ * WebSocket primitives — runtime-agnostic types, handshake, and RFC 6455
+ * frame protocol. Adapter packages (`@daloyjs/core/node`, `@daloyjs/core/bun`)
+ * wire these primitives into their respective servers.
+ *
+ * The public API mirrors the WHATWG `WebSocket` interface where it makes
+ * sense for the server side (`readyState`, `send`, `close`, `protocol`,
+ * `extensions`, `bufferedAmount`, `binaryType`) and uses Bun-style handler
+ * callbacks (`open`, `message`, `close`, `drain`, `error`) so the same
+ * handler shape runs on both Node and Bun.
+ *
+ * ```ts
+ * import { App } from "@daloyjs/core";
+ * import { serve } from "@daloyjs/core/node";
+ *
+ * const app = new App();
+ *
+ * app.ws("/chat/:room", {
+ *   open(conn, ctx) {
+ *     conn.data = { user: ctx.query.user ?? "anon", room: ctx.params.room };
+ *     conn.send(`welcome ${(conn.data as any).user}`);
+ *   },
+ *   message(conn, data) {
+ *     conn.send(typeof data === "string" ? data.toUpperCase() : data);
+ *   },
+ *   close(conn, code, reason) {
+ *     // cleanup
+ *   },
+ * });
+ *
+ * serve(app, { port: 3000 });
+ * ```
+ */
+import { Router, type RouteMatch } from "./router.js"; import type { AppState, PathString, PathParams } from "./types.js";
+/** RFC 6455 magic GUID used to compute `Sec-WebSocket-Accept`. */
+export const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+/** WHATWG `WebSocket.readyState` constants. */
+export const WS_READY_STATE = {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+} as const;
+
+/** RFC 6455 opcodes. */
+export const WS_OPCODE = {
+  CONTINUATION: 0x0,
+  TEXT: 0x1,
+  BINARY: 0x2,
+  CLOSE: 0x8,
+  PING: 0x9,
+  PONG: 0xa,
+} as const;
+
+/** Common RFC 6455 / IANA close codes. */
+export const WS_CLOSE_CODE = {
+  NORMAL_CLOSURE: 1000,
+  GOING_AWAY: 1001,
+  PROTOCOL_ERROR: 1002,
+  UNSUPPORTED_DATA: 1003,
+  NO_STATUS_RECEIVED: 1005,
+  ABNORMAL_CLOSURE: 1006,
+  INVALID_PAYLOAD: 1007,
+  POLICY_VIOLATION: 1008,
+  MESSAGE_TOO_BIG: 1009,
+  INTERNAL_ERROR: 1011,
+} as const;
+
+/** Maximum payload length permitted on a single control frame (RFC 6455 §5.5). */
+export const WS_MAX_CONTROL_PAYLOAD = 125;
+
+// ---------- Public types ----------
+
+/**
+ * Live, server-side view of a WebSocket connection. Implementations are
+ * supplied by the runtime adapter; user handlers receive an instance and
+ * interact with it via this stable interface.
+ */
+export interface WebSocketConnection<TData = unknown> {
+  /** WHATWG ready state. */
+  readonly readyState: 0 | 1 | 2 | 3;
+  /** Negotiated subprotocol (the value of the response `Sec-WebSocket-Protocol`). */
+  readonly protocol: string;
+  /** Negotiated extensions (the value of the response `Sec-WebSocket-Extensions`). */
+  readonly extensions: string;
+  /** Bytes queued but not yet flushed to the kernel. */
+  readonly bufferedAmount: number;
+  /** Hint for how binary `message` payloads are surfaced. */
+  binaryType: "arraybuffer" | "nodebuffer";
+  /** Free-form user data slot. Persists for the lifetime of the connection. */
+  data: TData;
+  /** Send a text or binary frame. */
+  send(data: string | ArrayBufferLike | ArrayBufferView): void;
+  /** Send a CLOSE frame and start the closing handshake. */
+  close(code?: number, reason?: string): void;
+  /** Send a PING frame (≤ 125 bytes). */
+  ping(data?: string | ArrayBufferLike | ArrayBufferView): void;
+  /** Send a PONG frame (≤ 125 bytes). */
+  pong(data?: string | ArrayBufferLike | ArrayBufferView): void;
+  /** Forcefully tear the socket down without a closing handshake. */
+  terminate(): void;
+}
+
+/**
+ * Per-upgrade context handed to `beforeUpgrade` and `open`. Mirrors the
+ * subset of {@link BaseContext} that makes sense before a request body has
+ * been read.
+ */
+export interface WebSocketContext<P extends string = string, S = AppState> {
+  request: Request;
+  params: PathParams<P>;
+  query: Record<string, string>;
+  headers: Record<string, string>;
+  state: S;
+  /** Subprotocols offered by the client (parsed from `Sec-WebSocket-Protocol`). */
+  protocols: string[];
+}
+
+/**
+ * User-supplied WebSocket lifecycle callbacks.
+ *
+ * - `beforeUpgrade` may reject the upgrade by returning a `Response`. Returning
+ *   a string selects that subprotocol. Returning `undefined` accepts the
+ *   upgrade with no subprotocol.
+ * - `open`/`message`/`close`/`error`/`drain` follow Bun's signature so the
+ *   same handler runs on both Node and Bun.
+ */
+export interface WebSocketHandler<
+  P extends string = string,
+  S = AppState,
+  TData = unknown,
+> {
+  beforeUpgrade?(
+    request: Request,
+    ctx: WebSocketContext<P, S>,
+  ): Response | string | undefined | Promise<Response | string | undefined>;
+  open?(
+    conn: WebSocketConnection<TData>,
+    ctx: WebSocketContext<P, S>,
+  ): void | Promise<void>;
+  message?(
+    conn: WebSocketConnection<TData>,
+    data: string | Uint8Array | ArrayBuffer,
+    isBinary: boolean,
+  ): void | Promise<void>;
+  close?(
+    conn: WebSocketConnection<TData>,
+    code: number,
+    reason: string,
+  ): void | Promise<void>;
+  error?(conn: WebSocketConnection<TData>, err: unknown): void | Promise<void>;
+  drain?(conn: WebSocketConnection<TData>): void | Promise<void>;
+}
+
+/** Helper for declaring a handler with full type-inference. */
+export function defineWebSocket<
+  P extends string,
+  S = AppState,
+  TData = unknown,
+>(handler: WebSocketHandler<P, S, TData>): WebSocketHandler<P, S, TData> {
+  return handler;
+}
+
+// ---------- WebSocket route registry ----------
+
+export interface WebSocketRouteEntry {
+  path: PathString;
+  handler: WebSocketHandler<any, any, any>;
+  createState: WebSocketStateFactory;
+}
+
+type WebSocketStateFactory = () => Record<string, unknown>;
+
+/**
+ * Per-app registry of WebSocket routes. Uses the same trie router as HTTP so
+ * `:param` and static-route fast paths work identically.
+ *
+ * Adapters call {@link WebSocketRegistry.find} during the HTTP `upgrade`
+ * event (Node) or inside `fetch` (Bun / Workers).
+ */
+export class WebSocketRegistry {
+  private router = new Router<WebSocketRouteEntry>(); private _size = 0;
+  add(path: PathString, handler: WebSocketHandler<any, any, any>, createState: WebSocketStateFactory = () => ({})): void {
+    this.router.add("GET", path, { path, handler, createState });
+    this._size += 1;
+  }
+
+  find(pathname: string): RouteMatch<WebSocketRouteEntry> | undefined {
+    return this.router.find("GET", pathname);
+  }
+
+  get size(): number {
+    return this._size;
+  }
+}
+
+// ---------- Handshake helpers ----------
+
+const enc = new TextEncoder();
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+  return btoa(bin);
+}
+
+function getSubtle(): SubtleCrypto {
+  const c: Crypto | undefined = (globalThis as { crypto?: Crypto }).crypto;
+  if (!c?.subtle) {
+    throw new Error(
+      "websocket: Web Crypto (crypto.subtle) is required to compute Sec-WebSocket-Accept.",
+    );
+  }
+  return c.subtle;
+}
+
+/**
+ * Compute the `Sec-WebSocket-Accept` response header value for a given
+ * `Sec-WebSocket-Key` per RFC 6455 §4.2.2:
+ *
+ * `base64(SHA1(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))`
+ */
+export async function computeAcceptKey(key: string): Promise<string> {
+  const digest = await getSubtle().digest("SHA-1", enc.encode(key + WS_GUID));
+  return bytesToBase64(new Uint8Array(digest));
+}
+
+/**
+ * Parse the offered subprotocols from a `Sec-WebSocket-Protocol` header.
+ * Returns trimmed, non-empty tokens in client preference order.
+ */
+export function parseSubprotocols(header: string | null | undefined): string[] {
+  if (!header) return [];
+  return header
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+const WS_TOKEN_RE = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+/**
+ * Validate a server-selected subprotocol before it is written to the 101
+ * response. RFC 6455 requires the value to be one of the client-offered
+ * tokens; enforcing it also prevents accidental response-header injection.
+ */
+export function validateSelectedSubprotocol(
+  protocol: string,
+  offered: readonly string[],
+): string {
+  if (!WS_TOKEN_RE.test(protocol)) {
+    throw new WebSocketProtocolError(
+      "Selected WebSocket subprotocol must be a valid HTTP token",
+    );
+  }
+  if (!offered.includes(protocol)) {
+    throw new WebSocketProtocolError(
+      "Selected WebSocket subprotocol was not offered by the client",
+    );
+  }
+  return protocol;
+}
+
+/**
+ * Result of attempting a handshake against an incoming HTTP request.
+ * Adapters either send the 101 response and return `{ ok: true }` or send
+ * the error response described by {@link HandshakeFailure} and abort.
+ */
+export type HandshakeResult =
+  | { ok: true; acceptKey: string; protocols: string[] }
+  | { ok: false; status: number; reason: string };
+
+/**
+ * Validate the upgrade request headers and compute the accept key when
+ * valid. This helper does **not** touch the wire — it only decides whether
+ * the handshake should succeed and what the response key should be.
+ */
+export async function validateUpgrade(headers: {
+  get(name: string): string | null;
+}): Promise<HandshakeResult> {
+  const upgrade = headers.get("upgrade");
+  if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+    return {
+      ok: false,
+      status: 400,
+      reason: "Missing or invalid Upgrade header",
+    };
+  }
+  const connection = headers.get("connection");
+  if (!connection || !/\bupgrade\b/i.test(connection)) {
+    return {
+      ok: false,
+      status: 400,
+      reason: "Missing or invalid Connection header",
+    };
+  }
+  const version = headers.get("sec-websocket-version");
+  if (version !== "13") {
+    return {
+      ok: false,
+      status: 426,
+      reason: "Unsupported Sec-WebSocket-Version",
+    };
+  }
+  const key = headers.get("sec-websocket-key");
+  if (!key || !isValidWebSocketKey(key)) {
+    return {
+      ok: false,
+      status: 400,
+      reason: "Missing or invalid Sec-WebSocket-Key",
+    };
+  }
+  const acceptKey = await computeAcceptKey(key);
+  return {
+    ok: true,
+    acceptKey,
+    protocols: parseSubprotocols(headers.get("sec-websocket-protocol")),
+  };
+}
+
+function isValidWebSocketKey(key: string): boolean {
+  try {
+    const bytes = Uint8Array.from(atob(key), (char) => char.charCodeAt(0));
+    return bytes.length === 16;
+  } catch {
+    return false;
+  }
+}
+
+// ---------- Frame protocol (RFC 6455 §5) ----------
+
+export interface ParsedFrame {
+  fin: boolean;
+  opcode: number;
+  payload: Uint8Array;
+  /** Number of bytes consumed from the input buffer (header + payload). */
+  consumed: number;
+}
+
+/** Returned from `parseFrame` when the buffer doesn't yet hold a full frame. */
+export const FRAME_INCOMPLETE = Symbol("daloy.ws.frameIncomplete");
+
+/**
+ * Parse a single frame from `buf` starting at offset 0. Returns
+ * {@link FRAME_INCOMPLETE} when the buffer is too short for a complete
+ * frame; throws {@link WebSocketProtocolError} for RFC 6455 violations.
+ *
+ * The parser unmasks payloads in-place when needed. The returned `payload`
+ * is a subarray view over `buf`; copy it if you intend to retain it past
+ * the next call.
+ */
+export function parseFrame(
+  buf: Uint8Array,
+  opts: { requireMask?: boolean } = {},
+): ParsedFrame | typeof FRAME_INCOMPLETE {
+  if (buf.length < 2) return FRAME_INCOMPLETE;
+  const b0 = buf[0]!;
+  const b1 = buf[1]!;
+  const fin = (b0 & 0x80) !== 0;
+  const rsv = b0 & 0x70;
+  if (rsv !== 0)
+    throw new WebSocketProtocolError(
+      "RSV bits must be zero (no extensions negotiated)",
+    );
+  const opcode = b0 & 0x0f;
+  const masked = (b1 & 0x80) !== 0;
+  let payloadLen = b1 & 0x7f;
+  let offset = 2;
+
+  if ((opcode & 0x8) !== 0) {
+    if (!fin)
+      throw new WebSocketProtocolError("Control frames must not be fragmented");
+    if (payloadLen > WS_MAX_CONTROL_PAYLOAD)
+      throw new WebSocketProtocolError(
+        "Control frame payload exceeds 125 bytes",
+      );
+    if (
+      opcode !== WS_OPCODE.CLOSE &&
+      opcode !== WS_OPCODE.PING &&
+      opcode !== WS_OPCODE.PONG
+    )
+      throw new WebSocketProtocolError(
+        `Unknown control opcode 0x${opcode.toString(16)}`,
+      );
+  } else if (
+    opcode !== WS_OPCODE.CONTINUATION &&
+    opcode !== WS_OPCODE.TEXT &&
+    opcode !== WS_OPCODE.BINARY
+  ) {
+    throw new WebSocketProtocolError(
+      `Unknown data opcode 0x${opcode.toString(16)}`,
+    );
+  }
+
+  if (payloadLen === 126) {
+    if (buf.length < offset + 2) return FRAME_INCOMPLETE;
+    payloadLen = (buf[offset]! << 8) | buf[offset + 1]!;
+    offset += 2;
+  } else if (payloadLen === 127) {
+    if (buf.length < offset + 8) return FRAME_INCOMPLETE;
+    // JS numbers safely represent up to 2^53 - 1. RFC permits 64-bit; we cap.
+    const hi =
+      buf[offset]! * 2 ** 24 +
+      (buf[offset + 1]! << 16) +
+      (buf[offset + 2]! << 8) +
+      buf[offset + 3]!;
+    const lo =
+      buf[offset + 4]! * 2 ** 24 +
+      (buf[offset + 5]! << 16) +
+      (buf[offset + 6]! << 8) +
+      buf[offset + 7]!;
+    if (hi > 0x1fffff)
+      throw new WebSocketProtocolError(
+        "Frame payload exceeds Number.MAX_SAFE_INTEGER",
+      );
+    payloadLen = hi * 2 ** 32 + lo;
+    offset += 8;
+  }
+
+  if (opts.requireMask && !masked) {
+    throw new WebSocketProtocolError("Client frames must be masked");
+  }
+
+  let mask: Uint8Array | undefined;
+  if (masked) {
+    if (buf.length < offset + 4) return FRAME_INCOMPLETE;
+    mask = buf.subarray(offset, offset + 4);
+    offset += 4;
+  }
+
+  if (buf.length < offset + payloadLen) return FRAME_INCOMPLETE;
+
+  const payload = buf.subarray(offset, offset + payloadLen);
+  if (mask) {
+    for (let i = 0; i < payload.length; i++) {
+      payload[i] = payload[i]! ^ mask[i & 3]!;
+    }
+  }
+
+  return { fin, opcode, payload, consumed: offset + payloadLen };
+}
+
+/**
+ * Encode a single frame. By default the frame is emitted unmasked (server
+ * → client). Pass `mask: true` to generate a client-style masked frame (used
+ * mainly for testing).
+ */
+export function encodeFrame(opts: {
+  fin?: boolean;
+  opcode: number;
+  payload?: Uint8Array;
+  mask?: boolean;
+}): Uint8Array {
+  const fin = opts.fin !== false;
+  const opcode = opts.opcode & 0x0f;
+  const payload = opts.payload ?? new Uint8Array(0);
+  const masked = opts.mask === true;
+
+  if ((opcode & 0x8) !== 0 && payload.length > WS_MAX_CONTROL_PAYLOAD) {
+    throw new WebSocketProtocolError("Control frame payload exceeds 125 bytes");
+  }
+
+  let headerLen = 2;
+  let extLen: 0 | 2 | 8 = 0;
+  if (payload.length >= 65536) extLen = 8;
+  else if (payload.length > 125) extLen = 2;
+  headerLen += extLen;
+  if (masked) headerLen += 4;
+
+  const out = new Uint8Array(headerLen + payload.length);
+  out[0] = (fin ? 0x80 : 0) | opcode;
+  if (extLen === 0) out[1] = (masked ? 0x80 : 0) | payload.length;
+  else if (extLen === 2) {
+    out[1] = (masked ? 0x80 : 0) | 126;
+    out[2] = (payload.length >> 8) & 0xff;
+    out[3] = payload.length & 0xff;
+  } else {
+    out[1] = (masked ? 0x80 : 0) | 127;
+    // High 4 bytes are always 0 because JS numbers can't exceed 2^53.
+    const len = payload.length;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = 0;
+    out[6] = Math.floor(len / 2 ** 24) & 0xff;
+    out[7] = (len >> 16) & 0xff;
+    out[8] = (len >> 8) & 0xff;
+    out[9] = len & 0xff;
+    // Fix high-32 bits when length actually exceeds 2^32 (defensive; JS arrays cap).
+    if (len > 0xffffffff) {
+      out[2] = Math.floor(len / 2 ** 56) & 0xff;
+      out[3] = Math.floor(len / 2 ** 48) & 0xff;
+      out[4] = Math.floor(len / 2 ** 40) & 0xff;
+      out[5] = Math.floor(len / 2 ** 32) & 0xff;
+    }
+  }
+
+  if (masked) {
+    const maskOff = 2 + extLen;
+    const c = (globalThis as { crypto?: Crypto }).crypto;
+    if (!c?.getRandomValues) {
+      throw new Error(
+        "websocket: Web Crypto getRandomValues required to mask frames",
+      );
+    }
+    c.getRandomValues(out.subarray(maskOff, maskOff + 4));
+    const mask = out.subarray(maskOff, maskOff + 4);
+    const dataOff = maskOff + 4;
+    for (let i = 0; i < payload.length; i++) {
+      out[dataOff + i] = payload[i]! ^ mask[i & 3]!;
+    }
+  } else {
+    out.set(payload, 2 + extLen);
+  }
+
+  return out;
+}
+
+/** Encode a CLOSE frame payload (`uint16 code` + optional UTF-8 reason). */
+export function encodeClosePayload(code: number, reason = ""): Uint8Array {
+  const reasonBytes = enc.encode(reason);
+  if (reasonBytes.length > WS_MAX_CONTROL_PAYLOAD - 2) {
+    throw new WebSocketProtocolError("Close reason exceeds 123 bytes");
+  }
+  const out = new Uint8Array(2 + reasonBytes.length);
+  out[0] = (code >> 8) & 0xff;
+  out[1] = code & 0xff;
+  out.set(reasonBytes, 2);
+  return out;
+}
+
+/** Decode a CLOSE frame payload. Returns `{ code: 1005, reason: "" }` when empty. */
+export function decodeClosePayload(payload: Uint8Array): {
+  code: number;
+  reason: string;
+} {
+  if (payload.length === 0)
+    return { code: WS_CLOSE_CODE.NO_STATUS_RECEIVED, reason: "" };
+  if (payload.length === 1)
+    throw new WebSocketProtocolError("Close payload must be empty or ≥2 bytes");
+  const code = (payload[0]! << 8) | payload[1]!;
+  const reason = new TextDecoder("utf-8", { fatal: true }).decode(
+    payload.subarray(2),
+  );
+  return { code, reason };
+}
+
+/** Thrown on RFC 6455 violations. Adapters map these to a CLOSE(1002) frame. */
+export class WebSocketProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WebSocketProtocolError";
+  }
+}
+
+// ---------- Streaming frame parser ----------
+
+/**
+ * Incremental parser that buffers bytes from a socket and emits whole
+ * frames. Handles fragmentation, interleaved control frames, and UTF-8
+ * validation of text messages.
+ */
+export interface MessageEvent {
+  /** Decoded string for text messages, or the raw byte payload for binary. */
+  data: string | Uint8Array;
+  /** True when the message was assembled from binary frames. */
+  isBinary: boolean;
+}
+
+export interface FrameSinkEvents {
+  onMessage(ev: MessageEvent): void;
+  onPing(payload: Uint8Array): void;
+  onPong(payload: Uint8Array): void;
+  onClose(code: number, reason: string): void;
+  onProtocolError(err: WebSocketProtocolError): void;
+}
+
+/**
+ * Stream-oriented assembler. Push chunks via {@link FrameSink.push}; callbacks
+ * fire as whole messages and control frames become available. Designed to be
+ * driven by an adapter's socket `data` event.
+ */
+export class FrameSink {
+  private buffer: Uint8Array = new Uint8Array(0);
+  private fragments: Uint8Array[] = [];
+  private fragmentOpcode = -1;
+  private closed = false;
+
+  constructor(
+    private readonly opts: FrameSinkEvents & { requireMask?: boolean },
+  ) {}
+
+  push(chunk: Uint8Array): void {
+    if (this.closed) return;
+    if (this.buffer.length === 0) {
+      this.buffer = chunk.slice();
+    } else {
+      const next = new Uint8Array(this.buffer.length + chunk.length);
+      next.set(this.buffer, 0);
+      next.set(chunk, this.buffer.length);
+      this.buffer = next;
+    }
+    try {
+      while (this.buffer.length > 0) {
+        const frame = parseFrame(this.buffer, {
+          requireMask: this.opts.requireMask,
+        });
+        if (frame === FRAME_INCOMPLETE) return;
+        this.buffer = this.buffer.subarray(frame.consumed);
+        this.handle(frame);
+        if (this.closed) return;
+      }
+    } catch (err) {
+      if (err instanceof WebSocketProtocolError) {
+        this.closed = true;
+        this.opts.onProtocolError(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  private handle(frame: ParsedFrame): void {
+    if ((frame.opcode & 0x8) !== 0) {
+      // Control frame — copy payload because the buffer slice may be reused.
+      const copy = frame.payload.slice();
+      if (frame.opcode === WS_OPCODE.CLOSE) {
+        const { code, reason } = decodeClosePayload(copy);
+        this.closed = true;
+        this.opts.onClose(code, reason);
+      } else if (frame.opcode === WS_OPCODE.PING) {
+        this.opts.onPing(copy);
+      } else {
+        this.opts.onPong(copy);
+      }
+      return;
+    }
+
+    if (frame.opcode === WS_OPCODE.CONTINUATION) {
+      if (this.fragmentOpcode === -1) {
+        throw new WebSocketProtocolError(
+          "Continuation frame without an initial data frame",
+        );
+      }
+      this.fragments.push(frame.payload.slice());
+    } else {
+      if (this.fragmentOpcode !== -1) {
+        throw new WebSocketProtocolError(
+          "New data frame received while a fragmented message is in progress",
+        );
+      }
+      this.fragmentOpcode = frame.opcode;
+      this.fragments.push(frame.payload.slice());
+    }
+
+    if (frame.fin) {
+      const total = this.fragments.reduce((n, p) => n + p.length, 0);
+      const joined = new Uint8Array(total);
+      let offset = 0;
+      for (const p of this.fragments) {
+        joined.set(p, offset);
+        offset += p.length;
+      }
+      const isBinary = this.fragmentOpcode === WS_OPCODE.BINARY;
+      this.fragments = [];
+      this.fragmentOpcode = -1;
+      if (isBinary) {
+        this.opts.onMessage({ data: joined, isBinary: true });
+      } else {
+        let text: string;
+        try {
+          text = new TextDecoder("utf-8", { fatal: true }).decode(joined);
+        } catch {
+          throw new WebSocketProtocolError("Invalid UTF-8 in text message");
+        }
+        this.opts.onMessage({ data: text, isBinary: false });
+      }
+    }
+  }
+}
+
+// ---------- Helpers shared by adapters ----------
+
+/** Coerce arbitrary `send()` payloads to a `Uint8Array` + opcode pair. */
+export function encodeSendPayload(
+  data: string | ArrayBufferLike | ArrayBufferView,
+): { opcode: number; payload: Uint8Array } {
+  if (typeof data === "string") {
+    return { opcode: WS_OPCODE.TEXT, payload: enc.encode(data) };
+  }
+  if (data instanceof Uint8Array) {
+    return { opcode: WS_OPCODE.BINARY, payload: data };
+  }
+  if (ArrayBuffer.isView(data)) {
+    return {
+      opcode: WS_OPCODE.BINARY,
+      payload: new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+    };
+  }
+  return {
+    opcode: WS_OPCODE.BINARY,
+    payload: new Uint8Array(data as ArrayBufferLike),
+  };
+}

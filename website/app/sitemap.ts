@@ -1,14 +1,14 @@
-import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/seo";
+import type { MetadataRoute } from "next"
+import { SITE_URL } from "@/lib/seo"
 
 /**
  * Static sitemap for website. Add new docs pages here so they are
  * discoverable by search engines.
  */
 const STATIC_PATHS: Array<{
-  path: string;
-  changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
-  priority: number;
+  path: string
+  changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]
+  priority: number
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1.0 },
   { path: "/docs", changeFrequency: "weekly", priority: 0.9 },
@@ -24,7 +24,12 @@ const STATIC_PATHS: Array<{
   { path: "/docs/openapi", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/typed-client", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/streaming", changeFrequency: "monthly", priority: 0.8 },
-  { path: "/docs/architecture/modular-monolith", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/docs/websocket", changeFrequency: "monthly", priority: 0.8 },
+  {
+    path: "/docs/architecture/modular-monolith",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
   { path: "/docs/security", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/security/csrf", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/security/session", changeFrequency: "monthly", priority: 0.7 },
@@ -43,10 +48,22 @@ const STATIC_PATHS: Array<{
   { path: "/docs/odm/ottoman", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/databases", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/databases/neon", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/docs/databases/planetscale", changeFrequency: "monthly", priority: 0.7 },
+  {
+    path: "/docs/databases/planetscale",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
   { path: "/docs/databases/turso", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/docs/databases/cloudflare-d1", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/docs/databases/aurora-dsql", changeFrequency: "monthly", priority: 0.7 },
+  {
+    path: "/docs/databases/cloudflare-d1",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/docs/databases/aurora-dsql",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
   { path: "/docs/email", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/email/aws-ses", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/email/sendgrid", changeFrequency: "monthly", priority: 0.7 },
@@ -60,15 +77,19 @@ const STATIC_PATHS: Array<{
   { path: "/docs/auth/auth0", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/auth/okta", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/auth/clerk", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/docs/tutorials/bookstore", changeFrequency: "monthly", priority: 0.7 },
-];
+  {
+    path: "/docs/tutorials/bookstore",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+]
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const lastModified = new Date()
   return STATIC_PATHS.map(({ path, changeFrequency, priority }) => ({
     url: `${SITE_URL}${path}`,
     lastModified,
     changeFrequency,
     priority,
-  }));
+  }))
 }

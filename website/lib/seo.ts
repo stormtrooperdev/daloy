@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
 /**
  * Canonical site URL. Used by `metadataBase`, OpenGraph URLs, sitemap, robots.
@@ -6,15 +6,15 @@ import type { Metadata } from "next";
  */
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://daloyjs.dev"
-).replace(/\/$/, "");
+).replace(/\/$/, "")
 
-export const SITE_NAME = "DaloyJS";
+export const SITE_NAME = "DaloyJS"
 
 export const CORE_PACKAGE_VERSION =
-  process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION ?? "0.9.1";
+  process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION ?? "0.11.0"
 
 export const SITE_TAGLINE =
-  "Runtime-portable TypeScript web framework with contract-first routing, validation, OpenAPI, and a typed client.";
+  "Runtime-portable TypeScript web framework with contract-first routing, validation, OpenAPI, and a typed client."
 
 export const DEFAULT_KEYWORDS = [
   "DaloyJS",
@@ -31,35 +31,35 @@ export const DEFAULT_KEYWORDS = [
   "Deno",
   "edge runtime",
   "serverless TypeScript",
-];
+]
 
 export type PageSeoInput = {
   /** Page title fragment (will be templated as `%s · DaloyJS` by the root layout). */
-  title: string;
+  title: string
   /** 140–160 character meta description. */
-  description: string;
+  description: string
   /** Path beginning with `/` (e.g. `/docs/routing`). Used for canonical + og:url. */
-  path: string;
+  path: string
   /** Additional keywords merged with defaults. */
-  keywords?: string[];
+  keywords?: string[]
   /** Override the og/twitter image. Defaults to `/opengraph-image`. */
-  image?: string;
+  image?: string
   /** Mark the page as documentation/article instead of website. */
-  type?: "website" | "article";
-};
+  type?: "website" | "article"
+}
 
 /**
  * Build a Next.js `Metadata` object with consistent SEO defaults:
  * canonical URL, OpenGraph, Twitter card, robots, and keyword merging.
  */
 export function buildMetadata(input: PageSeoInput): Metadata {
-  const path = input.path.startsWith("/") ? input.path : `/${input.path}`;
-  const url = `${SITE_URL}${path}`;
-  const fullTitle = `${input.title} · ${SITE_NAME}`;
-  const image = input.image ?? "/opengraph-image";
+  const path = input.path.startsWith("/") ? input.path : `/${input.path}`
+  const url = `${SITE_URL}${path}`
+  const fullTitle = `${input.title} · ${SITE_NAME}`
+  const image = input.image ?? "/opengraph-image"
   const keywords = Array.from(
-    new Set([...(input.keywords ?? []), ...DEFAULT_KEYWORDS]),
-  );
+    new Set([...(input.keywords ?? []), ...DEFAULT_KEYWORDS])
+  )
 
   return {
     title: input.title,
@@ -92,5 +92,5 @@ export function buildMetadata(input: PageSeoInput): Metadata {
         "max-video-preview": -1,
       },
     },
-  };
+  }
 }

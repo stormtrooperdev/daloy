@@ -5,6 +5,18 @@
  * `development`, `unix`) and exposes the server's `url` for ergonomic logging.
  */
 import type { App } from "../app.js";
+import {
+  WS_READY_STATE,
+  WS_CLOSE_CODE,
+  WS_MAX_CONTROL_PAYLOAD,
+  encodeSendPayload,
+  parseSubprotocols,
+  validateSelectedSubprotocol,
+  WebSocketProtocolError,
+  type WebSocketConnection,
+  type WebSocketContext,
+  type WebSocketHandler,
+} from "../websocket.js";
 
 export interface BunTLSOptions {
   /** PEM certificate. */
@@ -39,12 +51,43 @@ export interface BunServerHandle {
 }
 
 export function serve(app: App, opts: BunServeOptions = {}): BunServerHandle {
-  const Bun = (globalThis as { Bun?: { serve?: (cfg: Record<string, unknown>) => { port: number; url?: URL; stop: (force?: boolean) => void } } }).Bun;
+  const Bun = (
+    globalThis as {
+      Bun?: {
+        serve?: (cfg: Record<string, unknown>) => {
+          port: number;
+          url?: URL;
+          stop: (force?: boolean) => void;
+          upgrade?: (
+            req: Request,
+            opts?: { data?: unknown; headers?: HeadersInit },
+          ) => boolean;
+        };
+      };
+    }
+  ).Bun;
   if (!Bun?.serve) throw new Error("Bun runtime not detected");
+
+  const hasWs = app.webSocketRoutes.size > 0;
 
   const cfg: Record<string, unknown> = {
     maxRequestBodySize: opts.maxRequestBodySize ?? 16 * 1024 * 1024,
-    fetch: (req: Request) => app.fetch(req),
+    fetch: hasWs
+      ? (
+          req: Request,
+          server: {
+            upgrade: (
+              req: Request,
+              opts?: { data?: unknown; headers?: HeadersInit },
+            ) => boolean;
+          },
+        ) => {
+          if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+            return tryBunUpgrade(app, req, server);
+          }
+          return app.fetch(req);
+        }
+      : (req: Request) => app.fetch(req),
     error: (err: Error) =>
       new Response(
         JSON.stringify({
@@ -53,9 +96,13 @@ export function serve(app: App, opts: BunServeOptions = {}): BunServerHandle {
           status: 500,
           detail: err.message,
         }),
-        { status: 500, headers: { "content-type": "application/problem+json" } }
+        {
+          status: 500,
+          headers: { "content-type": "application/problem+json" },
+        },
       ),
   };
+  if (hasWs) cfg.websocket = buildBunWebSocketConfig(app);
   if (opts.unix === undefined) {
     cfg.port = opts.port ?? 3000;
     cfg.hostname = opts.hostname ?? "0.0.0.0";
@@ -74,4 +121,247 @@ export function serve(app: App, opts: BunServeOptions = {}): BunServerHandle {
       server.stop(true);
     },
   };
+}
+
+// ---------- WebSocket integration ----------
+
+interface BunWebSocketServer {
+  upgrade(
+    req: Request,
+    opts?: { data?: unknown; headers?: HeadersInit },
+  ): boolean;
+}
+
+interface BunNativeWebSocket {
+  readyState: 0 | 1 | 2 | 3;
+  data: BunUpgradeData | undefined;
+  binaryType: "arraybuffer" | "nodebuffer" | "uint8array";
+  remoteAddress?: string;
+  send(data: string | Uint8Array | ArrayBuffer, compress?: boolean): number;
+  close(code?: number, reason?: string): void;
+  terminate(): void;
+  ping(data?: string | Uint8Array | ArrayBuffer): number;
+  pong(data?: string | Uint8Array | ArrayBuffer): number;
+  publish?: (...args: unknown[]) => number;
+  subscribe?: (topic: string) => void;
+  unsubscribe?: (topic: string) => void;
+  isSubscribed?: (topic: string) => boolean;
+  getBufferedAmount?(): number;
+}
+
+interface BunUpgradeData {
+  handler: WebSocketHandler<any, any, any>;
+  ctx: WebSocketContext;
+  protocol: string;
+  conn?: BunWebSocketConnection;
+}
+
+async function tryBunUpgrade(
+  app: App,
+  req: Request,
+  server: BunWebSocketServer,
+): Promise<Response | undefined> {
+  const url = new URL(req.url);
+  const match = app.webSocketRoutes.find(url.pathname);
+  if (!match) return new Response("Not Found", { status: 404 });
+
+  const ctx: WebSocketContext = {
+    request: req,
+    params: match.params as any,
+    query: Object.fromEntries(url.searchParams.entries()),
+    headers: Object.fromEntries(req.headers.entries()),
+    state: match.handler.createState() as any,
+    protocols: parseSubprotocols(req.headers.get("sec-websocket-protocol")),
+  };
+
+  const handler = match.handler.handler as WebSocketHandler<any, any, any>;
+  let chosenProtocol = "";
+  try {
+    const decision = await handler.beforeUpgrade?.(req, ctx);
+    if (decision instanceof Response) return decision;
+    if (typeof decision === "string")
+      chosenProtocol = validateSelectedSubprotocol(decision, ctx.protocols);
+  } catch (err) {
+    if (err instanceof WebSocketProtocolError) {
+      return new Response(err.message, { status: 400 });
+    }
+    app.log.error({ err }, "WebSocket beforeUpgrade hook failed");
+    return new Response("Internal Server Error", { status: 500 });
+  }
+
+  const headers: Record<string, string> = {};
+  if (chosenProtocol) headers["sec-websocket-protocol"] = chosenProtocol;
+  const data: BunUpgradeData = { handler, ctx, protocol: chosenProtocol };
+  const ok = server.upgrade(req, { data, headers });
+  if (!ok) return new Response("Upgrade Failed", { status: 500 });
+  return undefined;
+}
+
+function buildBunWebSocketConfig(app: App) {
+  return {
+    open(ws: BunNativeWebSocket) {
+      const data = ws.data as BunUpgradeData | undefined;
+      if (!data) return;
+      const conn = new BunWebSocketConnection(ws, data.protocol);
+      data.conn = conn;
+      invokeBunHandler(
+        app,
+        data,
+        "WebSocket open() handler failed",
+        () => data.handler.open?.(conn, data.ctx),
+        true,
+      );
+    },
+    message(
+      ws: BunNativeWebSocket,
+      msg: string | Buffer | Uint8Array | ArrayBuffer,
+    ) {
+      const data = ws.data as BunUpgradeData | undefined;
+      if (!data?.conn) return;
+      const isBinary = typeof msg !== "string";
+      invokeBunHandler(
+        app,
+        data,
+        "WebSocket message() handler failed",
+        () => data.handler.message?.(data.conn!, msg as any, isBinary),
+        true,
+      );
+    },
+    close(ws: BunNativeWebSocket, code: number, reason: string) {
+      const data = ws.data as BunUpgradeData | undefined;
+      if (!data?.conn) return;
+      data.conn._markClosed();
+      invokeBunHandler(app, data, "WebSocket close() handler threw", () =>
+        data.handler.close?.(
+          data.conn!,
+          code ?? WS_CLOSE_CODE.NO_STATUS_RECEIVED,
+          reason ?? "",
+        ),
+      );
+    },
+    drain(ws: BunNativeWebSocket) {
+      const data = ws.data as BunUpgradeData | undefined;
+      if (!data?.conn) return;
+      invokeBunHandler(app, data, "WebSocket drain() handler threw", () =>
+        data.handler.drain?.(data.conn!),
+      );
+    },
+  };
+}
+
+class BunWebSocketConnection implements WebSocketConnection {
+  readyState: 0 | 1 | 2 | 3 = WS_READY_STATE.OPEN;
+  readonly extensions = "";
+  data: unknown = undefined;
+
+  constructor(
+    private ws: BunNativeWebSocket,
+    readonly protocol: string,
+  ) {}
+
+  get binaryType(): "arraybuffer" | "nodebuffer" {
+    const v = this.ws.binaryType;
+    return v === "arraybuffer" ? "arraybuffer" : "nodebuffer";
+  }
+  set binaryType(v: "arraybuffer" | "nodebuffer") {
+    this.ws.binaryType = v;
+  }
+
+  get bufferedAmount(): number {
+    return this.ws.getBufferedAmount?.() ?? 0;
+  }
+
+  send(data: string | ArrayBufferLike | ArrayBufferView): void {
+    if (this.readyState !== WS_READY_STATE.OPEN) return;
+    if (typeof data === "string") {
+      this.ws.send(data);
+    } else if (data instanceof ArrayBuffer) {
+      this.ws.send(data);
+    } else if (ArrayBuffer.isView(data)) {
+      this.ws.send(
+        new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+      );
+    } else {
+      this.ws.send(new Uint8Array(data as ArrayBufferLike));
+    }
+  }
+
+  close(code = WS_CLOSE_CODE.NORMAL_CLOSURE, reason = ""): void {
+    if (this.readyState >= WS_READY_STATE.CLOSING) return;
+    this.readyState = WS_READY_STATE.CLOSING;
+    this.ws.close(code, reason);
+  }
+
+  ping(data?: string | ArrayBufferLike | ArrayBufferView): void {
+    validateControlPayload(data);
+    this.ws.ping(toBunBinary(data));
+  }
+  pong(data?: string | ArrayBufferLike | ArrayBufferView): void {
+    validateControlPayload(data);
+    this.ws.pong(toBunBinary(data));
+  }
+  terminate(): void {
+    this.readyState = WS_READY_STATE.CLOSED;
+    this.ws.terminate();
+  }
+
+  _markClosed(): void {
+    this.readyState = WS_READY_STATE.CLOSED;
+  }
+}
+
+function invokeBunHandler(
+  app: App,
+  data: BunUpgradeData,
+  label: string,
+  run: () => void | Promise<void> | undefined,
+  notifyError = false,
+): void {
+  try {
+    const result = run();
+    if (result && typeof (result as Promise<void>).then === "function") {
+      void (result as Promise<void>).catch((err) =>
+        reportBunHandlerFailure(app, data, label, err, notifyError),
+      );
+    }
+  } catch (err) {
+    reportBunHandlerFailure(app, data, label, err, notifyError);
+  }
+}
+
+function reportBunHandlerFailure(
+  app: App,
+  data: BunUpgradeData,
+  label: string,
+  err: unknown,
+  notifyError: boolean,
+): void {
+  app.log.error({ err }, label);
+  if (notifyError && data.conn) {
+    invokeBunHandler(app, data, "WebSocket error() handler threw", () =>
+      data.handler.error?.(data.conn!, err),
+    );
+  }
+}
+
+function validateControlPayload(
+  data: string | ArrayBufferLike | ArrayBufferView | undefined,
+): void {
+  if (
+    data !== undefined &&
+    encodeSendPayload(data).payload.length > WS_MAX_CONTROL_PAYLOAD
+  ) {
+    throw new WebSocketProtocolError("Control frame payload exceeds 125 bytes");
+  }
+}
+
+function toBunBinary(
+  data: string | ArrayBufferLike | ArrayBufferView | undefined,
+): string | Uint8Array | undefined {
+  if (data === undefined) return undefined;
+  if (typeof data === "string") return data;
+  if (data instanceof Uint8Array) return data;
+  if (ArrayBuffer.isView(data))
+    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  return new Uint8Array(data as ArrayBufferLike);
 }

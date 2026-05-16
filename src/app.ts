@@ -1,4 +1,5 @@
 import { Router } from "./router.js";
+import { WebSocketRegistry, type WebSocketHandler } from "./websocket.js";
 import {
   BadRequestError,
   HttpError,
@@ -65,7 +66,10 @@ export interface AppOptions {
   /** Production mode hides 5xx detail in error responses. Default: NODE_ENV === "production". */
   production?: boolean;
   /** Pluggable logger. Default: structured JSON logger at "info" (or noop in test). */
-  logger?: Logger | { level?: "trace" | "debug" | "info" | "warn" | "error" | "fatal" } | false;
+  logger?:
+    | Logger
+    | { level?: "trace" | "debug" | "info" | "warn" | "error" | "fatal" }
+    | false;
 
   /**
    * Mock mode: instead of running handlers, return the first declared response example
@@ -177,13 +181,20 @@ const DEFAULTS = {
  * @since 0.1.0
  */
 export class App {
-  readonly options: Required<Pick<AppOptions, "validateResponses" | "bodyLimitBytes" | "requestTimeoutMs">> &
+  readonly options: Required<
+    Pick<
+      AppOptions,
+      "validateResponses" | "bodyLimitBytes" | "requestTimeoutMs"
+    >
+  > &
     AppOptions;
   readonly log: Logger;
   /** Public registry: enables OpenAPI gen, typed-client gen, dead-route detection. */
   readonly routes: RouteDefinition<any, any, any, any>[] = [];
 
   private router = new Router<CompiledRoute>();
+  /** WebSocket route registry. Adapters look up handlers via `app.webSocketRoutes.find()`. */
+  readonly webSocketRoutes: WebSocketRegistry = new WebSocketRegistry();
   private prefix = "";
   private groupHooks: Hooks[] = [];
   private groupTags: string[] = [];
@@ -193,8 +204,12 @@ export class App {
   private installedPlugins = new Set<string>();
   private closeHooks: Array<() => void | Promise<void>> = [];
   private closeHooksRun = false;
-  private pluginInstalledListeners: Array<(info: PluginInstalledEvent) => void | Promise<void>> = [];
-  private shutdownListeners: Array<(info: ShutdownEvent) => void | Promise<void>> = [];
+  private pluginInstalledListeners: Array<
+    (info: PluginInstalledEvent) => void | Promise<void>
+  > = [];
+  private shutdownListeners: Array<
+    (info: ShutdownEvent) => void | Promise<void>
+  > = [];
   private shutdownListenersRun = false;
   private pendingPlugins: Promise<unknown>[] = [];
   /** In-flight request count for graceful shutdown. */
@@ -203,7 +218,8 @@ export class App {
 
   constructor(options: AppOptions = {}) {
     this.options = {
-      validateResponses: options.validateResponses ?? DEFAULTS.validateResponses,
+      validateResponses:
+        options.validateResponses ?? DEFAULTS.validateResponses,
       bodyLimitBytes: options.bodyLimitBytes ?? DEFAULTS.bodyLimitBytes,
       requestTimeoutMs: options.requestTimeoutMs ?? DEFAULTS.requestTimeoutMs,
       ...options,
@@ -211,9 +227,10 @@ export class App {
     this.log =
       options.logger === false
         ? noopLogger
-        : options.logger && typeof (options.logger as Logger).info === "function"
-        ? (options.logger as Logger)
-        : createLogger({ level: (options.logger as any)?.level ?? "info" });
+        : options.logger &&
+            typeof (options.logger as Logger).info === "function"
+          ? (options.logger as Logger)
+          : createLogger({ level: (options.logger as any)?.level ?? "info" });
   }
 
   // ---------- registration ----------
@@ -246,7 +263,7 @@ export class App {
     P extends PathString,
     M extends HttpMethod,
     Req extends RequestSchemas | undefined,
-    Res extends ResponsesMap
+    Res extends ResponsesMap,
   >(def: RouteDefinition<P, M, Req, Res>): this {
     const fullPath = joinPath(this.prefix, def.path) as PathString;
     const merged: RouteDefinition<any, any, any, any> = {
@@ -256,8 +273,33 @@ export class App {
       auth: def.auth ?? this.groupAuth,
     };
     const hooks = mergeHooks([...this.groupHooks, def.hooks ?? {}]);
-    this.router.add(def.method, fullPath, { def: merged, hooks }, def.operationId);
+    this.router.add(
+      def.method,
+      fullPath,
+      { def: merged, hooks },
+      def.operationId,
+    );
     this.routes.push(merged);
+    return this;
+  }
+
+  /**
+   * Register a WebSocket route. The handler runs when an HTTP client sends an
+   * `Upgrade: websocket` request to `path`; the adapter performs the RFC 6455
+   * handshake and invokes the lifecycle callbacks. Path params (`/chat/:room`)
+   * land on `ctx.params`. The handler shape matches Bun's WebSocket API.
+   * @example `app.ws("/echo", { message(c, d) { c.send(d); } });`
+   */
+  ws<P extends PathString, TData = unknown>(
+    path: P,
+    handler: WebSocketHandler<P, any, TData>,
+  ): this {
+    const fullPath = joinPath(this.prefix, path) as PathString;
+    this.webSocketRoutes.add(
+      fullPath,
+      handler as WebSocketHandler<any, any, any>,
+      () => ({ ...this.decorations }),
+    );
     return this;
   }
 
@@ -288,14 +330,18 @@ export class App {
   group(
     prefix: PathString,
     config: { tags?: string[]; hooks?: Hooks; auth?: RouteDefinition["auth"] },
-    register: (app: App) => void
+    register: (app: App) => void,
   ): this {
     const child = new App(this.options);
     (child as any).router = this.router;
     (child as any).routes = this.routes;
+    (child as any).webSocketRoutes = this.webSocketRoutes;
     (child as any).log = this.log;
     (child as any).prefix = joinPath(this.prefix, prefix);
-    (child as any).groupHooks = [...this.groupHooks, ...(config.hooks ? [config.hooks] : [])];
+    (child as any).groupHooks = [
+      ...this.groupHooks,
+      ...(config.hooks ? [config.hooks] : []),
+    ];
     (child as any).groupTags = [...this.groupTags, ...(config.tags ?? [])];
     (child as any).groupAuth = config.auth ?? this.groupAuth;
     (child as any).decorations = this.decorations;
@@ -376,12 +422,14 @@ export class App {
   }
 
   /**
-    * Subscribe to plugin install events. The listener fires once per registered
+   * Subscribe to plugin install events. The listener fires once per registered
    * plugin, after `register()` (or its returned promise) completes. Useful
    * for observability plugins that want to enumerate everything else that
    * was installed without polluting the route registry.
    */
-  onPluginInstalled(listener: (info: PluginInstalledEvent) => void | Promise<void>): this {
+  onPluginInstalled(
+    listener: (info: PluginInstalledEvent) => void | Promise<void>,
+  ): this {
     this.pluginInstalledListeners.push(listener);
     return this;
   }
@@ -398,12 +446,18 @@ export class App {
   }
 
   /**
-   * Encapsulated plugin registration (Fastify-style).
-   * The plugin function receives a child App; its routes/hooks are scoped.
+   * Encapsulated plugin registration (Fastify-style). Receives a child App; routes/hooks are scoped.
    */
   register(
-    plugin: { name?: string; register: (app: App) => void | Promise<void> } | ((app: App) => void | Promise<void>),
-    config: { prefix?: PathString; tags?: string[]; hooks?: Hooks; auth?: RouteDefinition["auth"] } = {}
+    plugin:
+      | { name?: string; register: (app: App) => void | Promise<void> }
+      | ((app: App) => void | Promise<void>),
+    config: {
+      prefix?: PathString;
+      tags?: string[];
+      hooks?: Hooks;
+      auth?: RouteDefinition["auth"];
+    } = {},
   ): this {
     const fn = typeof plugin === "function" ? plugin : plugin.register;
     const name = typeof plugin === "function" ? undefined : plugin.name;
@@ -414,12 +468,17 @@ export class App {
       this.installedPlugins.add(name);
     }
     const prefix = config.prefix ?? ("/" as PathString);
-    const event: PluginInstalledEvent = { name, prefix: joinPath(this.prefix, prefix) };
+    const event: PluginInstalledEvent = {
+      name,
+      prefix: joinPath(this.prefix, prefix),
+    };
     this.group(prefix, config, (child) => {
       const r = fn(child);
       if (r && typeof (r as Promise<unknown>).then === "function") {
         // Plugin is async — caller should await app.ready().
-        this.pendingPlugins.push((r as Promise<unknown>).then(() => this.firePluginInstalled(event)));
+        this.pendingPlugins.push(
+          (r as Promise<unknown>).then(() => this.firePluginInstalled(event)),
+        );
       } else {
         // Sync plugin: fire listeners immediately. Any returned promise from a
         // listener is collected so `app.ready()` can await observers too.
@@ -432,22 +491,34 @@ export class App {
     return this;
   }
 
-  private firePluginInstalled(event: PluginInstalledEvent): Promise<void> | undefined {
+  private firePluginInstalled(
+    event: PluginInstalledEvent,
+  ): Promise<void> | undefined {
     if (this.pluginInstalledListeners.length === 0) return undefined;
     const promises: Array<Promise<unknown>> = [];
     for (const listener of this.pluginInstalledListeners) {
       try {
         const r = listener(event);
         if (r && typeof (r as Promise<unknown>).then === "function") {
-          promises.push((r as Promise<unknown>).catch((err) => {
-            this.log.error({ err, plugin: event.name }, "onPluginInstalled listener failed");
-          }));
+          promises.push(
+            (r as Promise<unknown>).catch((err) => {
+              this.log.error(
+                { err, plugin: event.name },
+                "onPluginInstalled listener failed",
+              );
+            }),
+          );
         }
       } catch (err) {
-        this.log.error({ err, plugin: event.name }, "onPluginInstalled listener failed");
+        this.log.error(
+          { err, plugin: event.name },
+          "onPluginInstalled listener failed",
+        );
       }
     }
-    return promises.length > 0 ? Promise.all(promises).then(() => undefined) : undefined;
+    return promises.length > 0
+      ? Promise.all(promises).then(() => undefined)
+      : undefined;
   }
 
   /**
@@ -499,12 +570,22 @@ export class App {
           title: "Service Unavailable",
           status: 503,
         }),
-        { status: 503, headers: { "content-type": "application/problem+json", "retry-after": "5" } }
+        {
+          status: 503,
+          headers: {
+            "content-type": "application/problem+json",
+            "retry-after": "5",
+          },
+        },
       );
     }
     this.inflight++;
     const requestId = randomId();
-    const log = this.log.child({ requestId, method: request.method, url: request.url });
+    const log = this.log.child({
+      requestId,
+      method: request.method,
+      url: request.url,
+    });
     let ctx: BaseContext<any, any> | undefined;
     const globalHooks = mergeHooks([this.options.hooks ?? {}]);
     let activeErrorHook = globalHooks.onError;
@@ -517,7 +598,9 @@ export class App {
       const url = new URL(request.url);
       const method = request.method as HttpMethod;
       const headFallback = method === "HEAD";
-      const match = this.router.find(method, url.pathname) ?? (headFallback ? this.router.find("GET", url.pathname) : undefined);
+      const match =
+        this.router.find(method, url.pathname) ??
+        (headFallback ? this.router.find("GET", url.pathname) : undefined);
 
       if (!match) {
         const allowed = this.router.allowedMethods(url.pathname);
@@ -544,20 +627,32 @@ export class App {
               state: { ...this.decorations, requestId, log },
               set: { headers: new Headers() },
             };
-            const preflightHooks = mergeHooks([this.options.hooks ?? {}, ...this.groupHooks]);
+            const preflightHooks = mergeHooks([
+              this.options.hooks ?? {},
+              ...this.groupHooks,
+            ]);
             const intercepted = await preflightHooks.beforeHandle?.(synthCtx);
             if (intercepted instanceof Response) {
               copyContextHeaders(synthCtx, intercepted);
-              return await finalizeResponse(intercepted, synthCtx, preflightHooks);
+              return await finalizeResponse(
+                intercepted,
+                synthCtx,
+                preflightHooks,
+              );
             }
-            const res = new Response(null, { status: 204, headers: { allow: allowed.join(", ") } });
+            const res = new Response(null, {
+              status: 204,
+              headers: { allow: allowed.join(", ") },
+            });
             copyContextHeaders(synthCtx, res);
             res.headers.set("x-request-id", requestId);
             return await finalizeResponse(res, synthCtx, preflightHooks);
           }
           throw new MethodNotAllowedError(allowed);
         }
-        throw new NotFoundError(`No route for ${request.method} ${url.pathname}`);
+        throw new NotFoundError(
+          `No route for ${request.method} ${url.pathname}`,
+        );
       }
 
       const { def, hooks } = match.handler;
@@ -584,9 +679,16 @@ export class App {
       const afterReturn = await allHooks.afterHandle?.(ctx, result);
       if (afterReturn !== undefined) result = afterReturn;
 
-      let response = await serializeResult(result, def, this.options.validateResponses ?? true);
+      let response = await serializeResult(
+        result,
+        def,
+        this.options.validateResponses ?? true,
+      );
       if (method === "HEAD") {
-        response = new Response(null, { status: response.status, headers: response.headers });
+        response = new Response(null, {
+          status: response.status,
+          headers: response.headers,
+        });
       }
       copyContextHeaders(ctx, response);
       return await finalizeResponse(response, ctx, allHooks);
@@ -594,22 +696,34 @@ export class App {
       const handled = await activeErrorHook?.(err, ctx);
       if (handled instanceof Response) {
         if (ctx) copyContextHeaders(ctx, handled);
-        if (!handled.headers.has("x-request-id")) handled.headers.set("x-request-id", requestId);
-        return finalizeResponse(handled, ctx, { onSend: activeSendHook, onResponse: activeResponseHook });
+        if (!handled.headers.has("x-request-id"))
+          handled.headers.set("x-request-id", requestId);
+        return finalizeResponse(handled, ctx, {
+          onSend: activeSendHook,
+          onResponse: activeResponseHook,
+        });
       }
       const httpErr: HttpError =
         err instanceof HttpError
           ? err
-          : new InternalError(err instanceof Error ? err.message : "Unexpected error");
-      if (httpErr.status >= 500) log.error({ err: serializeErr(err) }, httpErr.problem.title);
-      if (httpErr.status < 500) log.warn({ status: httpErr.status }, httpErr.problem.title);
+          : new InternalError(
+              err instanceof Error ? err.message : "Unexpected error",
+            );
+      if (httpErr.status >= 500)
+        log.error({ err: serializeErr(err) }, httpErr.problem.title);
+      if (httpErr.status < 500)
+        log.warn({ status: httpErr.status }, httpErr.problem.title);
       const res = httpErr.toResponse({
         production: this.options.production,
         requestId,
       });
       if (ctx) copyContextHeaders(ctx, res);
-      if (!res.headers.has("x-request-id")) res.headers.set("x-request-id", requestId);
-      return finalizeResponse(res, ctx, { onSend: activeSendHook, onResponse: activeResponseHook });
+      if (!res.headers.has("x-request-id"))
+        res.headers.set("x-request-id", requestId);
+      return finalizeResponse(res, ctx, {
+        onSend: activeSendHook,
+        onResponse: activeResponseHook,
+      });
     } finally {
       this.inflight--;
     }
@@ -631,9 +745,14 @@ export class App {
    * @param init - Standard `RequestInit` (ignored if `input` is a `Request`).
    * @returns Fulfills with the `Response` produced by the matching handler.
    */
-  request(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  request(
+    input: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> {
     const url =
-      typeof input === "string" && input.startsWith("/") ? `http://test.local${input}` : input;
+      typeof input === "string" && input.startsWith("/")
+        ? `http://test.local${input}`
+        : input;
     const req = url instanceof Request ? url : new Request(url as any, init);
     return this.fetch(req);
   }
@@ -734,7 +853,7 @@ function mergeHooks(layers: Hooks[]): Hooks {
 }
 
 function responsePipeline(
-  fns: NonNullable<Hooks["onSend"]>[]
+  fns: NonNullable<Hooks["onSend"]>[],
 ): NonNullable<Hooks["onSend"]> | undefined {
   if (fns.length === 0) return undefined;
   return async (res, ctx) => {
@@ -750,7 +869,7 @@ function responsePipeline(
 async function finalizeResponse(
   res: Response,
   ctx: BaseContext<any, any> | undefined,
-  hooks: Pick<Hooks, "onSend" | "onResponse">
+  hooks: Pick<Hooks, "onSend" | "onResponse">,
 ): Promise<Response> {
   const sent = await hooks.onSend?.(res, ctx);
   const final = sent instanceof Response ? sent : res;
@@ -765,7 +884,9 @@ function chain<F extends (...args: any[]) => any>(fns: F[]): F | undefined {
   }) as unknown as F;
 }
 
-function firstResponse<F extends (...args: any[]) => any>(fns: F[]): F | undefined {
+function firstResponse<F extends (...args: any[]) => any>(
+  fns: F[],
+): F | undefined {
   if (fns.length === 0) return undefined;
   return (async (...args: any[]) => {
     for (const fn of fns) {
@@ -776,7 +897,9 @@ function firstResponse<F extends (...args: any[]) => any>(fns: F[]): F | undefin
   }) as unknown as F;
 }
 
-function pipeline<F extends (ctx: any, value: any) => any>(fns: F[]): F | undefined {
+function pipeline<F extends (ctx: any, value: any) => any>(
+  fns: F[],
+): F | undefined {
   if (fns.length === 0) return undefined;
   return (async (ctx: any, value: any) => {
     let v = value;
@@ -796,7 +919,7 @@ function copyContextHeaders(ctx: BaseContext<any, any>, res: Response): void {
 
 function hasRequestSchema(
   request: RequestSchemas | undefined,
-  key: keyof RequestSchemas
+  key: keyof RequestSchemas,
 ): boolean {
   return !!request && !!request[key];
 }
@@ -810,7 +933,7 @@ async function buildContext(
     bodyLimitBytes: number;
     allowedContentTypes?: string[];
     multipart?: AppOptions["multipart"];
-  }
+  },
 ): Promise<BaseContext<any, any>> {
   const set = { headers: new Headers() };
   const headersObj = headersToObject(request.headers);
@@ -846,7 +969,12 @@ async function buildContext(
     if (!allowed.some((a) => ct.includes(a))) {
       throw new UnsupportedMediaTypeError(ct || "(none)", allowed);
     }
-    const raw = await readBody(request, ct, opts.bodyLimitBytes, opts.multipart);
+    const raw = await readBody(
+      request,
+      ct,
+      opts.bodyLimitBytes,
+      opts.multipart,
+    );
     const r = await validate(def.request.body, raw);
     if (r.issues) throw new ValidationError("body", toIssues(r.issues));
     body = r.value;
@@ -872,11 +1000,15 @@ function queryToObject(s: URLSearchParams): Record<string, string | string[]> {
   return o;
 }
 
-function toIssues(issues: ReadonlyArray<{ message: string; path?: ReadonlyArray<any> }>) {
+function toIssues(
+  issues: ReadonlyArray<{ message: string; path?: ReadonlyArray<any> }>,
+) {
   return issues.map((i) => ({
     message: i.message,
     path: (i.path ?? [])
-      .map((p) => (typeof p === "object" && p && "key" in p ? (p as any).key : p))
+      .map((p) =>
+        typeof p === "object" && p && "key" in p ? (p as any).key : p,
+      )
       .join("."),
   }));
 }
@@ -885,7 +1017,7 @@ async function readBody(
   req: Request,
   ct: string,
   limit: number,
-  multipart?: AppOptions["multipart"]
+  multipart?: AppOptions["multipart"],
 ): Promise<unknown> {
   if (ct.includes("application/json")) {
     const bytes = await readBodyLimited(req, limit);
@@ -894,7 +1026,9 @@ async function readBody(
   }
   if (ct.includes("application/x-www-form-urlencoded")) {
     const bytes = await readBodyLimited(req, limit);
-    return Object.fromEntries(new URLSearchParams(new TextDecoder().decode(bytes)));
+    return Object.fromEntries(
+      new URLSearchParams(new TextDecoder().decode(bytes)),
+    );
   }
   if (ct.includes("multipart/form-data")) {
     // Multipart: rely on platform parser, but enforce content-length first.
@@ -926,12 +1060,12 @@ async function readBody(
     });
     if (multipart?.maxFields !== undefined && fields > multipart.maxFields) {
       throw new BadRequestError(
-        `Too many form fields (${fields} > ${multipart.maxFields})`
+        `Too many form fields (${fields} > ${multipart.maxFields})`,
       );
     }
     if (multipart?.maxFiles !== undefined && files > multipart.maxFiles) {
       throw new BadRequestError(
-        `Too many file uploads (${files} > ${multipart.maxFiles})`
+        `Too many file uploads (${files} > ${multipart.maxFiles})`,
       );
     }
     return out;
@@ -943,21 +1077,21 @@ async function readBody(
 async function serializeResult(
   result: { status: number; body: unknown; headers?: Record<string, string> },
   def: RouteDefinition<any, any, any, any>,
-  validateResponses: boolean
+  validateResponses: boolean,
 ): Promise<Response> {
   const spec = def.responses[result.status];
   if (!spec) {
     throw new InternalError(
-      `Handler returned status ${result.status} which is not declared in responses for ${def.method} ${def.path}`
+      `Handler returned status ${result.status} which is not declared in responses for ${def.method} ${def.path}`,
     );
   }
   if (validateResponses && spec.body) {
     const r = await validate(spec.body, result.body);
     if (r.issues) {
       throw new InternalError(
-        `Response body for ${def.method} ${def.path} failed schema validation: ${
-          r.issues.map((i) => i.message).join("; ")
-        }`
+        `Response body for ${def.method} ${def.path} failed schema validation: ${r.issues
+          .map((i) => i.message)
+          .join("; ")}`,
       );
     }
   }
@@ -969,7 +1103,12 @@ async function serializeResult(
   let body: BodyInit | null;
   if (result.body === undefined || result.body === null) {
     body = null;
-  } else if (!treatAsJson && (typeof result.body === "string" || result.body instanceof Uint8Array || result.body instanceof ArrayBuffer)) {
+  } else if (
+    !treatAsJson &&
+    (typeof result.body === "string" ||
+      result.body instanceof Uint8Array ||
+      result.body instanceof ArrayBuffer)
+  ) {
     body = result.body as BodyInit;
   } else if (!treatAsJson && (result.body as any) instanceof ReadableStream) {
     body = result.body as BodyInit;
@@ -982,7 +1121,8 @@ async function serializeResult(
 function mockResponseFor(def: RouteDefinition<any, any, any, any>) {
   const statuses = Object.keys(def.responses).map(Number).sort();
   const status = statuses.find((s) => s >= 200 && s < 300) ?? statuses[0];
-  if (status === undefined) throw new InternalError("Mock mode: no responses declared");
+  if (status === undefined)
+    throw new InternalError("Mock mode: no responses declared");
   const spec = def.responses[status]!;
   const example =
     spec.examples && Object.values(spec.examples)[0] !== undefined
@@ -994,7 +1134,7 @@ function mockResponseFor(def: RouteDefinition<any, any, any, any>) {
 function runHandler(
   def: RouteDefinition<any, any, any, any>,
   ctx: BaseContext<any, any>,
-  requestTimeoutMs: number
+  requestTimeoutMs: number,
 ): Promise<unknown> {
   const handlerPromise = Promise.resolve(def.handler(ctx));
   return requestTimeoutMs > 0
@@ -1013,7 +1153,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
       (e) => {
         clearTimeout(t);
         reject(e);
-      }
+      },
     );
   });
 }
