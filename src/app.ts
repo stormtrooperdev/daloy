@@ -263,21 +263,20 @@ export class App {
 
   /**
    * Mount a group of routes under a shared prefix with shared tags, hooks,
-   * and authentication.
-   *
-   * The `register` callback receives an encapsulated child `App` whose
-   * `route()` calls inherit the prefix and group config. Hooks and tags are
-   * **merged** with any further `app.use(...)` / route-level entries.
+   * and authentication. The `register` callback receives an encapsulated
+   * child `App` whose `route()` calls inherit the prefix and group config.
+   * Hooks and tags are merged with any further `app.use(...)` / route-level
+   * entries.
    *
    * @example
-  * ```ts
-  * app.group("/admin", { tags: ["admin"] }, (admin) => {
-  *   admin.route({
-  *     method: "GET",
-  *     path: "/users",
-  *     responses: { 200: { description: "OK" } },
-  *     handler: () => ({ status: 200, body: [] }),
-  *   });
+   * ```ts
+   * app.group("/admin", { tags: ["admin"] }, (admin) => {
+   *   admin.route({
+   *     method: "GET",
+   *     path: "/users",
+   *     responses: { 200: { description: "OK" } },
+   *     handler: () => ({ status: 200, body: [] }),
+   *   });
    * });
    * ```
    *

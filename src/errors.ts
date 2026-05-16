@@ -44,10 +44,7 @@ export interface ProblemDetails {
  * @since 0.1.0
  */
 export interface ProblemRenderOptions {
-  /**
-   * When `true`, scrub the `detail` field from 5xx responses so internal
-   * messages never leak to clients. Defaults to `process.env.NODE_ENV === "production"`.
-   */
+  /** Scrub `detail` from 5xx responses. Defaults to `process.env.NODE_ENV === "production"`. */
   production?: boolean;
   /** Request id stamped into `instance` as `urn:request:<id>` for log correlation. */
   requestId?: string;

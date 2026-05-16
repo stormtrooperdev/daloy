@@ -145,11 +145,9 @@ export interface OpenAPIOptions {
  */
 export function generateOpenAPI(app: App, options: OpenAPIOptions): Record<string, unknown> {
   const paths: Record<string, Record<string, unknown>> = {};
-
   for (const route of app.routes) {
     const oasPath = route.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
-    paths[oasPath] ??= {};
-    paths[oasPath]![route.method.toLowerCase()] = buildOperation(route, route.path);
+    (paths[oasPath] ??= {})[route.method.toLowerCase()] = buildOperation(route, route.path);
   }
 
   const webhooks = buildWebhooks(options.webhooks);

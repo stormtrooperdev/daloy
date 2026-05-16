@@ -102,10 +102,10 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
 
   const hsts = opts.hsts ?? { maxAgeSeconds: 31536000, includeSubDomains: true };
   if (hsts !== false) {
-    let v = `max-age=${hsts.maxAgeSeconds}`;
-    if (hsts.includeSubDomains) v += "; includeSubDomains";
-    if (hsts.preload) v += "; preload";
-    headers["strict-transport-security"] = v;
+    const hstsParts = [`max-age=${hsts.maxAgeSeconds}`];
+    if (hsts.includeSubDomains) hstsParts.push("includeSubDomains");
+    if (hsts.preload) hstsParts.push("preload");
+    headers["strict-transport-security"] = hstsParts.join("; ");
   }
 
   const frame = opts.frameOptions ?? "DENY";
