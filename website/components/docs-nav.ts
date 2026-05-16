@@ -64,6 +64,18 @@ export const docsNav: DocsNavSection[] = [
     ],
   },
   {
+    title: "Email",
+    items: [
+      { title: "Overview", href: "/docs/email" },
+      { title: "AWS SES", href: "/docs/email/aws-ses" },
+      { title: "SendGrid", href: "/docs/email/sendgrid" },
+      { title: "Resend", href: "/docs/email/resend" },
+      { title: "Postmark", href: "/docs/email/postmark" },
+      { title: "Mailgun", href: "/docs/email/mailgun" },
+      { title: "Mailtrap", href: "/docs/email/mailtrap" },
+    ],
+  },
+  {
     title: "Production",
     items: [
       { title: "Security", href: "/docs/security" },

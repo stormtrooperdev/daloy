@@ -47,6 +47,13 @@ const STATIC_PATHS: Array<{
   { path: "/docs/databases/turso", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/databases/cloudflare-d1", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/databases/aurora-dsql", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/docs/email/aws-ses", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email/sendgrid", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email/resend", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email/postmark", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email/mailgun", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/email/mailtrap", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/tutorials/bookstore", changeFrequency: "monthly", priority: 0.7 },
 ];
 
