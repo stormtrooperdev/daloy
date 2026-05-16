@@ -4,33 +4,10 @@ import * as React from "react";
 import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
+import { writeTextToClipboard } from "@/lib/clipboard";
 
 interface CodeCopyButtonProps {
   code: string;
-}
-
-async function writeToClipboard(code: string) {
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(code);
-    return;
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = code;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.top = "0";
-  textarea.style.left = "-9999px";
-  document.body.append(textarea);
-  textarea.focus();
-  textarea.select();
-
-  const copied = document.execCommand("copy");
-  textarea.remove();
-
-  if (!copied) {
-    throw new Error("Clipboard copy failed");
-  }
 }
 
 export function CodeCopyButton({ code }: CodeCopyButtonProps) {
@@ -51,7 +28,7 @@ export function CodeCopyButton({ code }: CodeCopyButtonProps) {
     }
 
     try {
-      await writeToClipboard(code);
+      await writeTextToClipboard(code);
       setStatus("copied");
     } catch {
       setStatus("error");

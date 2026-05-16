@@ -52,7 +52,7 @@ export async function CodeBlock({ code, language = "ts", className }: CodeBlockP
   });
 
   return (
-    <div className={cn("code-editor relative my-4 overflow-hidden rounded-xl border", className)}>
+    <div className={cn("code-editor relative my-4 overflow-hidden rounded-xl border", className)} data-language={language}>
       <div className="code-editor__toolbar flex items-center justify-between gap-3 border-b px-3 py-2 text-[11px] sm:px-4 sm:text-xs">
         <span className="min-w-0 truncate font-mono">{language}</span>
         <CodeCopyButton code={code} />

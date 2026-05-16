@@ -1,4 +1,5 @@
 import { getDocsSearchSections } from "@/lib/docs-search";
+import { DocsPageCopyButton } from "@/components/docs-page-copy-button";
 import { DocsSearch } from "../../components/docs-search";
 import { DocsSidebar } from "../../components/docs-sidebar";
 
@@ -8,8 +9,11 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8">
       <div className="pt-6 lg:pt-8">
-        <div className="max-w-xl">
-          <DocsSearch sections={searchSections} />
+        <div className="flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-stretch">
+          <div className="min-w-0 flex-1">
+            <DocsSearch sections={searchSections} />
+          </div>
+          <DocsPageCopyButton />
         </div>
       </div>
 
@@ -32,7 +36,7 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
           </div>
         </aside>
         <main className="min-w-0 flex-1">
-          <article className="docs-prose max-w-full lg:max-w-[72ch]">{children}</article>
+          <article data-docs-content className="docs-prose max-w-full lg:max-w-[72ch]">{children}</article>
         </main>
       </div>
     </div>
