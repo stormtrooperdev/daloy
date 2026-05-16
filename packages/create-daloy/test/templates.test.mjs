@@ -517,8 +517,8 @@ test("deno-basic template ships a runtime-native scaffold", async () => {
   const denoJson = JSON.parse(await readFile(path.join(pkgRoot, "templates/deno-basic/deno.json"), "utf8"));
   assert.match(denoJson.tasks.dev, /^deno run.*--watch src\/main\.ts$/);
   assert.match(denoJson.tasks.test, /^deno test\b/);
-  assert.equal(denoJson.imports["@daloyjs/core"], "npm:@daloyjs/core@^0.5.0");
-  assert.equal(denoJson.imports["@daloyjs/core/"], "npm:@daloyjs/core@^0.5.0/");
+  assert.equal(denoJson.imports["@daloyjs/core"], "npm:@daloyjs/core@^0.7.5");
+  assert.equal(denoJson.imports["@daloyjs/core/"], "npm:@daloyjs/core@^0.7.5/");
 });
 
 test("--list-templates includes the new bun-basic and deno-basic options", async () => {
@@ -553,6 +553,7 @@ test("--help documents the create flow across package managers", async () => {
   assert.match(out, /npm\s+create daloy@latest/);
   assert.match(out, /yarn create daloy/);
   assert.match(out, /bun\s+create daloy/);
+  assert.match(out, /--package-manager <pm>.*pnpm \| npm \| yarn \| bun/);
   assert.match(out, /--minimal/);
   assert.match(out, /--with-ci/);
   assert.match(out, /--code-owner/);

@@ -44,10 +44,10 @@ const TEMPLATE_OPTIONS = [
 ];
 
 const PACKAGE_MANAGER_OPTIONS = [
-  { value: "pnpm", title: "pnpm", description: "Recommended for DaloyJS projects" },
-  { value: "npm", title: "npm", description: "Use the npm client you already have" },
-  { value: "yarn", title: "Yarn", description: "Classic create workflow" },
-  { value: "bun", title: "Bun", description: "Fast install and runtime tooling" },
+  { value: "pnpm", title: "pnpm", description: "Recommended default with the hardened pnpm workspace settings" },
+  { value: "npm", title: "npm", description: "Use the stock npm CLI with rewritten scripts and docs" },
+  { value: "yarn", title: "Yarn", description: "Yarn workflow with rewritten scripts and lockfile-friendly installs" },
+  { value: "bun", title: "Bun", description: "Bun package manager for fast installs; runtime templates stay Bun-native" },
 ];
 
 const TEMPLATES = TEMPLATE_OPTIONS.map((option) => option.value);

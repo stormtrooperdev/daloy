@@ -12,6 +12,7 @@ import { buttonVariants } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { CodeBlock } from "../components/code-block";
+import { CodeCopyButton } from "../components/code-copy-button";
 import { ContractFlowVisual } from "../components/contract-flow-visual";
 import { FlowHeroScene } from "../components/flow-hero-scene";
 import { Reveal } from "../components/reveal";
@@ -61,6 +62,8 @@ app.route({
 });
 
 serve(app, { port: 3000 });`;
+
+const CREATE_COMMAND = "pnpm create daloy@latest my-api";
 
 const FEATURES = [
   {
@@ -177,7 +180,10 @@ export default function HomePage() {
                 Read the docs
               </Link>
             </div>
-            <code className="rounded-md bg-muted px-3 py-2 text-sm">$ pnpm create daloy@latest my-api</code>
+            <div className="float-up flex items-center gap-2 rounded-md border bg-muted/70 px-3 py-2" style={{ animationDelay: "380ms" }}>
+              <code className="text-sm">$ {CREATE_COMMAND}</code>
+              <CodeCopyButton code={CREATE_COMMAND} />
+            </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
               <span>320/320 tests passing</span>
               <span aria-hidden>·</span>
