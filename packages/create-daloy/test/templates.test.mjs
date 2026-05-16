@@ -9,6 +9,22 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgRoot = path.resolve(__dirname, "..");
 
+test("choiceInputMode prefers the controlling TTY when a wrapper hides raw mode on POSIX", async () => {
+  process.env.DALOY_TEST_IMPORT = "1";
+  let choiceInputMode;
+  try {
+    ({ choiceInputMode } = await import(`file://${path.join(pkgRoot, "bin/create-daloy.mjs")}?test=${Date.now()}`));
+  } finally {
+    delete process.env.DALOY_TEST_IMPORT;
+  }
+
+  assert.equal(choiceInputMode({ stdinIsTTY: true, hasRawMode: true, platform: "darwin" }), "stdin");
+  assert.equal(choiceInputMode({ stdinIsTTY: true, hasRawMode: false, platform: "darwin" }), "tty");
+  assert.equal(choiceInputMode({ stdinIsTTY: true, hasRawMode: false, platform: "linux" }), "tty");
+  assert.equal(choiceInputMode({ stdinIsTTY: true, hasRawMode: false, platform: "win32" }), "numbered");
+  assert.equal(choiceInputMode({ stdinIsTTY: false, hasRawMode: false, platform: "linux" }), "tty");
+});
+
 test("node-basic health route preserves literal true type", async () => {
   const source = await readFile(path.join(pkgRoot, "templates/node-basic/src/build-app.ts"), "utf8");
   assert.match(source, /body:\s*\{ ok: true as const, uptime: process\.uptime\(\) \}/);

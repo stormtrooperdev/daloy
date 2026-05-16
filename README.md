@@ -181,7 +181,7 @@ import { swaggerUiHtml, htmlResponse } from "@daloyjs/core/docs";
 ```
 
 Mount at `/docs` and the UI is always contract-accurate — never stale.
-`create-daloy@0.1.23` mounts Swagger UI at `/docs` and the live spec at `/openapi.json` by default.
+`create-daloy@0.1.24` mounts Swagger UI at `/docs` and the live spec at `/openapi.json` by default.
 
 ---
 

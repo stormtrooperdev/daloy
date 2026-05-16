@@ -3,10 +3,11 @@
 // Zero runtime dependencies; uses only Node built-ins.
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, openSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { ReadStream as TtyReadStream } from "node:tty";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -794,8 +795,42 @@ function runQuiet(cmd, args, cwd) {
 //
 // `ask`/`askYesNo` use readline for resilience (paste, history, multi-line
 // input). `askChoice` upgrades to raw-mode arrow-key navigation when stdin is
-// a TTY, with a numbered fallback used by the readline-driven tests.
+// a TTY. When package-manager wrappers hide raw mode on process.stdin (pnpm
+// does this on some terminals), we reopen the controlling TTY directly before
+// falling back to the numbered prompt used by the readline-driven tests.
 // ----------------------------------------------------------------------------
+
+function choiceInputMode({ stdinIsTTY, hasRawMode, platform }) {
+  if (stdinIsTTY && hasRawMode) return "stdin";
+  if (platform !== "win32") return "tty";
+  return "numbered";
+}
+
+function openChoiceInputStream() {
+  const mode = choiceInputMode({
+    stdinIsTTY: process.stdin.isTTY,
+    hasRawMode: typeof process.stdin.setRawMode === "function",
+    platform: process.platform,
+  });
+  if (mode === "stdin") {
+    return { stream: process.stdin, dispose: () => {} };
+  }
+  if (mode !== "tty") return null;
+  try {
+    const fd = openSync("/dev/tty", "r");
+    const stream = new TtyReadStream(fd);
+    if (!stream.isTTY || typeof stream.setRawMode !== "function") {
+      stream.destroy();
+      return null;
+    }
+    return {
+      stream,
+      dispose: () => stream.destroy(),
+    };
+  } catch {
+    return null;
+  }
+}
 
 function printPromptHeader(question) {
   console.log(`${color(COLORS.cyan, SYMBOLS.stepActive)}  ${color(COLORS.bold, question)}`);
@@ -842,8 +877,9 @@ function optionDescription(option) {
 // Arrow-key powered choice prompt. Falls back to numbered input whenever raw
 // mode is unavailable (CI, piped stdin, integration tests).
 async function askChoice(rl, question, choices, defaultChoice) {
-  const canRawMode = process.stdin.isTTY && typeof process.stdin.setRawMode === "function";
-  if (!canRawMode) return askChoiceNumbered(rl, question, choices, defaultChoice);
+  const rawInputHandle = openChoiceInputStream();
+  if (!rawInputHandle) return askChoiceNumbered(rl, question, choices, defaultChoice);
+  const rawInput = rawInputHandle.stream;
 
   printPromptHeader(question);
   printRailLine(color(COLORS.dim, `Use \u2191 \u2193 to navigate, Enter to confirm, type a number to jump.`));
@@ -875,9 +911,9 @@ async function askChoice(rl, question, choices, defaultChoice) {
 
   // Pause readline so it doesn't fight us for stdin while we're in raw mode.
   rl.pause();
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
+  rawInput.setRawMode(true);
+  rawInput.resume();
+  rawInput.setEncoding("utf8");
 
   // Initial render
   process.stdout.write(render(index) + "\n");
@@ -891,9 +927,10 @@ async function askChoice(rl, question, choices, defaultChoice) {
       process.stdout.write(render(newIndex) + "\n");
     }
     function cleanup() {
-      process.stdin.removeListener("data", onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
+      rawInput.removeListener("data", onData);
+      rawInput.setRawMode(false);
+      rawInput.pause();
+      rawInputHandle.dispose();
     }
     function onData(chunk) {
       const data = chunk.toString();
@@ -934,7 +971,7 @@ async function askChoice(rl, question, choices, defaultChoice) {
         rerender(index);
       }
     }
-    process.stdin.on("data", onData);
+    rawInput.on("data", onData);
   });
 
   // Replace the rendered list with a single confirmation line.
@@ -1272,4 +1309,8 @@ async function main() {
   }
 }
 
-await main();
+if (process.env.DALOY_TEST_IMPORT !== "1") {
+  await main();
+}
+
+export { choiceInputMode };
