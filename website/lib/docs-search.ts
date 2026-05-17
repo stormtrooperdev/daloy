@@ -19,6 +19,7 @@ type DiscoveredDoc = {
   title: string;
   href: string;
   description: string;
+  keywords: string[];
 };
 
 const docsDir = path.join(process.cwd(), "app", "docs");
@@ -58,11 +59,14 @@ function extractMetadata(source: string, filePath: string): DiscoveredDoc {
     source.match(/description:\s*(?:\n\s*)?"([\s\S]*?)",\s*path:/)?.[1] ??
     "Documentation page";
   const href = source.match(/path:\s*"([^"]+)"/)?.[1] ?? getRouteFromFile(filePath);
+  const keywordsBlock = source.match(/keywords:\s*\[([\s\S]*?)\]/)?.[1] ?? "";
+  const keywords = [...keywordsBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
 
   return {
     title: normalizeText(title),
     href,
     description: normalizeText(description),
+    keywords,
   };
 }
 
@@ -109,7 +113,16 @@ export const getDocsSearchSections = cache(async (): Promise<DocsSearchSection[]
       title: doc.title,
       href: doc.href,
       description: doc.description,
-      keywords: [heading, doc.title, navTitle, doc.href.replaceAll("/", " ")].filter(Boolean).join(" "),
+      keywords: [
+        heading,
+        doc.title,
+        navTitle,
+        doc.href.replaceAll("/", " "),
+        doc.description,
+        ...doc.keywords,
+      ]
+        .filter(Boolean)
+        .join(" "),
     });
 
     grouped.set(heading, sectionItems);

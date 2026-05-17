@@ -27,6 +27,29 @@ function isTypingTarget(target: EventTarget | null) {
   return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target.isContentEditable;
 }
 
+function scoreDocsItem(value: string, search: string) {
+  const haystack = value.toLowerCase();
+  const needle = search.toLowerCase().trim();
+
+  if (!needle) {
+    return 1;
+  }
+
+  if (haystack.includes(needle)) {
+    // Boost matches that hit the title (first segment of value) so e.g.
+    // searching "redis" surfaces the "Redis rate-limit store" page first.
+    return haystack.startsWith(needle) ? 1 : 0.75;
+  }
+
+  const tokens = needle.split(/\s+/).filter(Boolean);
+
+  if (tokens.length > 1 && tokens.every((token) => haystack.includes(token))) {
+    return 0.5;
+  }
+
+  return 0;
+}
+
 export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,7 +113,7 @@ export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
         description="Jump between documentation pages."
         className="max-w-2xl rounded-2xl border border-border bg-background/95 p-0 shadow-2xl"
       >
-        <Command>
+        <Command filter={scoreDocsItem}>
           <CommandInput placeholder="Search docs, topics, and routes..." />
           <CommandList className="max-h-104">
             <CommandEmpty>No documentation page matched your search.</CommandEmpty>
