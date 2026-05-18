@@ -26,12 +26,6 @@ function getPublishedCorePackageVersion() {
 const nextConfig = {
   experimental: {
     viewTransition: true,
-    // Tree-shake/inline these packages into the importer's chunk so they
-    // don't end up as standalone vendor chunks with random hash names that
-    // some corporate web filters (Zscaler/Umbrella/Forcepoint) block as
-    // suspicious-looking files. See `webpack` hook below for the matching
-    // deterministic chunk-name configuration.
-    optimizePackageImports: ["cmdk", "@phosphor-icons/react"],
   },
   // Pin the workspace root to this site so Next.js doesn't walk up into the
   // framework's `src/` (which has a `middleware.ts` that is NOT a Next.js
