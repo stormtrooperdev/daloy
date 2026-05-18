@@ -107,14 +107,31 @@ app.use(timing());              // Server-Timing header for observability`} />
 
       <h2><code>csrf()</code> for state-changing routes</h2>
       <p>
-        Use <a href="/docs/security/csrf"><code>csrf()</code></a> to protect mutating endpoints with the
-        double-submit-cookie pattern. The middleware sets a token cookie on safe requests, requires the
-        same value on the <code>x-csrf-token</code> header for unsafe methods, and rejects mismatches with
-        a timing-safe <strong>403</strong>.
+        Use <a href="/docs/security/csrf"><code>csrf()</code></a> to protect mutating endpoints. Two
+        strategies are supported:
       </p>
+      <ul>
+        <li>
+          <strong>Double-submit cookie</strong> (default) &mdash; sets a token cookie on safe
+          requests, requires the same value on the <code>x-csrf-token</code> header for unsafe
+          methods, and rejects mismatches with a timing-safe <strong>403</strong>.
+        </li>
+        <li>
+          <strong>Fetch Metadata</strong> (<code>strategy: &quot;fetch-metadata&quot;</code>) -
+          tokenless protection that relies on the modern <code>Sec-Fetch-Site</code> header. No
+          cookie round-trip; no HTML rendering coupling. Recommended for new browser-facing apps.
+        </li>
+      </ul>
       <CodeBlock code={`import { csrf } from "@daloyjs/core";
 
-app.use(csrf()); // __Host-daloy.csrf cookie + x-csrf-token header by default`} />
+// Classic double-submit cookie (default).
+app.use(csrf());
+
+// Tokenless Fetch-Metadata protection (recommended for browser-facing apps).
+app.use(csrf({
+  strategy: "fetch-metadata",
+  allowedOrigins: ["https://app.example.com"],
+}));`} />
 
       <h2><code>secureHeaders()</code> defaults</h2>
       <CodeBlock language="text" code={`content-security-policy: default-src 'self'; frame-ancestors 'none'
@@ -124,17 +141,58 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 permissions-policy: camera=(), microphone=(), geolocation=()
 cross-origin-opener-policy: same-origin
-cross-origin-resource-policy: same-origin
-x-xss-protection: 0`} />
+cross-origin-resource-policy: same-origin`} />
 
       <p>
         If you need a different CSP, want to disable HSTS in local development, or need a looser
         permissions policy, pass options to <code>secureHeaders()</code> explicitly.
+        The legacy <code>X-XSS-Protection: 0</code> header is opt-in via{" "}
+        <code>xssProtection: true</code> for deployments that want to explicitly disable old browser
+        XSS filters.
       </p>
 
-      <h2>Auth</h2>
-      <CodeBlock code={`import { bearerAuth, timingSafeEqual } from "@daloyjs/core";
+      <h3>CSP with per-request nonces &amp; Trusted Types</h3>
+      <p>
+        <code>secureHeaders()</code> can build the CSP from a directive map and inject a fresh{" "}
+        <strong>per-request nonce</strong> into <code>script-src</code>, <code>script-src-elem</code>,{" "}
+        <code>style-src</code>, and <code>style-src-elem</code>, plus emit{" "}
+        <code>require-trusted-types-for &apos;script&apos;</code> for runtime DOM XSS hardening.
+        The nonce is exposed at <code>ctx.state.cspNonce</code> so handlers can render it into{" "}
+        <code>&lt;script nonce=&quot;...&quot;&gt;</code> tags.
+      </p>
+      <CodeBlock code={`import { secureHeaders } from "@daloyjs/core";
+import { htmlResponse } from "@daloyjs/core/docs";
 
+app.use(secureHeaders({
+  contentSecurityPolicy: {
+    directives: {
+      "default-src": "'self'",
+      "script-src": "'self'",
+      "style-src": "'self'",
+      "img-src": ["'self'", "data:"],
+    },
+    nonce: true,
+    trustedTypes: { policies: ["default"] },
+  },
+}));
+
+app.route({
+  method: "GET",
+  path: "/page",
+  operationId: "page",
+  responses: { 200: { description: "ok" } },
+  handler: async ({ state }) => htmlResponse(\`
+    <!doctype html>
+    <script nonce="\${state.cspNonce}">
+      // inline bootstrap is allowed only via this fresh nonce
+    </script>
+  \`),
+});`} />
+
+      <h2>Auth</h2>
+      <CodeBlock code={`import { bearerAuth, basicAuth, timingSafeEqual } from "@daloyjs/core";
+
+// Bearer (opaque tokens, JWT verified via your own \`validate\`).
 app.route({
   method: "POST",
   path: "/admin/purge",
@@ -145,7 +203,15 @@ app.route({
   }),
   responses: { 204: { description: "ok" }, 401: { description: "denied" } },
   handler: async () => ({ status: 204 as const, body: undefined }),
-});`} />
+});
+
+// Basic auth (RFC 7617).
+app.use(basicAuth({
+  realm: "books-api",
+  verify: (user, pass) =>
+    timingSafeEqual(user, "admin") &&
+    timingSafeEqual(pass, process.env.ADMIN_PASSWORD ?? ""),
+}));`} />
 
       <h2>Supply-chain</h2>
       <p>

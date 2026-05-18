@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "CSRF protection",
   description:
-    "Use the built-in csrf() middleware to add double-submit-cookie CSRF protection to mutating routes with timing-safe verification.",
+    "Use the built-in csrf() middleware to protect mutating routes with double-submit-cookie or Fetch Metadata CSRF strategies.",
   path: "/docs/security/csrf",
   keywords: ["DaloyJS CSRF", "double-submit cookie", "CSRF protection", "TypeScript CSRF middleware"],
   type: "article",
@@ -86,6 +86,8 @@ await fetch("/transfer", {
           <tr><td><code>cookieOptions.sameSite</code></td><td><code>&quot;Lax&quot;</code></td></tr>
           <tr><td><code>cookieOptions.secure</code></td><td><code>true</code></td></tr>
           <tr><td><code>cookieOptions.path</code></td><td><code>&quot;/&quot;</code></td></tr>
+          <tr><td><code>strategy</code></td><td><code>&quot;double-submit&quot;</code></td></tr>
+          <tr><td><code>allowedOrigins</code></td><td>Required only for Fetch-Metadata legacy fallback / cross-origin allowlists</td></tr>
           <tr><td><code>generator</code></td><td>32-byte WebCrypto random token</td></tr>
         </tbody>
       </table>
@@ -147,6 +149,44 @@ await fetch("/transfer", {
           <code>csrf()</code> with <code>bearerAuth()</code> or your session middleware.
         </li>
       </ul>
+
+      <h2>Fetch-Metadata strategy (tokenless, recommended for new apps)</h2>
+      <p>
+        The <code>csrf()</code> middleware also implements the modern <strong>Fetch Metadata</strong>
+        strategy. Modern browsers send a{" "}
+        <code>Sec-Fetch-Site</code> header on every request that tells the server whether the
+        request originated from the <em>same</em> origin, a <em>cross</em>-site context, or no
+        navigable context at all (<code>none</code>, such as bookmarks or direct address-bar typing).
+        That single header is enough to defeat the classic CSRF attack model without any cookie
+        round-trip and without coupling your HTML rendering to a token.
+      </p>
+      <CodeBlock code={`app.use(csrf({
+  strategy: "fetch-metadata",
+  // Allowed when the legacy browser sends Origin/Referer but no Sec-Fetch-Site.
+  allowedOrigins: ["https://app.example.com"],
+}));`} />
+      <p>
+        In <code>&quot;fetch-metadata&quot;</code> mode the middleware <em>does not</em> issue or
+        require a cookie. On mutating requests it accepts the request when:
+      </p>
+      <ul>
+        <li><code>Sec-Fetch-Site</code> is <code>same-origin</code> or <code>none</code>; or</li>
+        <li>
+          <code>Sec-Fetch-Site</code> is missing (legacy browser) <em>and</em> <code>Origin</code>{" "}
+          or <code>Referer</code> matches your <code>allowedOrigins</code> list/predicate.
+        </li>
+      </ul>
+      <p>
+        For defense in depth, pass <code>strategy: &quot;both&quot;</code> &mdash; mutating
+        requests must then pass <em>both</em> the Fetch-Metadata check <em>and</em> the
+        double-submit cookie check.
+      </p>
+      <p>
+        Non-browser clients usually do not send <code>Sec-Fetch-Site</code>. If they need to call
+        protected mutating routes, give them an explicit <code>Origin</code> that matches{" "}
+        <code>allowedOrigins</code>, or use route-level middleware so browser and machine clients
+        can follow different CSRF policies.
+      </p>
     </>
   );
 }
