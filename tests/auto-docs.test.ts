@@ -348,3 +348,110 @@ test("docs auto-mount respects the openapi.servers and securitySchemes options",
     bearerAuth: { type: "http", scheme: "bearer" },
   });
 });
+
+test("docs: deno.json autofills info when no package.json is present", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "daloy-deno-"));
+  writeFileSync(
+    join(dir, "deno.json"),
+    JSON.stringify({
+      name: "my-deno-app",
+      version: "4.2.0",
+      description: "deno-only project",
+    }),
+  );
+  const realCwd = process.cwd;
+  (process as { cwd: () => string }).cwd = () => dir;
+  _resetPackageJsonCacheForTests();
+  try {
+    const app = withRoute(new App({ logger: false, docs: true }));
+    const json: any = await (await app.request("/openapi.json")).json();
+    assert.equal(json.info.title, "my-deno-app");
+    assert.equal(json.info.version, "4.2.0");
+    assert.equal(json.info.description, "deno-only project");
+  } finally {
+    (process as { cwd: () => string }).cwd = realCwd;
+    _resetPackageJsonCacheForTests();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("docs: deno.jsonc autofills info and strips JSONC line + block comments", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "daloy-denoc-"));
+  writeFileSync(
+    join(dir, "deno.jsonc"),
+    `{
+  // app name
+  "name": "jsonc-app",
+  /* multi-line
+     block comment */
+  "version": "1.1.1"
+}`,
+  );
+  const realCwd = process.cwd;
+  (process as { cwd: () => string }).cwd = () => dir;
+  _resetPackageJsonCacheForTests();
+  try {
+    const app = withRoute(new App({ logger: false, docs: true }));
+    const json: any = await (await app.request("/openapi.json")).json();
+    assert.equal(json.info.title, "jsonc-app");
+    assert.equal(json.info.version, "1.1.1");
+  } finally {
+    (process as { cwd: () => string }).cwd = realCwd;
+    _resetPackageJsonCacheForTests();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("docs: deno.json ignores empty-string name/version/description fields", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "daloy-empty-"));
+  writeFileSync(
+    join(dir, "deno.json"),
+    JSON.stringify({ name: "", version: "", description: "" }),
+  );
+  const realCwd = process.cwd;
+  (process as { cwd: () => string }).cwd = () => dir;
+  _resetPackageJsonCacheForTests();
+  try {
+    const app = withRoute(new App({ logger: false, docs: true }));
+    const json: any = await (await app.request("/openapi.json")).json();
+    // Empty strings should be ignored, falling back to defaults.
+    assert.equal(json.info.title, "DaloyJS API");
+    assert.equal(json.info.version, "0.0.0");
+    assert.equal(json.info.description, undefined);
+  } finally {
+    (process as { cwd: () => string }).cwd = realCwd;
+    _resetPackageJsonCacheForTests();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("docs: malformed manifest is swallowed and returns empty autofill", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "daloy-bad-"));
+  writeFileSync(join(dir, "deno.json"), "{ not json");
+  const realCwd = process.cwd;
+  (process as { cwd: () => string }).cwd = () => dir;
+  _resetPackageJsonCacheForTests();
+  try {
+    const app = withRoute(new App({ logger: false, docs: true }));
+    const json: any = await (await app.request("/openapi.json")).json();
+    assert.equal(json.info.title, "DaloyJS API");
+    assert.equal(json.info.version, "0.0.0");
+  } finally {
+    (process as { cwd: () => string }).cwd = realCwd;
+    _resetPackageJsonCacheForTests();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
