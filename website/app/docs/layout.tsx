@@ -17,7 +17,7 @@ export default async function DocsLayout({
           <div className="w-full max-w-xl">
             {/* <DocsSearch sections={searchSections} /> */}
           </div>
-          <DocsPageCopyButton />
+          {/* <DocsPageCopyButton /> */}
         </div>
       </div>
 
