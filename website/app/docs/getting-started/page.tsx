@@ -12,6 +12,9 @@ export const metadata = buildMetadata({
     "DaloyJS quickstart",
     "first DaloyJS app",
     "TypeScript API tutorial",
+    "Swagger UI",
+    "Scalar API reference",
+    "OpenAPI docs UI",
   ],
   type: "article",
 });
