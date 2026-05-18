@@ -515,7 +515,10 @@ test("App.docs mounts /openapi.yaml alongside /openapi.json by default", async (
   const yamlApp = new App({ docs: true });
   const res = await yamlApp.fetch(new Request("http://localhost/openapi.yaml"));
   assert.equal(res.status, 200);
-  assert.match(res.headers.get("content-type") ?? "", /application\/yaml/);
+  // Must be text/yaml (not application/yaml) so browsers render inline
+  // instead of triggering a file download.
+  assert.match(res.headers.get("content-type") ?? "", /^text\/yaml/);
+  assert.equal(res.headers.get("content-disposition"), "inline");
   const text = await res.text();
   assert.ok(text.startsWith("openapi: 3.1.0\n"));
   assert.match(text, /info:\n/);
@@ -535,5 +538,5 @@ test("App.docs honours a custom openapiYamlPath", async () => {
     new Request("http://localhost/swagger/v1/swagger.yaml"),
   );
   assert.equal(res.status, 200);
-  assert.match(res.headers.get("content-type") ?? "", /application\/yaml/);
+  assert.match(res.headers.get("content-type") ?? "", /^text\/yaml/);
 });

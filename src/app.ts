@@ -450,7 +450,11 @@ export class App {
           status: 200 as const,
           body: openapiToYAML(await generate()),
           headers: {
-            "content-type": "application/yaml; charset=utf-8",
+            // text/yaml + inline disposition so browsers render it in the
+            // viewport instead of triggering a file download (the behaviour
+            // of application/yaml in Chrome / Firefox / Safari).
+            "content-type": "text/yaml; charset=utf-8",
+            "content-disposition": "inline",
             "x-content-type-options": "nosniff",
           },
         }),
