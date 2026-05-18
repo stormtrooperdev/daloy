@@ -2,7 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ButterflyIcon, GithubLogoIcon, ListIcon, PackageIcon, XIcon } from "@phosphor-icons/react/ssr";
+import {
+  ButterflyIcon,
+  GithubLogoIcon,
+  ListIcon,
+  PackageIcon,
+  XIcon,
+} from "@phosphor-icons/react/ssr";
 import { buttonVariants } from "./ui/button";
 import { ThemeSwitcher } from "./theme-switcher";
 import { CORE_PACKAGE_VERSION } from "@/lib/seo";
@@ -49,7 +55,10 @@ export function SiteHeader() {
       return;
     }
 
-    if (mobileNavPanelRef.current?.contains(target) || mobileNavButtonRef.current?.contains(target)) {
+    if (
+      mobileNavPanelRef.current?.contains(target) ||
+      mobileNavButtonRef.current?.contains(target)
+    ) {
       return;
     }
 
@@ -87,12 +96,17 @@ export function SiteHeader() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 items-center gap-3">
-          <Link href="/" className="flex min-w-0 items-center gap-2 font-semibold">
+          <Link
+            href="/"
+            className="flex min-w-0 items-center gap-2 font-semibold"
+          >
             <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
               dj
             </span>
             <span className="truncate">DaloyJS</span>
-            <span className="ml-1 hidden text-xs font-mono text-muted-foreground sm:inline-block">v{CORE_PACKAGE_VERSION}</span>
+            <span className="ml-1 hidden font-mono text-xs text-muted-foreground sm:inline-block">
+              v{CORE_PACKAGE_VERSION}
+            </span>
           </Link>
 
           <nav className="ml-8 hidden items-center gap-5 text-sm xl:flex">
@@ -114,12 +128,15 @@ export function SiteHeader() {
               transitionTypes={["nav-forward"]}
               aria-label="Installation"
               onClick={closeMobileNav}
-              className={buttonVariants({ variant: "ghost", size: "sm" }) + " hidden sm:inline-flex xl:hidden"}
+              className={
+                buttonVariants({ variant: "ghost", size: "sm" }) +
+                " hidden sm:inline-flex xl:hidden"
+              }
             >
               <PackageIcon className="size-4" />
             </Link>
 
-            <ThemeSwitcher />
+            {/* <ThemeSwitcher /> */}
 
             <div className="hidden items-center gap-2 xl:flex">
               {socialLinks.map((link) => {
@@ -163,7 +180,11 @@ export function SiteHeader() {
               <button
                 ref={mobileNavButtonRef}
                 type="button"
-                aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-label={
+                  mobileNavOpen
+                    ? "Close navigation menu"
+                    : "Open navigation menu"
+                }
                 aria-expanded={mobileNavOpen}
                 aria-controls="mobile-site-nav"
                 className={
@@ -179,8 +200,10 @@ export function SiteHeader() {
                 id="mobile-site-nav"
                 ref={mobileNavPanelRef}
                 className={
-                  "mobile-nav__panel absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur " +
-                  (mobileNavOpen ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0")
+                  "mobile-nav__panel absolute top-[calc(100%+0.5rem)] right-0 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur " +
+                  (mobileNavOpen
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0")
                 }
               >
                 <nav className="flex flex-col gap-1">
@@ -218,7 +241,10 @@ export function SiteHeader() {
                         rel="noreferrer"
                         aria-label={link.label}
                         onClick={closeMobileNav}
-                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
                       >
                         <Icon className="size-4" />
                       </a>
