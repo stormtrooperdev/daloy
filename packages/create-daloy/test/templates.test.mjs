@@ -1198,3 +1198,97 @@ test("scaffolded projects include AGENTS.md and SKILL.md at the conventional pat
     await rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+test("--yes + pnpm defaults install to N and skips dependency installation", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "create-daloy-"));
+  const projectName = "pnpm-default-no-install";
+  try {
+    const { exitCode, stdout } = await new Promise((resolve) => {
+      let buf = "";
+      const proc = spawn(
+        process.execPath,
+        [
+          path.join(pkgRoot, "bin/create-daloy.mjs"),
+          projectName,
+          "--template",
+          "node-basic",
+          "--package-manager",
+          "pnpm",
+          "--no-git",
+          "--no-ci",
+          "--yes",
+          // intentionally omit --install / --no-install to exercise the default
+        ],
+        { cwd: tmpDir },
+      );
+      proc.stdout.on("data", (c) => (buf += c.toString()));
+      proc.stderr.on("data", (c) => (buf += c.toString()));
+      proc.on("exit", (code) => resolve({ exitCode: code ?? 1, stdout: buf }));
+      proc.on("error", () => resolve({ exitCode: 1, stdout: buf }));
+    });
+    assert.equal(exitCode, 0);
+    // Default-N for pnpm means node_modules must not exist.
+    await assert.rejects(
+      access(path.join(tmpDir, projectName, "node_modules")),
+    );
+    // Post-install hint about the supply-chain embargo must surface.
+    assert.match(stdout, /minimumReleaseAge: 1440/);
+    assert.match(stdout, /pnpm\.onlyBuiltDependencies/);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("--yes + non-pnpm package manager defaults --with-ci to Y", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "create-daloy-"));
+  const projectName = "default-ci-on";
+  try {
+    const exitCode = await new Promise((resolve) => {
+      const proc = spawn(
+        process.execPath,
+        [
+          path.join(pkgRoot, "bin/create-daloy.mjs"),
+          projectName,
+          "--template",
+          "node-basic",
+          "--package-manager",
+          "npm",
+          "--no-install",
+          "--no-git",
+          "--yes",
+          // intentionally omit --with-ci / --no-ci to exercise the default
+        ],
+        { cwd: tmpDir, stdio: "ignore" },
+      );
+      proc.on("exit", (code) => resolve(code ?? 1));
+      proc.on("error", () => resolve(1));
+    });
+    assert.equal(exitCode, 0);
+    // CI bundle must be scaffolded by default now.
+    await access(
+      path.join(tmpDir, projectName, ".github/workflows/ci.yml"),
+    );
+    await access(path.join(tmpDir, projectName, ".github/CODEOWNERS"));
+    await access(path.join(tmpDir, projectName, "SECURITY.md"));
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("--help documents the secure-by-default install + CI defaults", async () => {
+  const out = await new Promise((resolve) => {
+    let buf = "";
+    const proc = spawn(
+      process.execPath,
+      [path.join(pkgRoot, "bin/create-daloy.mjs"), "--help"],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
+    proc.stdout.on("data", (c) => (buf += c.toString()));
+    proc.stderr.on("data", (c) => (buf += c.toString()));
+    proc.on("exit", () => resolve(buf));
+    proc.on("error", () => resolve(buf));
+  });
+  assert.match(out, /minimumReleaseAge/);
+  assert.match(out, /onlyBuiltDependencies/);
+  assert.match(out, /--with-ci.*\(default: Y\)/);
+});

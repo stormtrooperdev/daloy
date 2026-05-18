@@ -314,10 +314,10 @@ ${heading("Options")}
   ${color(COLORS.green, "--template <name>")}          ${TEMPLATES.join(" | ")}  ${color(COLORS.dim, "(default: node-basic)")}
   ${color(COLORS.green, "--package-manager <pm>")}     ${PACKAGE_MANAGERS.join(" | ")}  ${color(COLORS.dim, "(default: pnpm)")}
   ${color(COLORS.green, "--list-templates")}           Print available templates and exit.
-  ${color(COLORS.green, "--install / --no-install")}   Install dependencies after scaffolding.
+  ${color(COLORS.green, "--install / --no-install")}   Install dependencies after scaffolding. ${color(COLORS.dim, "(default: Y, except pnpm \u2014 N to respect minimumReleaseAge + onlyBuiltDependencies)")}
   ${color(COLORS.green, "--git / --no-git")}           Initialize a git repository.
   ${color(COLORS.green, "--minimal")}                  Strip the bookstore + OpenAPI docs demo routes.
-  ${color(COLORS.green, "--with-ci / --no-ci")}         Add hardened GitHub Actions + governance files.
+  ${color(COLORS.green, "--with-ci / --no-ci")}         Add hardened GitHub Actions + governance files. ${color(COLORS.dim, "(default: Y)")}
   ${color(COLORS.green, "--code-owner <owner>")}        CODEOWNERS owner for --with-ci, e.g. @acme/security.
   ${color(COLORS.green, "--force")}                    Overwrite an existing non-empty directory.
   ${color(COLORS.green, "--yes, -y")}                  Accept all defaults; never prompt.
@@ -1114,6 +1114,23 @@ function printSummary({ projectName, template, packageManager, installDeps, skip
     console.log(`  ${arrow} ${color(COLORS.cyan, `${packageManager} run dev`)}`);
   }
 
+  if (!installDeps && !skipPackageManager && packageManager === "pnpm") {
+    console.log("");
+    console.log(`${color(COLORS.bold, "Heads-up before \`pnpm install\`")}`);
+    console.log(
+      `  ${color(COLORS.gray, SYMBOLS.pointer)} ${color(COLORS.dim, "pnpm-workspace.yaml sets minimumReleaseAge: 1440 \u2014 newly-published deps")}`,
+    );
+    console.log(
+      `  ${color(COLORS.gray, SYMBOLS.pointer)} ${color(COLORS.dim, "(including a just-released @daloyjs/core) are embargoed for 24 h.")}`,
+    );
+    console.log(
+      `  ${color(COLORS.gray, SYMBOLS.pointer)} ${color(COLORS.dim, "Lifecycle scripts are blocked by default; allowlist trusted builds in")}`,
+    );
+    console.log(
+      `  ${color(COLORS.gray, SYMBOLS.pointer)} ${color(COLORS.dim, "package.json under pnpm.onlyBuiltDependencies if install complains.")}`,
+    );
+  }
+
   console.log("");
   console.log(`${color(COLORS.bold, "Useful commands")}`);
   if (skipPackageManager) {
@@ -1228,6 +1245,27 @@ async function main() {
     if (installDeps === undefined) {
       if (skipPackageManager) {
         installDeps = false;
+      } else if (packageManager === "pnpm") {
+        // Deny-by-default for pnpm: the scaffolded `pnpm-workspace.yaml` ships
+        // with `minimumReleaseAge: 1440` (24 h embargo on newly-published
+        // versions) and the `.npmrc` blocks lifecycle scripts unless they're
+        // allowlisted in `package.json` under `pnpm.onlyBuiltDependencies`.
+        // Both are security best practices, but they mean a fresh
+        // `pnpm install` can fail until the user (a) waits 24 h for newly
+        // published `@daloyjs/core` versions to clear the embargo, or (b)
+        // allowlists any dep that needs a build script. Defaulting to N
+        // makes that explicit instead of failing the install silently.
+        if (rl) {
+          console.log(
+            color(
+              COLORS.gray,
+              "  (pnpm install may fail until you set pnpm.onlyBuiltDependencies in package.json and wait 24h for fresh @daloyjs/core releases \u2014 see pnpm-workspace.yaml)",
+            ),
+          );
+          installDeps = await askYesNo(rl, `Install dependencies with ${packageManager}?`, false);
+        } else {
+          installDeps = false;
+        }
       } else {
         installDeps = rl ? await askYesNo(rl, `Install dependencies with ${packageManager}?`, true) : false;
       }
@@ -1240,7 +1278,9 @@ async function main() {
 
     let withCi = opts.ci;
     if (withCi === undefined) {
-      withCi = rl ? await askYesNo(rl, "Add hardened GitHub Actions and security files?", false) : false;
+      // Default to Y — the hardened GitHub Actions + Dependabot + CODEOWNERS
+      // + SECURITY.md bundle is opt-out, not opt-in. Most users want it.
+      withCi = rl ? await askYesNo(rl, "Add hardened GitHub Actions and security files?", true) : true;
     }
 
     rl?.close();
