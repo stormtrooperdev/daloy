@@ -316,7 +316,7 @@ ${heading("Options")}
   ${color(COLORS.green, "--list-templates")}           Print available templates and exit.
   ${color(COLORS.green, "--install / --no-install")}   Install dependencies after scaffolding.
   ${color(COLORS.green, "--git / --no-git")}           Initialize a git repository.
-  ${color(COLORS.green, "--minimal")}                  Strip the bookstore + Swagger/OpenAPI demo routes.
+  ${color(COLORS.green, "--minimal")}                  Strip the bookstore + OpenAPI docs demo routes.
   ${color(COLORS.green, "--with-ci / --no-ci")}         Add hardened GitHub Actions + governance files.
   ${color(COLORS.green, "--code-owner <owner>")}        CODEOWNERS owner for --with-ci, e.g. @acme/security.
   ${color(COLORS.green, "--force")}                    Overwrite an existing non-empty directory.

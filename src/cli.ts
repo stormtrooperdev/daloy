@@ -21,6 +21,17 @@ export interface CliIO {
   importEntry: (specifier: string) => Promise<unknown>;
   /** Version string surfaced by `--version`. */
   version: string;
+  /**
+   * Spawn a child process and resolve with its exit code. Required for
+   * `daloy dev`; optional so unit tests that only exercise `inspect`
+   * can omit it.
+   */
+  spawn?: (command: string, args: readonly string[]) => Promise<number>;
+  /**
+   * Override runtime detection (defaults to inspecting `globalThis.process.versions`).
+   * Mainly exists for tests.
+   */
+  detectRuntime?: () => DevRuntime;
 }
 
 export interface CliResult {
@@ -37,6 +48,8 @@ export interface CliOptions {
   entry?: string;
   help: boolean;
   version: boolean;
+  /** Override runtime detection for `daloy dev`. */
+  runtime?: DevRuntime;
 }
 
 const HELP = `daloy — DaloyJS CLI
@@ -46,6 +59,9 @@ Usage:
 
 Commands:
   inspect [entry]        Load an App and print its routes (default command).
+  dev     [entry]        Start the entry file with the host runtime's
+                         native watch mode (tsx --watch on Node, --hot on
+                         Bun, --watch on Deno).
 
 Options:
   --json                 Print machine-readable JSON instead of a table.
@@ -54,21 +70,30 @@ Options:
   --openapi              Print the OpenAPI 3.1 document for the App.
   --tag <tag>            Only show routes that declare this tag.
   --method <method>      Only show routes for this HTTP method.
+  --runtime <r>          (dev) Force the runtime: node | bun | deno.
+                         Useful from package.json scripts where the CLI
+                         shebang would otherwise always select Node.
   -h, --help             Show this help.
   -v, --version          Print the @daloyjs/core version this CLI ships from.
 
 Entry:
-  A path to a JS or TS file that exports an App instance, either as the
-  default export or as a named export called "app". Modules may also
-  export a zero-argument buildApp() or createApp() factory. Defaults to
-  ./src/app.ts, ./src/app.js, ./src/build-app.ts, ./src/build-app.js,
-  ./app.ts, ./app.js, ./build-app.ts, then ./build-app.js.
+  For inspect: a path to a JS or TS file that exports an App instance,
+  either as the default export or as a named export called "app". Modules
+  may also export a zero-argument buildApp() or createApp() factory.
+  Defaults to ./src/app.ts, ./src/app.js, ./src/build-app.ts,
+  ./src/build-app.js, ./app.ts, ./app.js, ./build-app.ts, ./build-app.js.
+
+  For dev: a path to the runnable entry (e.g. ./src/index.ts that calls
+  serve()). Defaults to ./src/index.ts, ./src/main.ts, ./src/server.ts,
+  ./src/app.ts, ./index.ts, ./main.ts, ./server.ts, ./app.ts.
 
 Examples:
   daloy inspect
   daloy inspect --json src/server.ts
   daloy inspect --check
   daloy inspect --openapi > openapi.json
+  daloy dev
+  daloy dev src/server.ts
 `;
 
 const DEFAULT_ENTRIES: string[] = [
@@ -82,6 +107,97 @@ const DEFAULT_ENTRIES: string[] = [
   "build-app.js",
 ];
 
+const DEFAULT_DEV_ENTRIES: string[] = [
+  "src/index.ts",
+  "src/main.ts",
+  "src/server.ts",
+  "src/app.ts",
+  "src/index.js",
+  "src/main.js",
+  "src/server.js",
+  "src/app.js",
+  "index.ts",
+  "main.ts",
+  "server.ts",
+  "app.ts",
+  "index.js",
+  "main.js",
+  "server.js",
+  "app.js",
+];
+
+/** Runtime detected for `daloy dev`. */
+export type DevRuntime = "node" | "bun" | "deno";
+
+/**
+ * Detect which JS runtime is hosting the CLI. Inspects
+ * `globalThis.process.versions` for Bun/Deno markers; falls back to Node.
+ *
+ * @since 0.3.0
+ */
+export function detectRuntime(): DevRuntime {
+  const proc = (globalThis as { process?: { versions?: Record<string, unknown> } }).process;
+  const v = proc?.versions ?? {};
+  if (v.bun) return "bun";
+  if (v.deno) return "deno";
+  return "node";
+}
+
+/**
+ * Build the `(command, args)` pair `daloy dev` should spawn for the given
+ * runtime and entry file. Pure function so tests can assert exact argv
+ * without spawning a child process.
+ *
+ * - Node: `node --import tsx --watch <entry>` (tsx must be installed as a
+ *   dev dependency for TS files; .js entries also work).
+ * - Bun:  `bun --hot <entry>` (Bun ships with TS support).
+ * - Deno: `deno run --watch --allow-net --allow-env --allow-read <entry>`
+ *   (the three permissions cover serving HTTP, reading env vars, and
+ *   reading the source tree; users who need more should run `deno run`
+ *   directly).
+ *
+ * @since 0.3.0
+ */
+export function buildDevCommand(runtime: DevRuntime, entry: string): { command: string; args: string[] } {
+  switch (runtime) {
+    case "bun":
+      return { command: "bun", args: ["--hot", entry] };
+    case "deno":
+      return {
+        command: "deno",
+        args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", entry],
+      };
+    case "node":
+    default:
+      return { command: "node", args: ["--import", "tsx", "--watch", entry] };
+  }
+}
+
+/**
+ * Pick the first existing dev entry. Unlike `loadApp` we can't `import()`
+ * to probe (we'd execute the user's server twice) so we rely on the file
+ * system via `node:fs` when available; on edge runtimes we just return the
+ * first candidate.
+ */
+async function resolveDevEntry(entry: string | undefined): Promise<string> {
+  if (entry) return entry;
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const proc = (globalThis as { process?: { cwd?: () => string } }).process;
+    const cwd = proc?.cwd?.() ?? ".";
+    for (const candidate of DEFAULT_DEV_ENTRIES) {
+      if (fs.existsSync(path.join(cwd, candidate))) return candidate;
+    }
+  } catch {
+    /* fall through */
+  }
+  throw new Error(
+    `Could not find a dev entry. Tried: ${DEFAULT_DEV_ENTRIES.join(", ")}.\n` +
+      `Pass an explicit path: daloy dev ./src/server.ts`
+  );
+}
+
 export function parseArgs(argv: readonly string[]): { command: string; opts: CliOptions } {
   const opts: CliOptions = {
     json: false,
@@ -92,9 +208,11 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
     version: false,
   };
   let command = "inspect";
-  let i = argv[0] === "inspect" ? 1 : 0;
-  // Treat the first positional that isn't a known command as the entry.
-  if (argv[0] === "help") { command = "help"; i = 1; }
+  let i = 0;
+  if (argv[0] === "inspect" || argv[0] === "dev" || argv[0] === "help") {
+    command = argv[0];
+    i = 1;
+  }
   for (; i < argv.length; i++) {
     const a = argv[i];
     if (a === undefined) continue;
@@ -117,6 +235,14 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
       case "--method":
         opts.method = readFlagValue(argv, ++i, "--method").toUpperCase();
         break;
+      case "--runtime": {
+        const value = readFlagValue(argv, ++i, "--runtime").toLowerCase();
+        if (value !== "node" && value !== "bun" && value !== "deno") {
+          throw new Error(`--runtime must be one of: node, bun, deno (got: ${value})`);
+        }
+        opts.runtime = value;
+        break;
+      }
       case "-h":
       case "--help":
         opts.help = true;
@@ -159,6 +285,9 @@ export async function runCli(argv: readonly string[], io: CliIO): Promise<CliRes
   if (opts.version) {
     io.stdout(`${io.version}\n`);
     return { exitCode: 0 };
+  }
+  if (command === "dev") {
+    return runDev(opts, io);
   }
   if (command !== "inspect") {
     io.stderr(`Unknown command: ${command}\n\n${HELP}`);
@@ -256,6 +385,32 @@ function formatContract(report: Awaited<ReturnType<typeof runContractTests>>): s
   if (report.ok) out.push("OK.");
   else out.push("FAIL.");
   return `${out.join("\n")}\n`;
+}
+
+async function runDev(opts: CliOptions, io: CliIO): Promise<CliResult> {
+  if (!io.spawn) {
+    io.stderr(
+      "daloy dev requires a spawn-capable host (use the bundled bin/daloy.mjs CLI).\n"
+    );
+    return { exitCode: 2 };
+  }
+  let entry: string;
+  try {
+    entry = await resolveDevEntry(opts.entry);
+  } catch (err) {
+    io.stderr(`${(err as Error).message}\n`);
+    return { exitCode: 1 };
+  }
+  const runtime = opts.runtime ?? (io.detectRuntime ?? detectRuntime)();
+  const { command, args } = buildDevCommand(runtime, entry);
+  io.stdout(`daloy dev: ${runtime} → ${command} ${args.join(" ")}\n`);
+  try {
+    const code = await io.spawn(command, args);
+    return { exitCode: code };
+  } catch (err) {
+    io.stderr(`daloy dev: failed to start: ${(err as Error).message}\n`);
+    return { exitCode: 1 };
+  }
 }
 
 async function loadApp(entry: string | undefined, io: CliIO): Promise<App> {

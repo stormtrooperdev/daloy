@@ -10,7 +10,7 @@ serve(app, { port });
 const url = `http://localhost:${port}`;
 const links: StartupBannerLink[] = [
   // daloy-minimal:strip-start docs
-  { label: "Swagger UI", url: `${url}/docs` },
+  { label: "API docs", url: `${url}/docs` },
   { label: "OpenAPI JSON", url: `${url}/openapi.json` },
   // daloy-minimal:strip-end docs
   { label: "Health", url: `${url}/healthz` },

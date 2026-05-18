@@ -72,15 +72,17 @@ test("vercel-edge health route preserves literal true type", async () => {
   );
 });
 
-test("node-basic template exposes /docs and /openapi.json", async () => {
+test("node-basic template opts into the auto-mounted /docs and /openapi.json", async () => {
   const source = await readFile(
     path.join(pkgRoot, "templates/node-basic/src/build-app.ts"),
     "utf8",
   );
-  assert.match(source, /path:\s*"\/docs"/);
-  assert.match(source, /path:\s*"\/openapi\.json"/);
-  assert.match(source, /swaggerUiHtml\(/);
-  assert.match(source, /generateOpenAPI\(app/);
+  // The framework auto-mounts /docs and /openapi.json when `docs: true` is
+  // set on the App constructor. info.title / info.version are auto-filled
+  // from package.json so the template no longer hardcodes them.
+  assert.match(source, /docs:\s*true/);
+  assert.match(source, /openapi:\s*\{/);
+  assert.doesNotMatch(source, /info:\s*\{\s*title:\s*"My Daloy API"/);
 });
 
 test("node-basic separates buildApp() from server boot so codegen has no side effects", async () => {
@@ -148,15 +150,14 @@ test("node-basic separates buildApp() from server boot so codegen has no side ef
   assert.deepEqual(buildTsconfig.exclude, ["node_modules", "dist", "tests"]);
 });
 
-test("vercel-edge template exposes /docs and /openapi.json", async () => {
+test("vercel-edge template opts into the auto-mounted /docs and /openapi.json", async () => {
   const source = await readFile(
     path.join(pkgRoot, "templates/vercel-edge/api/[...path].ts"),
     "utf8",
   );
-  assert.match(source, /path:\s*"\/docs"/);
-  assert.match(source, /path:\s*"\/openapi\.json"/);
-  assert.match(source, /swaggerUiHtml\(/);
-  assert.match(source, /generateOpenAPI\(app/);
+  assert.match(source, /docs:\s*true/);
+  assert.match(source, /openapi:\s*\{/);
+  assert.match(source, /info:\s*\{\s*title:\s*"My Daloy Edge API"/);
 });
 
 test("pnpm templates ship hardened supply-chain .npmrc defaults", async () => {
@@ -647,10 +648,7 @@ test("npm scaffold rewrites pnpm-prefixed scripts so `npm run gen` works", async
     assert.equal(pkg.scripts.gen, "npm run gen:openapi && npm run gen:client");
     assert.equal(pkg.scripts.audit, "npm audit --prod");
     // Sanity: scripts that don't reference pnpm must remain untouched.
-    assert.match(
-      pkg.scripts.dev,
-      /^node --import tsx\/esm --watch src\/index\.ts$/,
-    );
+    assert.equal(pkg.scripts.dev, "daloy dev");
 
     const readme = await readFile(
       path.join(tmpDir, projectName, "README.md"),
@@ -759,7 +757,7 @@ test("bun-basic template ships secure defaults and a Bun adapter entry", async (
       "utf8",
     ),
   );
-  assert.equal(pkg.scripts.dev, "bun --hot src/index.ts");
+  assert.equal(pkg.scripts.dev, "daloy dev --runtime bun");
   assert.equal(pkg.scripts.test, "bun test");
 });
 
@@ -792,10 +790,10 @@ test("deno-basic template ships a runtime-native scaffold", async () => {
   );
   assert.match(denoJson.tasks.dev, /^deno run.*--watch src\/main\.ts$/);
   assert.match(denoJson.tasks.test, /^deno test\b/);
-  assert.equal(denoJson.imports["@daloyjs/core"], "npm:@daloyjs/core@^0.12.0");
+  assert.equal(denoJson.imports["@daloyjs/core"], "npm:@daloyjs/core@^0.13.0");
   assert.equal(
     denoJson.imports["@daloyjs/core/"],
-    "npm:@daloyjs/core@^0.12.0/",
+    "npm:@daloyjs/core@^0.13.0/",
   );
 });
 

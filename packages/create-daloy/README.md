@@ -112,7 +112,7 @@ A [Deno](https://deno.com) runtime starter using `@daloyjs/core/deno` with:
 ## Minimal scaffolds
 
 Pass `--minimal` to drop the bookstore demo route and the built-in
-`/docs` + `/openapi.json` Swagger UI routes from any template that supports
+`/docs` + `/openapi.json` API docs routes from any template that supports
 them. The scaffolded app is left with the framework bootstrap and a single
 `/healthz` route — the smallest realistic starting point:
 

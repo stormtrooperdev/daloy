@@ -75,8 +75,8 @@ bun  create daloy           my-api`}
           <code>--git</code> / <code>--no-git</code> — initialize a git repository.
         </li>
         <li>
-          <code>--minimal</code> — strip the bookstore demo and the{" "}
-          <code>/docs</code> + <code>/openapi.json</code> Swagger UI routes so the
+          <code>--minimal</code> — strip the bookstore demo and the auto-mounted{" "}
+          <code>/docs</code> + <code>/openapi.json</code> API docs routes so the
           scaffold only ships the framework bootstrap and a health route. Useful
           when you want to start from the smallest possible app.
         </li>
@@ -112,9 +112,10 @@ bun  create daloy           my-api`}
       </p>
       <p>
         Like FastAPI, every scaffolded project also exposes API documentation out of the box:{" "}
-        <code>/docs</code> serves Swagger UI and <code>/openapi.json</code> serves the live
+        <code>/docs</code> serves a Scalar API reference UI and <code>/openapi.json</code> serves the live
         OpenAPI 3.1 spec generated from your route definitions. The dev server logs both URLs at
-        startup.
+        startup. Pass <code>{`docs: { ui: "swagger" }`}</code> on the <code>App</code> constructor to switch to
+        Swagger UI instead.
       </p>
 
       <h3><code>cloudflare-worker</code></h3>
@@ -134,7 +135,7 @@ bun  create daloy           my-api`}
         Node starter.
       </p>
       <p>
-        The Vercel template also ships <code>/docs</code> (Swagger UI) and <code>/openapi.json</code>
+        The Vercel template also ships <code>/docs</code> (Scalar API reference) and <code>/openapi.json</code>
         wired to the same app, so the deployed Edge URL serves API documentation automatically.
       </p>
 
@@ -162,7 +163,7 @@ bun  create daloy           my-api`}
       <h2>Minimal scaffolds</h2>
       <p>
         Pass <code>--minimal</code> to drop the bookstore demo route and the built-in{" "}
-        <code>/docs</code> + <code>/openapi.json</code> Swagger UI routes from any template that
+        <code>/docs</code> + <code>/openapi.json</code> API docs routes from any template that
         supports them. The scaffolded app is left with the framework bootstrap and a single{" "}
         <code>/healthz</code> route, which is the smallest realistic starting point for teams
         that already know exactly what they want to build:

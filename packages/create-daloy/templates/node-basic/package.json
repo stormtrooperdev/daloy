@@ -7,7 +7,7 @@
     "node": ">=24.15.0"
   },
   "scripts": {
-    "dev": "node --import tsx/esm --watch src/index.ts",
+    "dev": "daloy dev",
     "start": "node --import tsx/esm src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
@@ -18,7 +18,7 @@
     "audit": "pnpm audit --prod"
   },
   "dependencies": {
-    "@daloyjs/core": "^0.12.0",
+    "@daloyjs/core": "^0.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

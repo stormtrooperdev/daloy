@@ -81,7 +81,7 @@ console.log(\`listening on http://localhost:\${port}\`);`} />
         Prefer the colorized startup panel you get from <code>create-daloy</code> templates? Swap the
         plain <code>console.log</code> for <code>printStartupBanner()</code> from{" "}
         <code>@daloyjs/core/banner</code> — it renders a TTY-aware, ASCII-fallback boxed banner
-        with your app name, URL, and any extra links (Swagger UI, health check, etc.):
+        with your app name, URL, and any extra links (API docs, health check, etc.):
       </p>
       <CodeBlock code={`import { printStartupBanner } from "@daloyjs/core/banner";
 
@@ -92,7 +92,7 @@ printStartupBanner({
   url: \`http://localhost:\${port}\`,
   runtime: "Node.js",
   links: [
-    { label: "Swagger UI", url: \`http://localhost:\${port}/docs\` },
+    { label: "API docs", url: \`http://localhost:\${port}/docs\` },
     { label: "OpenAPI JSON", url: \`http://localhost:\${port}/openapi.json\` },
     { label: "Health", url: \`http://localhost:\${port}/healthz\` },
   ],
@@ -115,39 +115,53 @@ console.log(res.status, await res.json());
 // → 200 { msg: "Hello, world!" }`} />
 
       <h2>3. Add OpenAPI &amp; docs UI</h2>
-      <CodeBlock code={`import { generateOpenAPI } from "@daloyjs/core/openapi";
-    import { swaggerUiHtml, htmlResponse } from "@daloyjs/core/docs";
-
-app.route({
-  method: "GET",
-  path: "/openapi.json",
-  operationId: "openapi",
-  responses: { 200: { description: "OpenAPI doc" } },
-  handler: async () => ({
-    status: 200,
-    body: generateOpenAPI(app, { info: { title: "Hello", version: "1.0.0" } }),
-  }),
-});
-
-app.route({
-  method: "GET",
-  path: "/docs",
-  operationId: "docs",
-  responses: { 200: { description: "API reference" } },
-  handler: async () => {
-    const html = swaggerUiHtml({ specUrl: "/openapi.json", title: "Hello API" });
-    const res = htmlResponse(html);
-    return { status: 200, body: await res.text(), headers: Object.fromEntries(res.headers) };
-  },
+      <p>
+        One line on the <code>App</code> constructor and DaloyJS auto-mounts{" "}
+        <code>GET /openapi.json</code> (the live spec) and <code>GET /docs</code> (a Scalar API
+        reference UI) for you:
+      </p>
+      <CodeBlock code={`const app = new App({
+  bodyLimitBytes: 64 * 1024,
+  requestTimeoutMs: 5_000,
+  openapi: { info: { title: "Hello", version: "1.0.0" } },
+  docs: true, // mounts GET /docs and GET /openapi.json
 });`} />
 
-      <p>Open <code>http://localhost:3000/docs</code> for interactive Swagger UI.</p>
+      <p>Open <code>http://localhost:3000/docs</code> for an interactive Scalar reference, or{" "}
+      <code>http://localhost:3000/openapi.json</code> for the raw spec.</p>
+
+      <p>
+        If you omit <code>openapi.info</code> entirely, DaloyJS will read your project&apos;s{" "}
+        <code>package.json</code> (<code>name</code>, <code>version</code>, <code>description</code>)
+        and use those for the spec automatically. Deno projects without a <code>package.json</code>{" "}
+        fall back to <code>deno.json</code> / <code>deno.jsonc</code>. Explicit values always
+        override the autofill.
+      </p>
+
+      <p>
+        Prefer a factory call? <code>createApp(options)</code> is an exported alias of{" "}
+        <code>new App(options)</code> with identical behaviour:
+      </p>
+      <CodeBlock code={`import { createApp } from "@daloyjs/core";
+
+const app = createApp({ docs: true });`} />
+
+      <p>
+        Want Swagger UI instead, or a custom path? Use the object form:{" "}
+        <code>{`docs: { ui: "swagger", path: "/reference" }`}</code>. Want it only in development?
+        Use <code>{`docs: "auto"`}</code> — it skips the mount when <code>production: true</code>.
+        Need full control? Set <code>docs: false</code> and mount your own routes with{" "}
+        <code>generateOpenAPI()</code> and <code>swaggerUiHtml() / scalarHtml()</code> — see the{" "}
+        <Link href="/docs/openapi">OpenAPI guide</Link>.
+      </p>
+
       <p>
         Both <code>swaggerUiHtml()</code> and <code>scalarHtml()</code> load their default assets from
         the jsDelivr CDN, so a strict Content-Security-Policy must allow those assets or the docs UI
-        can render blank. <code>htmlResponse()</code> adds a compatible CSP automatically; if you build
-        your own response, import <code>docsContentSecurityPolicy</code> from{" "}
-        <code>@daloyjs/core/docs</code> and pass the result as the response header:
+        can render blank. The auto-mounted route and <code>htmlResponse()</code> both add a
+        compatible CSP automatically; if you build your own response, import{" "}
+        <code>docsContentSecurityPolicy</code> from <code>@daloyjs/core/docs</code> and pass the
+        result as the response header:
       </p>
       <CodeBlock code={`import { docsContentSecurityPolicy } from "@daloyjs/core/docs";
 

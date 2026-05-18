@@ -21,7 +21,7 @@ last at least one minor cycle before removal.
 
 ## Now — `0.1.x` (shipped)
 
-Published to npm as **`@daloyjs/core@0.12.0`**. The `0.1.x` foundation below is fully shipped; confidence/lifecycle cleanup shipped in the `0.2.x` line, the streaming/helper + OpenAPI extras work shipped in the `0.3.x` line, input ergonomics shipped in the `0.4.x` line, the first project-ops slice shipped in the `0.5.x` line, plugin lifecycle events shipped in the `0.6.x` line, edge-friendly sessions shipped in the `0.7.x` line, adapter/runtime modernization shipped in the `0.8.x` line, banner + Node ≥ 24.15 runtime upgrade shipped in the `0.9.x` line, branch coverage gate shipped in the `0.10.x` line, WebSocket primitives shipped in the `0.11.x` line, and security hardening (CSRF Fetch-Metadata, CSP nonce + Trusted Types, `basicAuth`) shipped in the `0.12.x` line.
+Published to npm as **`@daloyjs/core@0.13.0`**. The `0.1.x` foundation below is fully shipped; confidence/lifecycle cleanup shipped in the `0.2.x` line, the streaming/helper + OpenAPI extras work shipped in the `0.3.x` line, input ergonomics shipped in the `0.4.x` line, the first project-ops slice shipped in the `0.5.x` line, plugin lifecycle events shipped in the `0.6.x` line, edge-friendly sessions shipped in the `0.7.x` line, adapter/runtime modernization shipped in the `0.8.x` line, banner + Node ≥ 24.15 runtime upgrade shipped in the `0.9.x` line, branch coverage gate shipped in the `0.10.x` line, WebSocket primitives shipped in the `0.11.x` line, security hardening (CSRF Fetch-Metadata, CSP nonce + Trusted Types, `basicAuth`) shipped in the `0.12.x` line, and the DX polish slice (`createApp()` alias, `daloy dev` watcher with `--runtime` override, OpenAPI `info` autofill from `deno.json` / `deno.jsonc`) shipped in the `0.13.x` line.
 
 - [x] Trie router with static fast path, traversal guard, real `405 + Allow`.
 - [x] Contract-first `app.route()`, groups, encapsulated plugins, decorators.
@@ -97,6 +97,7 @@ design issue before implementation.
 - [x] **Plugin lifecycle events** (`onPluginInstalled`, `onShutdown`) for observability plugins.
 - [x] **Edge-friendly session primitive**: signed-cookie (`__Host-` prefix, HMAC-SHA256, key rotation) with a pluggable `SessionStore` (default in-memory, KV/Redis-friendly) exposed as `ctx.state.session`.
 - [x] **Security hardening** — CSRF Fetch-Metadata strategy, dual CSRF (`"both"`), CSP nonce + Trusted Types in `secureHeaders()`, `basicAuth()` middleware with UTF-8 credential decoding, construction-time validation, and `basicAuth` exports — shipped in `0.12.0`.
+- [x] **DX polish** — `createApp(options)` factory alias for `new App(options)`, `daloy dev [entry]` one-command watch loop that delegates to `node --import tsx --watch` / `bun --hot` / `deno run --watch` with a `--runtime <node|bun|deno>` override for `package.json` scripts, and OpenAPI `info` autofill extended to read `deno.json` / `deno.jsonc` when no `package.json` is present — shipped in `0.13.0`.
 - [x] **WebSocket primitives** with adapter coverage for Node and Bun — shipped in `0.11.0`.
 
 ---
@@ -117,7 +118,7 @@ cleanly before any new feature work. Both are `1.0.0` gates.
 
 ---
 
-## Pre-1.0 — `0.13.0` ("AI-friendly route metadata")
+## Pre-1.0 — `0.14.0` ("AI-friendly route metadata")
 
 Additive, non-breaking. Pulled out of the research bucket because the surface
 is small (optional fields on existing `route()` calls) and lands cleanly before
@@ -131,7 +132,7 @@ existing routes keep working unchanged.
 
 ---
 
-## Soon — `0.14.0`+ ("secure-by-default initiative")
+## Soon — `0.15.0`+ ("secure-by-default initiative")
 
 Converts Daloy's existing security middleware from opt-in to opt-out where
 exactly one correct default exists, and adds a small set of high-value

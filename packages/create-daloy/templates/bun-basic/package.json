@@ -7,7 +7,7 @@
     "bun": ">=1.1.0"
   },
   "scripts": {
-    "dev": "bun --hot src/index.ts",
+    "dev": "daloy dev --runtime bun",
     "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
@@ -16,7 +16,7 @@
     "gen": "pnpm gen:openapi && pnpm gen:client"
   },
   "dependencies": {
-    "@daloyjs/core": "^0.12.0",
+    "@daloyjs/core": "^0.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -15,42 +15,13 @@
 
 import { App } from "../src/index.js";
 import { serve } from "../src/adapters/node.js";
-import { generateOpenAPI } from "../src/openapi.js";
 import { createClient } from "../src/client.js";
-import { scalarHtml, htmlResponse } from "../src/docs.js";
 import { printStartupBanner } from "../src/banner.js";
 import { buildExampleApp } from "./build-app.js";
 
+// `buildExampleApp()` configures `docs: true` on the App constructor, so
+// GET /docs (Scalar UI) and GET /openapi.json are auto-mounted for us.
 const app: App = buildExampleApp();
-
-// OpenAPI spec endpoint — feeds Scalar UI and Hey API codegen.
-app.route({
-  method: "GET",
-  path: "/openapi.json",
-  operationId: "getOpenAPI",
-  tags: ["Meta"],
-  responses: { 200: { description: "OpenAPI 3.1 doc" } },
-  handler: async () => ({
-    status: 200 as const,
-    body: generateOpenAPI(app, {
-      info: { title: "Bookstore API", version: "1.0.0" },
-      securitySchemes: { bearer: { type: "http", scheme: "bearer" } },
-    }),
-  }),
-});
-
-app.route({
-  method: "GET",
-  path: "/docs",
-  operationId: "docs",
-  tags: ["Meta"],
-  responses: { 200: { description: "Interactive API reference" } },
-  handler: async () => {
-    const html = scalarHtml({ specUrl: "/openapi.json", title: "Bookstore API" });
-    const res = htmlResponse(html);
-    return { status: 200 as const, body: html, headers: Object.fromEntries(res.headers) };
-  },
-});
 
 app.route({
   method: "GET",

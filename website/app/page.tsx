@@ -159,7 +159,9 @@ export default function HomePage() {
               Contract-first routing, Standard Schema validation, OpenAPI 3.1 with Hey API typed
               client codegen, streaming and OpenTelemetry tracing, edge-friendly sessions, a
               security-focused runtime by default, and a supply-chain-hardened release pipeline
-              for the framework itself.
+              for the framework itself. One line on the <code>App</code> constructor —{" "}
+              <code>docs: true</code> — auto-mounts a Scalar API reference at <code>/docs</code> and
+              the live OpenAPI 3.1 spec at <code>/openapi.json</code>, the same DX as FastAPI.
             </p>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
               <span className="font-medium text-foreground">ᜇᜎᜓᜌ᜔</span> Daloy means{" "}
@@ -182,7 +184,7 @@ export default function HomePage() {
               <code className="text-sm">$ {CREATE_COMMAND}</code>
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span>320/320 tests passing</span>
+              <span>443/443 tests passing</span>
               <span aria-hidden>·</span>
               <span>100% line + function coverage</span>
               <span aria-hidden>·</span>

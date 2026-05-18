@@ -2,13 +2,14 @@ import { CodeBlock } from "../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "CLI inspector — daloy inspect",
+  title: "CLI — daloy inspect & daloy dev",
   description:
-    "Use the daloy CLI to introspect routes, contract-test an app, or dump OpenAPI 3.1 from any DaloyJS project.",
+    "Use the daloy CLI to introspect routes, contract-test an app, dump OpenAPI 3.1, or start a watch-mode dev server on any DaloyJS project.",
   path: "/docs/cli",
   keywords: [
     "daloy CLI",
     "daloy inspect",
+    "daloy dev",
     "DaloyJS routes",
     "OpenAPI dump",
     "contract tests CLI",
@@ -97,6 +98,38 @@ export function buildApp() {
           <code>-h, --help</code> · <code>-v, --version</code>
         </li>
       </ul>
+
+      <h2><code>daloy dev</code> — watch-mode dev server</h2>
+      <p>
+        <code>daloy dev [entry]</code> starts your app in the host runtime&apos;s native watch
+        mode — no extra config, no extra dependency to install on Bun or Deno:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`pnpm daloy dev                # auto-detects ./src/index.ts, ./src/main.ts, ...
+pnpm daloy dev ./src/server.ts`}
+      />
+      <p>The exact command spawned depends on the runtime that hosts the CLI:</p>
+      <ul>
+        <li>
+          <strong>Node</strong>: <code>node --import tsx --watch &lt;entry&gt;</code> (install{" "}
+          <code>tsx</code> as a dev dependency for TypeScript entries).
+        </li>
+        <li>
+          <strong>Bun</strong>: <code>bun --hot &lt;entry&gt;</code>.
+        </li>
+        <li>
+          <strong>Deno</strong>:{" "}
+          <code>deno run --watch --allow-net --allow-env --allow-read &lt;entry&gt;</code>.
+        </li>
+      </ul>
+      <p>
+        Pass <code>--runtime &lt;node|bun|deno&gt;</code> to override runtime detection. This is
+        required when running <code>daloy dev</code> from a <code>package.json</code> script on
+        Bun or Deno, because the CLI binary&apos;s <code>#!/usr/bin/env node</code> shebang
+        otherwise forces Node detection. The <code>bun-basic</code> template ships{" "}
+        <code>&quot;dev&quot;: &quot;daloy dev --runtime bun&quot;</code> for this reason.
+      </p>
 
       <h2>CI usage</h2>
       <p>

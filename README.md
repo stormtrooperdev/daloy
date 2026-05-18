@@ -8,6 +8,8 @@
 
 > A **runtime-portable TypeScript web framework** with built-in **contract-first routing**, **validation**, **OpenAPI (Hey API)**, **typed client generation**, **large-scale maintainability**, and **security-focused runtime plus supply-chain posture**.
 
+**One-line API docs.** `new App({ openapi: { info: ... }, docs: true })` auto-mounts `GET /docs` (Scalar) and `GET /openapi.json` — the same DX as FastAPI, without leaving TypeScript.
+
 DaloyJS is maintained in the GitHub organization at <https://github.com/daloyjs>; the canonical framework repository is <https://github.com/daloyjs/daloy>.
 
 ---
@@ -16,7 +18,7 @@ DaloyJS exists to be the framework you'd build if you took the best ideas from e
 
 | You want                                                | Today's best-of                                       | What DaloyJS gives you                                                                                                       |
 | ------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Best **OpenAPI ergonomics**                             | [FastAPI](https://fastapi.tiangolo.com)               | First-class OpenAPI 3.1 generation from a single route definition.                                                           |
+| Best **OpenAPI ergonomics**                             | [FastAPI](https://fastapi.tiangolo.com)               | First-class OpenAPI 3.1 generation from a single route definition; one-line `docs: true` auto-mounts `/docs` and `/openapi.json`.                                                           |
 | Best **Vercel / serverless / edge fit**                 | [Hono](https://hono.dev/docs/)                        | Web-standard `Request → Response` core, multi-runtime adapters.                                                              |
 | Mature **Swagger / docs / ops** in Node                 | [Fastify](https://fastify.dev/docs/latest/Reference/) | Encapsulated plugins, structured logger, graceful shutdown, request ids, hooks.                                              |
 | Modern **TS-first DX**, Bun acceptable                  | [Elysia](https://elysiajs.com/at-glance.html)         | End-to-end typed handlers, typed context, typed client.                                                                      |
@@ -182,15 +184,61 @@ const r = await client.getBookById({ params: { id: "1" } });
 
 ---
 
-## Built-in docs UI (Swagger UI / Scalar)
+## Built-in docs UI (Scalar / Swagger UI)
+
+FastAPI-style. One line on the `App` constructor mounts `GET /docs` and `GET /openapi.json` for you,
+with a strict CSP and CDN-hosted assets:
 
 ```ts
-import { swaggerUiHtml, htmlResponse } from "@daloyjs/core/docs";
-// returns a self-contained HTML page that loads /openapi.json
+import { App } from "@daloyjs/core";
+
+const app = new App({
+  openapi: { info: { title: "My API", version: "1.0.0" } },
+  docs: true, // mounts GET /docs (Scalar) and GET /openapi.json
+});
 ```
 
-Mount at `/docs` and the UI is always contract-accurate — never stale.
-`create-daloy@0.2.0` mounts Swagger UI at `/docs` and the live spec at `/openapi.json` by default.
+Use `docs: "auto"` to mount only when `production: false`, or the object form for full control:
+
+```ts
+new App({
+  openapi: { info: { title: "My API", version: "1.0.0" } },
+  docs: { ui: "swagger", path: "/reference", openapiPath: "/spec.json", tags: ["Docs"] },
+});
+```
+
+Prefer to mount manually? Import the helpers directly:
+
+```ts
+import { swaggerUiHtml, scalarHtml, htmlResponse } from "@daloyjs/core/docs";
+import { generateOpenAPI } from "@daloyjs/core/openapi";
+```
+
+The UI is always contract-accurate — never stale. `create-daloy` templates opt in with `docs: true`.
+
+If you omit `openapi.info.title` / `info.version`, Daloy reads your project's `package.json` (`name`, `version`, `description`) automatically — no boilerplate. Deno projects without a `package.json` fall back to `deno.json` / `deno.jsonc`. Explicit values always win.
+
+Prefer a factory? `createApp(options)` is exported as an alias of `new App(options)`.
+
+```ts
+import { createApp } from "@daloyjs/core";
+
+const app = createApp({ docs: true });
+```
+
+### `daloy dev` — one-command watch mode
+
+`daloy dev [entry]` delegates to the host runtime's native watch tool, with no extra config:
+
+| Runtime | Spawned command                                                 |
+| ------- | --------------------------------------------------------------- |
+| Node    | `node --import tsx --watch <entry>`                             |
+| Bun     | `bun --hot <entry>`                                             |
+| Deno    | `deno run --watch --allow-net --allow-env --allow-read <entry>` |
+
+Entry defaults to `src/index.ts`, `src/main.ts`, `src/server.ts`, or `src/app.ts`. Install `tsx` as a dev dependency on Node for TypeScript entries.
+
+Pass `--runtime <node|bun|deno>` to override runtime detection. This is required when running `daloy dev` from a `package.json` script on Bun or Deno, because the CLI binary's `#!/usr/bin/env node` shebang otherwise forces Node detection. The `bun-basic` template ships `"dev": "daloy dev --runtime bun"` for this reason.
 
 ---
 
@@ -321,6 +369,8 @@ What works today, at a glance:
 - WebSocket primitives with the same Bun-style handler shape (`open`/`message`/`close`/`drain`/`error`) running on both Node and Bun adapters, plus typed `app.ws(path, handler)` registration and route-table awareness so the upgrade listener is only installed when WS routes exist.
 - Pretty `printStartupBanner()` / `formatStartupBanner()` startup helpers at `@daloyjs/core/banner`, used by every starter template so `pnpm dev` greets you with a colorized boxed panel (TTY + `NO_COLOR` / `FORCE_COLOR` aware, with an ASCII fallback for dumb terminals).
 - In-process test client (`app.request()`), contract-test runner, in-process typed client, and Hey API codegen via `pnpm gen`.
+- One-command watch loop: `daloy dev` delegates to the host runtime's native watcher (`node --import tsx --watch`, `bun --hot`, or `deno run --watch`) with a `--runtime` override for cross-runtime `package.json` scripts.
+- Zero-config OpenAPI `info` autofill from `package.json` (Node / Bun) or `deno.json` / `deno.jsonc` (Deno) — explicit `openapi.info` values always win.
 - `pnpm create daloy` scaffolder with Node, Bun, Deno, Cloudflare Worker, and Vercel Edge templates, plus optional `--with-ci` GitHub Actions / Dependabot / CODEOWNERS / SECURITY.md hardening.
 - Plugin encapsulation, decorators, structured logging, request-id propagation, lifecycle events (`onPluginInstalled`, `onShutdown`, `onClose`), and graceful shutdown.
 - Integration guides for transactional email providers — AWS SES, SendGrid, Resend, Postmark, Mailgun, and Mailtrap — with a common `EmailSender` plugin pattern and runtime-compatibility matrix.

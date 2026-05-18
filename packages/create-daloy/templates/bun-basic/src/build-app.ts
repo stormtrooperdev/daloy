@@ -6,10 +6,6 @@ import {
   requestId,
   secureHeaders,
 } from "@daloyjs/core";
-// daloy-minimal:strip-start docs
-import { generateOpenAPI } from "@daloyjs/core/openapi";
-import { htmlResponse, swaggerUiHtml } from "@daloyjs/core/docs";
-// daloy-minimal:strip-end docs
 
 /**
  * Build the application as a pure factory so the same `App` is reused by
@@ -22,6 +18,17 @@ export function buildApp(): App {
     bodyLimitBytes: 1024 * 1024,
     requestTimeoutMs: 5_000,
     production: process.env.NODE_ENV === "production",
+    // daloy-minimal:strip-start docs
+    // Auto-mounted docs:
+    //   GET /openapi.json — live OpenAPI 3.1 spec generated from your routes
+    //   GET /docs         — Scalar API reference UI that loads it
+    // `info.title` / `info.version` are pulled from package.json by default;
+    // set `openapi.info` here to override them.
+    openapi: {
+      servers: [{ url: `http://localhost:${process.env.PORT ?? 3000}` }],
+    },
+    docs: true,
+    // daloy-minimal:strip-end docs
   });
 
   app.use(requestId());
@@ -69,40 +76,6 @@ export function buildApp(): App {
     },
   });
   // daloy-minimal:strip-end books
-
-  // daloy-minimal:strip-start docs
-  app.route({
-    method: "GET",
-    path: "/openapi.json",
-    operationId: "getOpenAPI",
-    tags: ["Docs"],
-    responses: { 200: { description: "OpenAPI 3.1 document" } },
-    handler: async () => ({
-      status: 200 as const,
-      body: generateOpenAPI(app, {
-        info: { title: "My Daloy Bun API", version: "0.0.1" },
-        servers: [{ url: `http://localhost:${process.env.PORT ?? 3000}` }],
-      }),
-    }),
-  });
-
-  app.route({
-    method: "GET",
-    path: "/docs",
-    operationId: "docs",
-    tags: ["Docs"],
-    responses: { 200: { description: "API reference UI" } },
-    handler: async () => {
-      const html = swaggerUiHtml({ specUrl: "/openapi.json", title: "My Daloy Bun API" });
-      const res = htmlResponse(html);
-      return {
-        status: 200 as const,
-        body: html,
-        headers: Object.fromEntries(res.headers),
-      };
-    },
-  });
-  // daloy-minimal:strip-end docs
 
   return app;
 }

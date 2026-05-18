@@ -36,6 +36,11 @@ export function buildExampleApp(): App {
     version: "1.0.0",
     bodyLimitBytes: 64 * 1024,
     requestTimeoutMs: 5_000,
+    openapi: {
+      info: { title: "Bookstore API", version: "1.0.0" },
+      securitySchemes: { bearer: { type: "http", scheme: "bearer" } },
+    },
+    docs: true,
   });
 
   app.use(requestId());

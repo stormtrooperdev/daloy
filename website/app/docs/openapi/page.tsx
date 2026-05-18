@@ -22,31 +22,55 @@ export default function Page() {
         no plugins, no separate decorators. Validation, types, and the spec all share one source of truth.
       </p>
 
-      <h2>Generate a spec</h2>
-      <CodeBlock code={`import { z } from "zod";
-    import { generateOpenAPI } from "@daloyjs/core/openapi";
+      <h2>One line: auto-mount /docs and /openapi.json</h2>
+      <p>
+        FastAPI-style. Pass <code>docs: true</code> to the <code>App</code> constructor and DaloyJS
+        registers <code>GET /openapi.json</code> (the live spec) and <code>GET /docs</code> (a Scalar
+        API reference UI) for you.
+      </p>
+      <CodeBlock code={`import { App } from "@daloyjs/core";
+
+const app = new App({
+  openapi: {
+    info: { title: "My API", version: "1.0.0" },
+    servers: [{ url: "https://api.example.com" }],
+    securitySchemes: { bearer: { type: "http", scheme: "bearer" } },
+  },
+  docs: true, // mounts GET /docs and GET /openapi.json
+});`} />
+
+      <p>
+        Use <code>docs: &quot;auto&quot;</code> to mount only when <code>production: false</code>, or
+        leave it off (the default) and mount manually with the helpers below. Customize paths, UI, and
+        tags via the object form:
+      </p>
+      <CodeBlock code={`new App({
+  openapi: { info: { title: "My API", version: "1.0.0" } },
+  docs: {
+    path: "/reference",          // default: "/docs"
+    openapiPath: "/spec.json",   // default: "/openapi.json"
+    ui: "swagger",                // "scalar" (default) | "swagger"
+    tags: ["Docs"],               // default: ["Docs"], pass [] to omit
+    enabled: "auto",              // true | false | "auto" (off in production)
+  },
+});`} />
+
+      <h2>Advanced: generate the spec manually</h2>
+      <p>
+        Need the raw spec object (for codegen, contract tests, or a custom route)? Call{" "}
+        <code>generateOpenAPI(app, options)</code> directly:
+      </p>
+      <CodeBlock code={`import { generateOpenAPI } from "@daloyjs/core/openapi";
 
 const doc = generateOpenAPI(app, {
   info: { title: "My API", version: "1.0.0" },
   servers: [{ url: "https://api.example.com" }],
-  securitySchemes: {
-    bearer: { type: "http", scheme: "bearer" },
-  },
+  securitySchemes: { bearer: { type: "http", scheme: "bearer" } },
 });
 
 console.log(JSON.stringify(doc, null, 2));`} />
 
-      <h2>Serve the spec from your app</h2>
-      <CodeBlock code={`app.route({
-  method: "GET",
-  path: "/openapi.json",
-  operationId: "getOpenAPI",
-  tags: ["Meta"],
-  responses: { 200: { description: "OpenAPI 3.1 doc" } },
-  handler: async () => ({ status: 200, body: generateOpenAPI(app, { info: { title: "My API", version: "1.0.0" } }) }),
-});`} />
-
-      <h2>Built-in docs UIs</h2>
+      <h2>Advanced: serve docs from your own route</h2>
       <CodeBlock code={`import { swaggerUiHtml, scalarHtml, htmlResponse } from "@daloyjs/core/docs";
 
 app.route({
@@ -55,7 +79,7 @@ app.route({
   operationId: "docs",
   responses: { 200: { description: "API reference" } },
   handler: async () => {
-    const html = swaggerUiHtml({ specUrl: "/openapi.json", title: "My API" });
+    const html = scalarHtml({ specUrl: "/openapi.json", title: "My API" });
     const res = htmlResponse(html);
     return { status: 200, body: await res.text(), headers: Object.fromEntries(res.headers) };
   },
@@ -63,8 +87,7 @@ app.route({
 
       <p>
         Both <code>swaggerUiHtml</code> and <code>scalarHtml</code> return self-contained HTML pages that load
-        their assets from jsDelivr with a strict CSP allowing only that origin. The official starter uses
-        <code>swaggerUiHtml</code> for <code>/docs</code> by default.
+        their assets from jsDelivr with a strict CSP allowing only that origin.
       </p>
 
       <p>

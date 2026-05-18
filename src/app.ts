@@ -23,6 +23,17 @@ import type {
   ResponsesMap,
   RouteDefinition,
 } from "./types.js";
+import {
+  generateOpenAPI,
+  type OpenAPIInfo,
+  type OpenAPIOptions,
+} from "./openapi.js";
+import {
+  docsContentSecurityPolicy,
+  scalarHtml,
+  swaggerUiHtml,
+  type DocsContentSecurityPolicyOptions,
+} from "./docs.js";
 
 /**
  * Configuration accepted by {@link App}'s constructor. Every field is
@@ -79,6 +90,90 @@ export interface AppOptions {
 
   /** Global hooks applied to every route. */
   hooks?: Hooks;
+
+  /**
+   * OpenAPI 3.1 document metadata used by the built-in auto-mounted
+   * `/openapi.json` route and any other consumer that calls
+   * `generateOpenAPI(app)` without its own options. When `info.title` /
+   * `info.version` are omitted they fall back to the top-level
+   * {@link AppOptions.title} / {@link AppOptions.version} fields, then to
+   * `"DaloyJS API"` / `"0.0.0"`.
+   *
+   * @since 0.3.0
+   */
+  openapi?: AppOpenAPIOptions;
+
+  /**
+   * Enable the built-in API documentation surface — a `/openapi.json` route
+   * that serves the live OpenAPI 3.1 spec and a `/docs` route that serves a
+   * Scalar (default) or Swagger UI HTML page that loads it. This is the
+   * one-line equivalent of FastAPI's automatic `/docs` UI.
+   *
+   * - `false` (default) — never mount. Write your own with `generateOpenAPI`
+   *   + `swaggerUiHtml` / `scalarHtml` for full control.
+   * - `true` — always mount on `/openapi.json` and `/docs`.
+   * - `"auto"` — mount when `NODE_ENV !== "production"`; otherwise skip. This
+   *   is a "secure by default" choice: production deployments should opt in
+   *   explicitly so internal APIs do not accidentally publish a browsable
+   *   schema.
+   * - object — full configuration (custom paths, UI choice, title, CSP
+   *   overrides). The `enabled` field on the object can override the
+   *   auto/prod rule.
+   *
+   * The default is `false` so adding a new `App({ ... })` to an existing app
+   * never silently changes its public surface; scaffolded projects from
+   * `create-daloy` set `docs: true` for the auto-mount experience.
+   *
+   * @since 0.3.0
+   */
+  docs?: boolean | "auto" | DocsRouteOptions;
+}
+
+/**
+ * Subset of {@link OpenAPIOptions} accepted by `new App({ openapi })`. All
+ * fields are optional; `info.title` / `info.version` fall back to the
+ * top-level {@link AppOptions.title} / {@link AppOptions.version}.
+ *
+ * @since 0.3.0
+ */
+export interface AppOpenAPIOptions {
+  info?: Partial<OpenAPIInfo>;
+  servers?: OpenAPIOptions["servers"];
+  securitySchemes?: OpenAPIOptions["securitySchemes"];
+  webhooks?: OpenAPIOptions["webhooks"];
+}
+
+/**
+ * Configuration for the auto-mounted docs surface. Pass to
+ * `new App({ docs: { ... } })` to override defaults; omit to take all
+ * defaults.
+ *
+ * @since 0.3.0
+ */
+export interface DocsRouteOptions {
+  /** Path the docs UI is served from. Default `"/docs"`. */
+  path?: PathString;
+  /** Path the OpenAPI 3.1 JSON spec is served from. Default `"/openapi.json"`. */
+  openapiPath?: PathString;
+  /** Which built-in UI to render. Default `"scalar"` (smaller payload, modern UI). */
+  ui?: "scalar" | "swagger";
+  /** Page `<title>`. Defaults to the resolved OpenAPI `info.title`. */
+  title?: string;
+  /**
+   * Force the docs to mount regardless of `NODE_ENV`. When `"auto"` (default
+   * for the object form), behaves like the top-level `docs: "auto"` setting.
+   */
+  enabled?: boolean | "auto";
+  /**
+   * Tags attached to the auto-mounted operations in the generated spec.
+   * Default: `["Docs"]`. Pass an empty array to omit tags entirely.
+   */
+  tags?: string[];
+  /**
+   * Override the Content-Security-Policy applied to the docs HTML response.
+   * Forwarded to {@link docsContentSecurityPolicy}.
+   */
+  csp?: DocsContentSecurityPolicyOptions;
 }
 
 /** Information passed to {@link App.onPluginInstalled} listeners. */
@@ -231,6 +326,131 @@ export class App {
             typeof (options.logger as Logger).info === "function"
           ? (options.logger as Logger)
           : createLogger({ level: (options.logger as any)?.level ?? "info" });
+
+    this.maybeMountDocs();
+  }
+
+  /**
+   * Resolve whether the app is running in production. Honours the explicit
+   * `production` option first, then falls back to `NODE_ENV === "production"`.
+   * Used by the docs auto-mount and error response detail stripping.
+   */
+  private isProduction(): boolean {
+    if (this.options.production !== undefined) return this.options.production;
+    return (
+      typeof process !== "undefined" &&
+      typeof process.env !== "undefined" &&
+      process.env.NODE_ENV === "production"
+    );
+  }
+
+  /**
+   * Resolve the {@link AppOptions.docs} option and, when enabled, register
+   * the `/openapi.json` + `/docs` routes. Called once during construction so
+   * the routes appear in `app.routes` for introspection and so the spec
+   * served at runtime includes every route registered afterwards (the spec
+   * is generated lazily inside the request handler).
+   */
+  private maybeMountDocs(): void {
+    const raw = this.options.docs;
+    if (raw === undefined || raw === false) return;
+
+    let resolvedOpts: DocsRouteOptions;
+    if (raw === true) {
+      resolvedOpts = {};
+    } else if (raw === "auto") {
+      if (this.isProduction()) return;
+      resolvedOpts = {};
+    } else {
+      // object form
+      const enabled = raw.enabled ?? true;
+      if (enabled === false) return;
+      if (enabled === "auto" && this.isProduction()) return;
+      resolvedOpts = raw;
+    }
+
+    this.mountDocs(resolvedOpts);
+  }
+
+  private mountDocs(opts: DocsRouteOptions): void {
+    const openapiPath = (opts.openapiPath ?? "/openapi.json") as PathString;
+    const docsPath = (opts.path ?? "/docs") as PathString;
+    const ui = opts.ui ?? "scalar";
+    const tags = opts.tags ?? ["Docs"];
+
+    // Best-effort lazy read of the host project's package.json so that
+    // `new App({ docs: true })` with no explicit `openapi.info` still produces
+    // a spec titled after the user's package (`name` → title,
+    // `version` → version, `description` → description). Silently skipped on
+    // edge runtimes that lack `node:fs`.
+    const resolveInfo = async (): Promise<OpenAPIInfo> => {
+      const fromOpenapi = this.options.openapi?.info ?? {};
+      const fromPkg = await readHostPackageJsonInfo();
+      const title =
+        fromOpenapi.title ?? this.options.title ?? fromPkg.title ?? "DaloyJS API";
+      const version =
+        fromOpenapi.version ?? this.options.version ?? fromPkg.version ?? "0.0.0";
+      const description =
+        fromOpenapi.description ?? this.options.description ?? fromPkg.description;
+      return description ? { title, version, description } : { title, version };
+    };
+
+    const generate = async (): Promise<Record<string, unknown>> =>
+      generateOpenAPI(this, {
+        info: await resolveInfo(),
+        ...(this.options.openapi?.servers
+          ? { servers: this.options.openapi.servers }
+          : {}),
+        ...(this.options.openapi?.securitySchemes
+          ? { securitySchemes: this.options.openapi.securitySchemes }
+          : {}),
+        ...(this.options.openapi?.webhooks
+          ? { webhooks: this.options.openapi.webhooks }
+          : {}),
+      });
+
+    this.route({
+      method: "GET",
+      path: openapiPath,
+      operationId: "getOpenAPIDocument",
+      ...(tags.length ? { tags } : {}),
+      summary: "OpenAPI 3.1 document",
+      responses: {
+        200: { description: "OpenAPI 3.1 document for this application." },
+      },
+      handler: async () => ({
+        status: 200 as const,
+        body: await generate(),
+      }),
+    });
+
+    this.route({
+      method: "GET",
+      path: docsPath,
+      operationId: "getDocsUI",
+      ...(tags.length ? { tags } : {}),
+      summary: "Interactive API reference",
+      responses: {
+        200: { description: "Interactive API documentation UI." },
+      },
+      handler: async () => {
+        const title = opts.title ?? (await resolveInfo()).title;
+        const html =
+          ui === "swagger"
+            ? swaggerUiHtml({ specUrl: openapiPath, title })
+            : scalarHtml({ specUrl: openapiPath, title });
+        return {
+          status: 200 as const,
+          body: html,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "content-security-policy": docsContentSecurityPolicy(opts.csp),
+            "x-content-type-options": "nosniff",
+            "referrer-policy": "no-referrer",
+          },
+        };
+      },
+    });
   }
 
   // ---------- registration ----------
@@ -332,7 +552,10 @@ export class App {
     config: { tags?: string[]; hooks?: Hooks; auth?: RouteDefinition["auth"] },
     register: (app: App) => void,
   ): this {
-    const child = new App(this.options);
+    // Child apps share the parent's router/routes/etc. Disable docs auto-mount
+    // on the child so it does not re-register the parent's `/openapi.json` and
+    // `/docs` routes (which would throw "Duplicate route").
+    const child = new App({ ...this.options, docs: false });
     (child as any).router = this.router;
     (child as any).routes = this.routes;
     (child as any).webSocketRoutes = this.webSocketRoutes;
@@ -1163,4 +1386,132 @@ function serializeErr(err: unknown): Record<string, unknown> {
     return { name: err.name, message: err.message, stack: err.stack };
   }
   return { value: String(err) };
+}
+
+/**
+ * Factory alias for `new App(options)`. Lets callers who prefer a
+ * functional style (or who avoid `new`) write:
+ *
+ * ```ts
+ * import { createApp } from "@daloyjs/core";
+ *
+ * const app = createApp({ openapi: { info: { title: "My API", version: "1.0.0" } }, docs: true });
+ * ```
+ *
+ * Behaviour is identical to `new App(options)` — the alias exists purely
+ * for ergonomics and matches the factory pattern used by Express, Fastify,
+ * and Hono adapters.
+ *
+ * @since 0.3.0
+ */
+export function createApp(options: AppOptions = {}): App {
+  return new App(options);
+}
+
+const PACKAGE_JSON_CACHE: { value?: Promise<{ title?: string; version?: string; description?: string }> } = {};
+
+/**
+ * Best-effort lazy read of the host project's `package.json` so that
+ * `new App({ docs: true })` with no explicit `openapi.info` still produces
+ * a spec titled after the user's package. Reads `package.json` first; if
+ * none is found while walking up from `process.cwd()`, falls back to
+ * `deno.json` / `deno.jsonc` so Deno projects get the same DX without a
+ * `package.json`. Returns an empty object on edge runtimes (Cloudflare
+ * Workers, Vercel Edge) where `node:fs` is absent, on any I/O or parse
+ * error, and when nothing is found.
+ *
+ * The result is memoized at module scope: manifests do not change
+ * during a process lifetime and we never want this to add latency to
+ * subsequent docs requests.
+ */
+function readHostPackageJsonInfo(): Promise<{ title?: string; version?: string; description?: string }> {
+  if (PACKAGE_JSON_CACHE.value !== undefined) return PACKAGE_JSON_CACHE.value;
+  const promise = (async () => {
+    const empty = {};
+    const proc = (globalThis as { process?: { cwd?: () => string } }).process;
+    if (!proc || typeof proc.cwd !== "function") return empty;
+
+    let fs: typeof import("node:fs");
+    let path: typeof import("node:path");
+    try {
+      fs = await import("node:fs");
+      path = await import("node:path");
+    } catch {
+      return empty;
+    }
+
+    let dir: string;
+    try {
+      dir = proc.cwd();
+    } catch {
+      return empty;
+    }
+
+    const parseManifest = (raw: string, allowComments: boolean) => {
+      // deno.jsonc allows // line comments and /* block */ comments. Strip
+      // them before parsing — naively, but well enough for typical manifests.
+      const text = allowComments
+        ? raw
+            .replace(/\/\*[\s\S]*?\*\//g, "")
+            .replace(/(^|[^:\\])\/\/.*$/gm, "$1")
+        : raw;
+      return JSON.parse(text) as {
+        name?: unknown;
+        version?: unknown;
+        description?: unknown;
+      };
+    };
+
+    const extractInfo = (json: { name?: unknown; version?: unknown; description?: unknown }) => {
+      const result: { title?: string; version?: string; description?: string } = {};
+      if (typeof json.name === "string" && json.name.length > 0) {
+        result.title = json.name;
+      }
+      if (typeof json.version === "string" && json.version.length > 0) {
+        result.version = json.version;
+      }
+      if (typeof json.description === "string" && json.description.length > 0) {
+        result.description = json.description;
+      }
+      return result;
+    };
+
+    // Walk up to the filesystem root looking for a manifest. Cap depth so
+    // a deeply-nested cwd can't cause excessive stat calls. At each level,
+    // prefer package.json, then deno.json, then deno.jsonc.
+    for (let i = 0; i < 12; i++) {
+      const pkg = path.join(dir, "package.json");
+      const denoJson = path.join(dir, "deno.json");
+      const denoJsonc = path.join(dir, "deno.jsonc");
+      try {
+        if (fs.existsSync(pkg)) {
+          return extractInfo(parseManifest(fs.readFileSync(pkg, "utf8"), false));
+        }
+        if (fs.existsSync(denoJson)) {
+          return extractInfo(parseManifest(fs.readFileSync(denoJson, "utf8"), false));
+        }
+        if (fs.existsSync(denoJsonc)) {
+          return extractInfo(parseManifest(fs.readFileSync(denoJsonc, "utf8"), true));
+        }
+      } catch {
+        return empty;
+      }
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    return empty;
+  })();
+  PACKAGE_JSON_CACHE.value = promise;
+  return promise;
+}
+
+/**
+ * Test helper: clear the cached package.json read so each test starts
+ * from a fresh lookup. Not part of the public API.
+ *
+ * @internal
+ */
+export function _resetPackageJsonCacheForTests(): void {
+  PACKAGE_JSON_CACHE.value = undefined;
 }

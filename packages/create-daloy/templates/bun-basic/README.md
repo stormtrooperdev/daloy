@@ -21,7 +21,7 @@ curl http://localhost:3000/books/1
 <!-- daloy-minimal:strip-start docs -->
 ## API documentation
 
-- Swagger UI: <http://localhost:3000/docs>
+- API docs (Scalar): <http://localhost:3000/docs>
 - OpenAPI 3.1 JSON: <http://localhost:3000/openapi.json>
 <!-- daloy-minimal:strip-end docs -->
 

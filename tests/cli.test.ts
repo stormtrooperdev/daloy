@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import { App } from "../src/index.js";
-import { runCli, parseArgs, type CliIO } from "../src/cli.js";
+import { runCli, parseArgs, type CliIO, detectRuntime, buildDevCommand } from "../src/cli.js";
 
 function buildIO(
   app: App | undefined,
@@ -367,4 +367,171 @@ test("runCli: picks app from arbitrary named export as fallback", async () => {
   const r = await runCli(["src/app.ts"], io);
   assert.equal(r.exitCode, 0);
   assert.match(out.join(""), /createUser/);
+});
+
+// ---------- `daloy dev` ----------
+
+test("parseArgs: recognizes dev as a command", () => {
+  const { command, opts } = parseArgs(["dev"]);
+  assert.equal(command, "dev");
+  assert.equal(opts.entry, undefined);
+});
+
+test("parseArgs: dev accepts an entry positional", () => {
+  const { command, opts } = parseArgs(["dev", "src/server.ts"]);
+  assert.equal(command, "dev");
+  assert.equal(opts.entry, "src/server.ts");
+});
+
+test("detectRuntime: returns 'node' under standard test env", () => {
+  assert.equal(detectRuntime(), "node");
+});
+
+test("buildDevCommand: node uses --import tsx --watch", () => {
+  assert.deepEqual(buildDevCommand("node", "src/server.ts"), {
+    command: "node",
+    args: ["--import", "tsx", "--watch", "src/server.ts"],
+  });
+});
+
+test("buildDevCommand: bun uses --hot", () => {
+  assert.deepEqual(buildDevCommand("bun", "src/server.ts"), {
+    command: "bun",
+    args: ["--hot", "src/server.ts"],
+  });
+});
+
+test("buildDevCommand: deno uses run --watch with safe permissions", () => {
+  assert.deepEqual(buildDevCommand("deno", "src/server.ts"), {
+    command: "deno",
+    args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"],
+  });
+});
+
+test("runCli dev: errors when spawn helper is not provided", async () => {
+  const out: string[] = [];
+  const err: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: (c) => err.push(c),
+    importEntry: async () => ({}),
+    version: "0.0.0",
+  };
+  const r = await runCli(["dev", "src/server.ts"], io);
+  assert.equal(r.exitCode, 2);
+  assert.match(err.join(""), /spawn/);
+});
+
+test("runCli dev: invokes spawn with the runtime-specific command", async () => {
+  const calls: { command: string; args: readonly string[] }[] = [];
+  const out: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: () => {},
+    importEntry: async () => ({}),
+    version: "0.0.0",
+    spawn: async (command, args) => {
+      calls.push({ command, args });
+      return 0;
+    },
+    detectRuntime: () => "bun",
+  };
+  const r = await runCli(["dev", "src/server.ts"], io);
+  assert.equal(r.exitCode, 0);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]!.command, "bun");
+  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "src/server.ts"]);
+  assert.match(out.join(""), /bun → bun --hot src\/server\.ts/);
+});
+
+test("runCli dev: propagates child exit code", async () => {
+  const io: CliIO = {
+    stdout: () => {},
+    stderr: () => {},
+    importEntry: async () => ({}),
+    version: "0.0.0",
+    spawn: async () => 137,
+    detectRuntime: () => "node",
+  };
+  const r = await runCli(["dev", "src/server.ts"], io);
+  assert.equal(r.exitCode, 137);
+});
+
+test("runCli dev: returns 1 when spawn rejects", async () => {
+  const err: string[] = [];
+  const io: CliIO = {
+    stdout: () => {},
+    stderr: (c) => err.push(c),
+    importEntry: async () => ({}),
+    version: "0.0.0",
+    spawn: async () => {
+      throw new Error("ENOENT bun");
+    },
+    detectRuntime: () => "bun",
+  };
+  const r = await runCli(["dev", "src/server.ts"], io);
+  assert.equal(r.exitCode, 1);
+  assert.match(err.join(""), /failed to start.*ENOENT bun/);
+});
+
+test("runCli dev: with no entry, errors when no default exists", async () => {
+  const err: string[] = [];
+  const io: CliIO = {
+    stdout: () => {},
+    stderr: (c) => err.push(c),
+    importEntry: async () => ({}),
+    version: "0.0.0",
+    spawn: async () => 0,
+  };
+  const realCwd = process.cwd;
+  (process as { cwd: () => string }).cwd = () => "/__nonexistent_for_dev_test__";
+  try {
+    const r = await runCli(["dev"], io);
+    assert.equal(r.exitCode, 1);
+    assert.match(err.join(""), /Could not find a dev entry/);
+  } finally {
+    (process as { cwd: () => string }).cwd = realCwd;
+  }
+});
+
+test("runCli dev: --runtime flag overrides detection", async () => {
+  const calls: { command: string; args: readonly string[] }[] = [];
+  const io: CliIO = {
+    stdout: () => {},
+    stderr: () => {},
+    importEntry: async () => ({}),
+    version: "0.0.0",
+    spawn: async (command, args) => {
+      calls.push({ command, args });
+      return 0;
+    },
+    // Detection says node, but --runtime bun should win.
+    detectRuntime: () => "node",
+  };
+  const r = await runCli(["dev", "--runtime", "bun", "src/server.ts"], io);
+  assert.equal(r.exitCode, 0);
+  assert.equal(calls[0]!.command, "bun");
+  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "src/server.ts"]);
+});
+
+test("parseArgs: rejects --runtime with an unknown value", () => {
+  assert.throws(() => parseArgs(["dev", "--runtime", "deno-fresh"]), /must be one of/);
+});
+
+test("parseArgs: --runtime is case-insensitive", () => {
+  const { opts } = parseArgs(["dev", "--runtime", "DENO"]);
+  assert.equal(opts.runtime, "deno");
+});
+
+test("runCli help: includes dev command in help text", async () => {
+  const out: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: () => {},
+    importEntry: async () => ({}),
+    version: "0.0.0",
+  };
+  const r = await runCli(["help"], io);
+  assert.equal(r.exitCode, 0);
+  assert.match(out.join(""), /dev\s+\[entry\]/);
 });

@@ -1,6 +1,10 @@
 export { App } from "./app.js";
+export { createApp } from "./app.js";
+export { _resetPackageJsonCacheForTests } from "./app.js";
 export type {
   AppOptions,
+  AppOpenAPIOptions,
+  DocsRouteOptions,
   IntrospectedRoute,
   PluginInstalledEvent,
   ShutdownEvent,

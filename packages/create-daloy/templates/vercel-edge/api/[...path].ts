@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { App, NotFoundError, requestId, secureHeaders } from "@daloyjs/core";
 import { toWebHandler } from "@daloyjs/core/vercel";
-// daloy-minimal:strip-start docs
-import { generateOpenAPI } from "@daloyjs/core/openapi";
-import { htmlResponse, swaggerUiHtml } from "@daloyjs/core/docs";
-// daloy-minimal:strip-end docs
 
 // This template defaults to Vercel's Edge runtime for compatibility with the
 // existing `vercel-edge` starter. For Vercel's recommended Node.js runtime,
@@ -15,6 +11,15 @@ const app = new App({
   bodyLimitBytes: 256 * 1024,
   requestTimeoutMs: 5_000,
   production: process.env.NODE_ENV === "production",
+  // daloy-minimal:strip-start docs
+  // Auto-mounted docs:
+  //   GET /openapi.json — live OpenAPI 3.1 spec generated from your routes
+  //   GET /docs         — Scalar API reference UI that loads it
+  openapi: {
+    info: { title: "My Daloy Edge API", version: "0.0.1" },
+  },
+  docs: true,
+  // daloy-minimal:strip-end docs
 });
 
 app.use(requestId());
@@ -60,42 +65,5 @@ app.route({
   },
 });
 // daloy-minimal:strip-end books
-
-// daloy-minimal:strip-start docs
-// --- API documentation -----------------------------------------------------
-// `/openapi.json` returns the OpenAPI 3.1 spec generated from the routes above.
-// `/docs` serves a Swagger UI page that loads that spec.
-
-app.route({
-  method: "GET",
-  path: "/openapi.json",
-  operationId: "getOpenAPI",
-  tags: ["Docs"],
-  responses: { 200: { description: "OpenAPI 3.1 document" } },
-  handler: async () => ({
-    status: 200 as const,
-    body: generateOpenAPI(app, {
-      info: { title: "My Daloy Edge API", version: "0.0.1" },
-    }),
-  }),
-});
-
-app.route({
-  method: "GET",
-  path: "/docs",
-  operationId: "docs",
-  tags: ["Docs"],
-  responses: { 200: { description: "API reference UI" } },
-  handler: async () => {
-    const html = swaggerUiHtml({ specUrl: "/openapi.json", title: "My Daloy Edge API" });
-    const res = htmlResponse(html);
-    return {
-      status: 200 as const,
-      body: html,
-      headers: Object.fromEntries(res.headers),
-    };
-  },
-});
-// daloy-minimal:strip-end docs
 
 export default toWebHandler(app);
