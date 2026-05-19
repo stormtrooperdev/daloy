@@ -7,6 +7,7 @@ export type {
   AppOpenAPIOptions,
   DocsRouteOptions,
   HealthRouteOptions,
+  CspReportRouteOptions,
   IntrospectedRoute,
   PluginInstalledEvent,
   ShutdownEvent,
@@ -90,6 +91,16 @@ export { every, some, except } from "./combine.js";
 export type { ExceptPredicate } from "./combine.js";
 export { ipRestriction } from "./ip-restriction.js";
 export type { IpRestrictionOptions } from "./ip-restriction.js";
+export { loadShedding, LOAD_SHEDDING_MARKER } from "./load-shedding.js";
+export type {
+  LoadSheddingOptions,
+  LoadSheddingSnapshot,
+} from "./load-shedding.js";
+export { defineConfig, ConfigValidationError } from "./config.js";
+export type {
+  ConfigSource,
+  DefineConfigOptions,
+} from "./config.js";
 export type {
   RequestIdOptions,
   SecureHeadersOptions,

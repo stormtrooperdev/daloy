@@ -87,6 +87,15 @@ export interface CspDirectivesOptions {
    * `policies` to also emit a `trusted-types <policy-names...>` directive.
    */
   trustedTypes?: boolean | { policies?: string[] };
+  /**
+   * When set, append `report-to <group>` to the generated CSP header so
+   * browsers POST violation reports to the named Reporting API endpoint.
+   * Pair with {@link SecureHeadersOptions.reportingEndpoints} (or
+   * {@link App.cspReportRoute}) to register the receiver. Wave 4 leftover.
+   *
+  * @since 0.20.0
+   */
+  reportTo?: string;
 }
 
 export interface SecureHeadersOptions {
@@ -99,6 +108,27 @@ export interface SecureHeadersOptions {
   crossOriginResourcePolicy?: string | false;
   noSniff?: boolean;
   xssProtection?: boolean;
+  /**
+   * Reporting API endpoint declarations rendered as the
+   * `Reporting-Endpoints` response header (modern browsers) plus a
+   * legacy `Report-To` JSON header for older Chromium versions. Keys are
+   * group names; values are absolute URLs that accept POSTed reports.
+   * Pair with {@link CspDirectivesOptions.reportTo} (or pass
+   * `reportTo: "csp-endpoint"` here as a shortcut) to direct CSP
+   * violation reports there. Wave 4 leftover.
+   *
+  * @since 0.20.0
+   */
+  reportingEndpoints?: Record<string, string>;
+  /**
+   * Shortcut: when set and {@link SecureHeadersOptions.contentSecurityPolicy}
+   * is a directives object, append `report-to <reportTo>` to the CSP
+   * header so violation reports land at the matching
+   * `reportingEndpoints` URL.
+   *
+  * @since 0.20.0
+   */
+  reportTo?: string;
 }
 
 const CSP_NONCE_STATE = "cspNonce";
@@ -141,6 +171,9 @@ function buildCspHeader(opt: CspDirectivesOptions, nonce: string | undefined): s
     if (typeof trustedTypes === "object" && trustedTypes.policies?.length) {
       entries["trusted-types"] = trustedTypes.policies.slice();
     }
+  }
+  if (opt.reportTo) {
+    entries["report-to"] = [opt.reportTo];
   }
   const parts: string[] = [];
   for (const [directiveName, sources] of Object.entries(entries)) {
@@ -189,7 +222,30 @@ export const SECURE_HEADERS_MARKER: unique symbol = Symbol.for(
 
 export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   const headers: Record<string, string> = {};
-  const cspOpt = opts.contentSecurityPolicy ?? "default-src 'self'; frame-ancestors 'none'";
+  let cspOpt = opts.contentSecurityPolicy ?? "default-src 'self'; frame-ancestors 'none'";
+  // If `reportTo` is provided at the top level but CSP is still a string,
+  // promote it into a directives object so we can append `report-to <group>`.
+  if (opts.reportTo && typeof cspOpt === "string") {
+    const directives: Record<string, string> = {};
+    for (const part of cspOpt.split(";")) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      const spaceIndex = trimmed.indexOf(" ");
+      if (spaceIndex === -1) {
+        directives[trimmed] = "";
+      } else {
+        directives[trimmed.slice(0, spaceIndex)] = trimmed.slice(spaceIndex + 1);
+      }
+    }
+    cspOpt = { directives, reportTo: opts.reportTo } as CspDirectivesOptions;
+  } else if (
+    opts.reportTo &&
+    cspOpt !== false &&
+    typeof cspOpt === "object" &&
+    !cspOpt.reportTo
+  ) {
+    cspOpt = { ...cspOpt, reportTo: opts.reportTo };
+  }
   const cspIsDynamic =
     cspOpt !== false && typeof cspOpt === "object";
   if (cspOpt !== false && typeof cspOpt === "string") {
@@ -221,6 +277,27 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
 
   if (opts.noSniff !== false) headers["x-content-type-options"] = "nosniff";
   if (opts.xssProtection ?? false) headers["x-xss-protection"] = "0"; // modern guidance
+
+  // Wave 4 leftover: Reporting API endpoints.
+  if (opts.reportingEndpoints) {
+    const entries = Object.entries(opts.reportingEndpoints);
+    if (entries.length > 0) {
+      // Modern: structured header field — quoted URL per group.
+      headers["reporting-endpoints"] = entries
+        .map(([group, url]) => `${group}="${url}"`)
+        .join(", ");
+      // Legacy: Report-To JSON for older Chromium versions.
+      headers["report-to"] = entries
+        .map(([group, url]) =>
+          JSON.stringify({
+            group,
+            max_age: 10886400,
+            endpoints: [{ url }],
+          }),
+        )
+        .join(", ");
+    }
+  }
 
   const hooks: Hooks = {
     beforeHandle(ctx) {

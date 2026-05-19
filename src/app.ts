@@ -53,6 +53,7 @@ import {
   SESSION_HOOK_MARKER,
   SESSION_SECRETS_MARKER,
 } from "./session.js";
+import { loadShedding as loadSheddingMiddleware, type LoadSheddingOptions } from "./load-shedding.js";
 
 const AUTO_SECURE_HEADERS_MARKER: unique symbol = Symbol.for(
   "daloyjs.app.autoSecureHeaders",
@@ -232,6 +233,35 @@ export interface AppOptions {
    * @since 0.18.0
    */
   crashOnUnhandledRejection?: boolean;
+
+  /**
+   * HTTP status code used in access logs when a request handler completes
+   * but the client has already disconnected (`request.signal.aborted`).
+   * Defaults to `499` (nginx convention: "Client Closed Request"). Must be
+   * an integer in the inclusive range `[400, 499]`; values outside that
+   * range cause the constructor to throw. Set to disable the rewrite by
+   * keeping the handler's original status: pass `0`.
+   *
+   * The client receives no response (the connection is gone); this option
+   * only controls how the access log line classifies the request so
+   * disconnect storms do not look like 5xx errors in dashboards.
+   *
+   * @since 0.20.0
+   */
+  disconnectStatusCode?: number;
+
+  /**
+   * Install the {@link loadShedding} pressure monitor as a global hook.
+   * `true` uses the defaults (event-loop delay at most 1 s, event-loop
+   * utilization at most 0.98, sample interval 1 s). Pass an options object to
+   * override individual thresholds.
+   *
+   * Active when {@link AppOptions.secureDefaults} is not `false`.
+   *
+   * @since 0.20.0
+   */
+  loadShedding?: boolean | LoadSheddingOptions;
+
   /** Pluggable logger. Default: structured JSON logger at "info" (or noop in test). */
   logger?:
     | Logger
@@ -383,6 +413,38 @@ export interface HealthRouteOptions {
    * `token` is omitted; otherwise registration throws.
    */
   acknowledgeUnauthenticated?: boolean;
+}
+
+/**
+ * Configuration accepted by {@link App.cspReportRoute}. Every field is
+ * optional.
+ *
+ * @since 0.20.0
+ */
+export interface CspReportRouteOptions {
+  /** Override the default path (`"/__csp-report"`). */
+  path?: PathString;
+  /**
+   * Per-IP fixed-window rate limit. Defaults to
+   * `{ limit: 60, windowMs: 60_000 }` (in-memory, per-process). Pass
+   * `false` to disable.
+   */
+  rateLimit?: { limit?: number; windowMs?: number } | false;
+  /**
+   * Maximum accepted request body size, in bytes. Default `8192`. Larger
+   * bodies are rejected with `413`.
+   */
+  maxBodyBytes?: number;
+  /**
+   * Custom sink for parsed reports. Receives the parsed JSON body plus the
+   * source IP (or `null` when unknown). Defaults to logging at `warn`
+   * through the pluggable logger so violations show up in standard
+   * dashboards without extra wiring.
+   */
+  onReport?: (
+    report: unknown,
+    ctx: { ip: string | null; userAgent: string | null },
+  ) => void | Promise<void>;
 }
 
 /**
@@ -574,10 +636,27 @@ export class App {
           : createLogger({ level: (options.logger as any)?.level ?? "info" });
 
     this.warnOnEnvMismatch();
+    this.assertDisconnectStatusCode();
     if (this.options.hooks) this.assertSecureHookConfig(this.options.hooks);
     this.installSecureDefaults();
     this.maybeInstallCrashHandlers();
     this.maybeMountDocs();
+  }
+
+  /**
+   * Wave 4 leftover: validate {@link AppOptions.disconnectStatusCode}.
+   * Refuses anything outside `[400, 499]` (except `0`, which disables the
+   * rewrite). Throws at construction time so the misconfiguration cannot
+   * survive past boot.
+   */
+  private assertDisconnectStatusCode(): void {
+    const v = this.options.disconnectStatusCode;
+    if (v === undefined || v === 0) return;
+    if (!Number.isInteger(v) || v < 400 || v > 499) {
+      throw new Error(
+        `disconnectStatusCode must be an integer in [400, 499] or 0; got ${String(v)}.`,
+      );
+    }
   }
 
   /**
@@ -602,6 +681,14 @@ export class App {
       const auto = secureHeadersMiddleware(opts);
       (auto as Record<PropertyKey, unknown>)[AUTO_SECURE_HEADERS_MARKER] = true;
       this.groupHooks.push(auto);
+    }
+    // Wave 4 leftover: opt-in load-shedding pressure monitor.
+    if (this.options.loadShedding) {
+      const lsOpts =
+        typeof this.options.loadShedding === "object"
+          ? this.options.loadShedding
+          : {};
+      this.groupHooks.push(loadSheddingMiddleware(lsOpts));
     }
   }
 
@@ -1247,6 +1334,112 @@ export class App {
   }
 
   /**
+   * Wave 4 leftover: register a built-in receiver for CSP / Reporting API
+   * violation reports. Accepts `application/csp-report` and
+   * `application/reports+json` payloads, rate-limits per IP (defaults: 60
+   * req/min), caps body size (default 8 KiB), and forwards parsed reports
+   * to {@link CspReportRouteOptions.onReport} (or the structured logger
+   * when omitted). Returns `204 No Content` so browsers stop retrying.
+   *
+   * Combine with `secureHeaders({ reportingEndpoints, reportTo })` to wire
+   * the browser to this endpoint. The route is registered as `internal:
+  * false` (i.e. publicly reachable); that is required for the browser
+   * Reporting API to send to it.
+   *
+   */
+  cspReportRoute(opts: CspReportRouteOptions = {}): this {
+    const path = (opts.path ?? "/__csp-report") as PathString;
+    const maxBytes = opts.maxBodyBytes ?? 8192;
+    const rateLimitConfig =
+      opts.rateLimit === false
+        ? null
+        : { limit: 60, windowMs: 60_000, ...(opts.rateLimit ?? {}) };
+    const buckets = rateLimitConfig
+      ? new Map<string, { count: number; resetMs: number }>()
+      : null;
+    const log = this.log;
+
+    this.route({
+      method: "POST",
+      path,
+      operationId: "cspReport",
+      tags: ["Reporting"],
+      summary: "CSP / Reporting API violation receiver",
+      handler: async ({ request }: BaseContext<any, any>) => {
+        if (buckets && rateLimitConfig) {
+          const key = healthRouteKey(request);
+          const now = Date.now();
+          const entry = buckets.get(key);
+          if (!entry || entry.resetMs <= now) {
+            buckets.set(key, { count: 1, resetMs: now + rateLimitConfig.windowMs });
+          } else {
+            entry.count++;
+            if (entry.count > rateLimitConfig.limit) {
+              throw new TooManyRequestsError(
+                Math.ceil((entry.resetMs - now) / 1000),
+              );
+            }
+          }
+        }
+        const contentType = (request.headers.get("content-type") ?? "")
+          .split(";")[0]!
+          .trim()
+          .toLowerCase();
+        if (
+          contentType !== "application/csp-report" &&
+          contentType !== "application/reports+json" &&
+          contentType !== "application/json"
+        ) {
+          throw new UnsupportedMediaTypeError(contentType || "<none>", [
+            "application/csp-report",
+            "application/reports+json",
+            "application/json",
+          ]);
+        }
+        const rawBytes = await readBodyLimited(request, maxBytes);
+        const rawText = new TextDecoder().decode(rawBytes);
+        let parsed: unknown;
+        try {
+          parsed = safeJsonParse(rawText);
+        } catch {
+          throw new BadRequestError("Invalid JSON report body");
+        }
+        if (parsed === undefined) {
+          throw new BadRequestError("Invalid JSON report body");
+        }
+        const ip = healthRouteKey(request);
+        const userAgent = request.headers.get("user-agent");
+        try {
+          if (opts.onReport) {
+            await opts.onReport(parsed, {
+              ip: ip === "global" ? null : ip,
+              userAgent,
+            });
+          } else {
+            log.warn(
+              { event: "csp.report", ip, userAgent, report: parsed },
+              "CSP violation report received",
+            );
+          }
+        } catch (err) {
+          log.error(
+            { err: serializeErr(err), event: "csp.report.sinkFailed" },
+            "cspReportRoute onReport sink failed",
+          );
+        }
+        return { status: 204 as const, body: undefined };
+      },
+      responses: {
+        204: { description: "Report accepted." },
+        413: { description: "Report body too large." },
+        415: { description: "Unsupported content-type." },
+        429: { description: "Rate limit exceeded." },
+      },
+    });
+    return this;
+  }
+
+  /**
    * Mount a group of routes under a shared prefix with shared tags, hooks,
    * and authentication. The `register` callback receives an encapsulated
    * child `App` whose `route()` calls inherit the prefix and group config.
@@ -1759,6 +1952,33 @@ export class App {
         if (!handled.headers.has("x-request-id"))
           handled.headers.set("x-request-id", requestId);
         return finalizeResponse(handled, ctx, {
+          onSend: activeSendHook,
+          onResponse: activeResponseHook,
+        }, stripFingerprint);
+      }
+      // Wave 4 leftover: when the client has already disconnected, classify
+      // the request at `disconnectStatusCode` (default 499) instead of
+      // letting an AbortError bubble up as a generic 5xx. Logged at `info`
+      // so disconnect storms do not look like service incidents.
+      const disconnectCode = this.options.disconnectStatusCode ?? 499;
+      if (
+        disconnectCode > 0 &&
+        request.signal?.aborted === true &&
+        !(err instanceof HttpError)
+      ) {
+        log.info(
+          { event: "request.disconnected", status: disconnectCode },
+          "Client disconnected before response was sent",
+        );
+        const res = new Response(null, {
+          status: disconnectCode,
+          headers: {
+            "content-type": "application/problem+json",
+            "x-request-id": requestId,
+          },
+        });
+        if (ctx) copyContextHeaders(ctx, res);
+        return finalizeResponse(res, ctx, {
           onSend: activeSendHook,
           onResponse: activeResponseHook,
         }, stripFingerprint);
