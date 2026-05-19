@@ -38,7 +38,9 @@ pnpm daloy inspect ./src/server.ts
 pnpm daloy inspect --schemas
 pnpm daloy inspect --check        # exit 1 on contract errors
 pnpm daloy inspect --openapi > openapi.json
+pnpm daloy inspect --openapi --yaml > openapi.yaml
 pnpm daloy inspect --ai > routes.json
+pnpm daloy inspect --ai --yaml > routes.yaml      # ~30% fewer LLM tokens
 pnpm daloy inspect --tag Users
 pnpm daloy inspect --method post --json`}
       />
@@ -95,10 +97,18 @@ export function buildApp() {
           <code>--openapi</code> — print the OpenAPI 3.1 document.
         </li>
         <li>
-          <code>--ai</code> — print an AI/codegen-friendly JSON dump of the
-          route catalog with JSON Schemas and any <code>meta.examples</code> you
+          <code>--ai</code> — print an AI/codegen-friendly dump of the route
+          catalog with JSON Schemas and any <code>meta.examples</code> you
           authored. See the{" "}
           <a href="/docs/ai-metadata">AI-friendly route metadata</a> guide.
+        </li>
+        <li>
+          <code>--yaml</code> · <code>--format &lt;json|yaml&gt;</code> — emit{" "}
+          <code>--openapi</code> or <code>--ai</code> output as YAML instead of
+          JSON. YAML drops braces, commas, and most quotes, so the payload is
+          typically ~30% smaller than the equivalent pretty-printed JSON —
+          useful when pasting route metadata into an LLM system prompt where
+          every token counts.
         </li>
         <li>
           <code>--tag &lt;tag&gt;</code> — only show routes that declare this

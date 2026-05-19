@@ -11,7 +11,7 @@ const POST = {
   title:
     "AI-Friendly Route Metadata: Machine-Readable Examples for Codegen Agents",
   description:
-    "DaloyJS 0.14.1 adds an optional meta field on every route() — structured examples, extra description copy, and free-form x-* extensions — validated against your Standard Schema at build time and surfaced into OpenAPI 3.1 (examples, x-daloy-*) plus a sibling routes.json via daloy inspect --ai. Additive, non-breaking, and built so Hey API, Claude, GPT, and home-grown codegen agents can write correct call sites on the first try.",
+    "DaloyJS 0.14.x adds an optional meta field on every route() — structured examples, extra description copy, and free-form x-* extensions — validated against your Standard Schema at build time and surfaced into OpenAPI 3.1 plus sibling routes.json or routes.yaml dumps via daloy inspect --ai. Additive, non-breaking, and built so Hey API, Claude, GPT, and home-grown codegen agents can write correct call sites on the first try.",
   date: "2026-06-08",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -201,15 +201,20 @@ const OPENAPI_OUT = `{
   }
 }`;
 
-const INSPECT_AI_CMD = `# 'daloy inspect --ai' dumps the route catalog as a single JSON
-# document with JSON Schema for every input + output and every
-# meta.examples entry. The format every codegen tool and LLM
-# system-prompt scratchpad needs.
+const INSPECT_AI_CMD = `# 'daloy inspect --ai' dumps the route catalog as a single document
+# with JSON Schema for every input + output and every meta.examples
+# entry. The format every codegen tool and LLM system-prompt
+# scratchpad needs.
 
 # Write to disk for Hey API / your codegen pipeline
 $ pnpm daloy inspect --ai > routes.json
 
-# Pipe through jq to enumerate operationIds
+# Or emit YAML — typically ~30% smaller than the equivalent pretty JSON,
+# which matters when the file ends up inside an LLM context window.
+$ pnpm daloy inspect --ai --yaml > routes.yaml
+$ pnpm daloy inspect --ai --format yaml > routes.yaml
+
+# Pipe through jq to enumerate operationIds (JSON only)
 $ pnpm daloy inspect --ai --json | jq '.routes[].operationId'
 
 # Scope the dump with the usual filters
@@ -218,10 +223,10 @@ $ pnpm daloy inspect --ai --method POST
 
 # What an LLM system prompt looks like with this file inlined:
 #   "You are writing TypeScript fetch calls for the Books API.
-#    The full route catalog and validated examples are below in JSON.
+#    The full route catalog and validated examples are below.
 #    Use the operationId for naming, and never invent field names
 #    that are not in the request/response JSON Schemas."
-#   <routes.json>`;
+#   <routes.yaml>`;
 
 const ROUTES_JSON = `{
   "daloy":       { "ai": 1 },
@@ -249,6 +254,48 @@ const ROUTES_JSON = `{
     }
   ]
 }`;
+
+const ROUTES_YAML = `daloy:
+  ai: 1
+generatedAt: "2026-05-19T12:00:00.000Z"
+routeCount: 1
+routes:
+  - method: POST
+    path: /books
+    operationId: createBook
+    tags:
+      - Books
+      - AI
+    request:
+      body:
+        type: object
+        properties:
+          title: { type: string }
+        required:
+          - title
+    responses:
+      "201":
+        description: Created
+        body:
+          type: object
+          properties:
+            id:    { type: string }
+            title: { type: string }
+      "400":
+        description: Invalid
+    examples:
+      happy:
+        summary: Standard create
+        request:
+          body:
+            title: Dune
+        response:
+          status: 201
+          body:
+            id: "1"
+            title: Dune
+    extensions:
+      x-codegen-hint: books-table`;
 
 const WHY_EXAMPLES = `# Why "schema + examples" beats "schema alone" for codegen agents.
 #
@@ -533,6 +580,9 @@ export default function BlogPostPage() {
             document <em>and</em> a sibling <code>routes.json</code> via{" "}
             <code>daloy inspect --ai</code>. The whole release is additive and
             non-breaking: every existing route keeps working with zero changes.
+            The 0.14.2 patch keeps that default JSON shape and adds{" "}
+            <code>--yaml</code> / <code>--format yaml</code> for the same dump
+            when the reader is a human or an LLM context window.
             This is the &quot;AI-friendly route metadata&quot; milestone from
             the roadmap, and it is the last pre-1.0 milestone before the
             secure-by-default initiative takes over.
@@ -558,7 +608,7 @@ export default function BlogPostPage() {
             downstream.
           </p>
 
-          <h2>What landed in 0.14.1</h2>
+          <h2>What landed in 0.14.x</h2>
 
           <EditorFrame
             files={["src/build-app.ts"]}
@@ -667,6 +717,14 @@ export default function BlogPostPage() {
             <CodeBlock language="json" code={ROUTES_JSON} />
           </EditorFrame>
 
+          <EditorFrame
+            files={["routes.yaml"]}
+            activeFile="routes.yaml"
+            status="same dump, ~30% fewer tokens · pass --yaml or --format yaml"
+          >
+            <CodeBlock language="yaml" code={ROUTES_YAML} />
+          </EditorFrame>
+
           <p>
             The dump is intentionally a flat JSON file with no DaloyJS runtime
             coupling. Feed it to{" "}
@@ -744,10 +802,11 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            <code>@daloyjs/core@0.14.1</code> and{" "}
-            <code>create-daloy@0.8.1</code> are on npm now. New projects pick up
-            the field automatically; existing projects can adopt it one route at
-            a time without changing anything else.
+            <code>@daloyjs/core@0.14.2</code> and{" "}
+            <code>create-daloy@0.8.2</code> are on npm now. New projects pick up
+            the field and the YAML-friendly CLI flags automatically; existing
+            projects can adopt them one route at a time without changing
+            anything else.
           </p>
 
           <p>

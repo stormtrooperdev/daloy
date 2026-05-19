@@ -397,3 +397,97 @@ test("OpenAPI: route with no tags and no meta tags omits tags field", () => {
   const op = (doc.paths as any)["/u"].get;
   assert.equal(op.tags, undefined);
 });
+
+test("runCli --ai --yaml prints YAML instead of JSON", async () => {
+  const app = metaApp();
+  const out: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: () => {},
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  const r = await runCli(["--ai", "--yaml", "src/app.ts"], io);
+  assert.equal(r.exitCode, 0);
+  const text = out.join("");
+  assert.ok(!text.startsWith("{"), "YAML output must not start with '{'");
+  assert.match(text, /^daloy:\n  ai: 1\n/m);
+  assert.match(text, /\n  - method: POST\n/);
+  assert.match(text, /\n    path: \/books\n/);
+  assert.match(text, /title: Dune/);
+  assert.ok(!text.includes('"title":'), "YAML must not contain JSON-style quoted keys");
+});
+
+test("runCli --ai --format yaml works identically to --yaml", async () => {
+  const app = metaApp();
+  const out: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: () => {},
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  const r = await runCli(["--ai", "--format", "yaml", "src/app.ts"], io);
+  assert.equal(r.exitCode, 0);
+  const text = out.join("");
+  assert.match(text, /^daloy:/);
+});
+
+test("runCli --openapi --yaml prints OpenAPI as YAML", async () => {
+  const app = metaApp();
+  const out: string[] = [];
+  const io: CliIO = {
+    stdout: (c) => out.push(c),
+    stderr: () => {},
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  const r = await runCli(["--openapi", "--yaml", "src/app.ts"], io);
+  assert.equal(r.exitCode, 0);
+  const text = out.join("");
+  assert.match(text, /^openapi: 3\.1\.0\n/);
+  assert.match(text, /\n  \/books:\n/);
+});
+
+test("runCli rejects unknown --format value", async () => {
+  const app = metaApp();
+  const err: string[] = [];
+  const io: CliIO = {
+    stdout: () => {},
+    stderr: (c) => err.push(c),
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  const r = await runCli(["--ai", "--format", "xml"], io);
+  assert.equal(r.exitCode, 2);
+  assert.match(err.join(""), /--format must be one of: json, yaml/);
+});
+
+test("YAML output is meaningfully smaller than pretty JSON for the same payload", async () => {
+  const app = metaApp();
+  const jsonOut: string[] = [];
+  const yamlOut: string[] = [];
+  const ioJson: CliIO = {
+    stdout: (c) => jsonOut.push(c),
+    stderr: () => {},
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  const ioYaml: CliIO = {
+    stdout: (c) => yamlOut.push(c),
+    stderr: () => {},
+    importEntry: async () => ({ default: app }),
+    version: "0.0.0",
+  };
+  // Default --ai (no --json) is pretty-printed JSON, which is what an
+  // LLM system prompt or a human reviewer would actually consume.
+  await runCli(["--ai", "src/app.ts"], ioJson);
+  await runCli(["--ai", "--yaml", "src/app.ts"], ioYaml);
+  const jsonLen = jsonOut.join("").length;
+  const yamlLen = yamlOut.join("").length;
+  // YAML should be at least 20% smaller than the equivalent pretty JSON.
+  assert.ok(
+    yamlLen < jsonLen * 0.8,
+    `expected YAML (${yamlLen}) < 80% of pretty JSON (${jsonLen})`,
+  );
+});

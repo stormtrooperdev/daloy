@@ -26,7 +26,7 @@ DaloyJS exists to be the framework you'd build if you took the best ideas from e
 | **Supply-chain-hardened installs and publishing**       | [pnpm](https://pnpm.io/motivation) + hardened CI/CD   | `ignore-scripts`, release-age cooldown, explicit build allowlist, SHA-pinned actions, isolated OIDC publish with provenance. |
 
 ```
-framework test suite passing · 100% line + function coverage · clean strict TypeScript 6
+framework test suite passing · 100% line + function coverage · typechecks on TypeScript 6 with `strict: true`
 runs on Node, Bun, Deno, Cloudflare, Vercel
 ~12.3M static-route ops/sec · ~1.5M dynamic-route ops/sec on M-class CPU
 ```
@@ -386,7 +386,7 @@ What works today, at a glance:
 - Pretty `printStartupBanner()` / `formatStartupBanner()` startup helpers at `@daloyjs/core/banner`, used by every starter template so `pnpm dev` greets you with a colorized boxed panel (TTY + `NO_COLOR` / `FORCE_COLOR` aware, with an ASCII fallback for dumb terminals).
 - In-process test client (`app.request()`), contract-test runner, in-process typed client, and Hey API codegen via `pnpm gen`.
 - One-command watch loop: `daloy dev` delegates to the host runtime's native watcher (`node --import tsx --watch`, `bun --hot`, or `deno run --watch`) with a `--runtime` override for cross-runtime `package.json` scripts.
-- AI-friendly route metadata via an optional `meta: { examples, extensions, summary, description, tags }` field on `route()`; examples are validated against your Standard Schemas at build time, surfaced into OpenAPI as `examples` + `x-daloy-*` extensions, and dumped as a sibling `routes.json` via `daloy inspect --ai` for LLM / Hey API / codegen consumption.
+- AI-friendly route metadata via an optional `meta: { examples, extensions, summary, description, tags }` field on `route()`; examples are validated against your Standard Schemas at build time, surfaced into OpenAPI as `examples` + `x-daloy-*` extensions, and dumped as a sibling `routes.json` (or `routes.yaml` via `--yaml` / `--format yaml`, ~30% fewer LLM tokens) through `daloy inspect --ai` for LLM / Hey API / codegen consumption.
 - Zero-config OpenAPI `info` autofill from `package.json` (Node / Bun) or `deno.json` / `deno.jsonc` (Deno) — explicit `openapi.info` values always win.
 - Live OpenAPI 3.1 spec served as both JSON (`GET /openapi.json`) and YAML (`GET /openapi.yaml`) when `docs: true`, with Scalar UI theming/custom CSS via `docs.scalar` — covers Swagger UI's `swagger.yaml` convention out of the box.
 - `pnpm create daloy` scaffolder with Node, Bun, Deno, Cloudflare Worker, and Vercel Edge templates, plus optional `--with-ci` GitHub Actions / Dependabot / CODEOWNERS / SECURITY.md hardening.

@@ -190,6 +190,11 @@ app.route({
         code={`pnpm daloy inspect --ai > routes.json
 pnpm daloy inspect --ai --json | jq '.routes[].operationId'
 
+# Emit YAML instead of JSON — typically ~30% smaller, which matters
+# when you are pasting the dump into an LLM system prompt.
+pnpm daloy inspect --ai --yaml > routes.yaml
+pnpm daloy inspect --ai --format yaml > routes.yaml
+
 # Combine with --tag/--method to scope the dump
 pnpm daloy inspect --ai --tag Books`}
       />
@@ -218,6 +223,66 @@ pnpm daloy inspect --ai --tag Books`}
   ]
 }`}
       />
+
+      <h2>YAML output</h2>
+      <p>
+        Both <code>--ai</code> and <code>--openapi</code> accept{" "}
+        <code>--yaml</code> (shorthand) or <code>--format yaml</code>. The
+        emitter is a tiny built-in YAML 1.2 serializer with no runtime
+        dependencies. Because YAML drops braces, commas, and most quotes, the
+        dump is typically <strong>about 30% smaller</strong> than the equivalent
+        pretty-printed JSON — a meaningful saving when the file becomes part of
+        an LLM system prompt.
+      </p>
+      <CodeBlock
+        language="yaml"
+        code={`daloy:
+  ai: 1
+generatedAt: "2026-05-19T12:00:00.000Z"
+routeCount: 1
+routes:
+  - method: POST
+    path: /books
+    operationId: createBook
+    tags:
+      - Books
+      - AI
+    request:
+      body:
+        type: object
+        properties:
+          title:
+            type: string
+        required:
+          - title
+    responses:
+      "201":
+        description: Created
+        body:
+          type: object
+          properties:
+            id: { type: string }
+            title: { type: string }
+      "400":
+        description: Invalid
+    examples:
+      happy:
+        summary: Standard create
+        request:
+          body:
+            title: Dune
+        response:
+          status: 201
+          body:
+            id: "1"
+            title: Dune
+    extensions:
+      x-codegen-hint: books-table`}
+      />
+      <p>
+        Use JSON when piping to <code>jq</code> or any other JSON-only tool, and
+        YAML when humans or LLMs will read the file directly.
+      </p>
 
       <h2>Consuming the dump</h2>
       <p>

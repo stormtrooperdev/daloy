@@ -12,7 +12,7 @@
 
 import type { App, IntrospectedRoute } from "./app.js";
 import { runContractTests } from "./contract.js";
-import { generateOpenAPI } from "./openapi.js";
+import { generateOpenAPI, openapiToYAML } from "./openapi.js";
 import type { RouteDefinition, RouteMeta } from "./types.js";
 
 export interface CliIO {
@@ -45,6 +45,15 @@ export interface CliOptions {
   schemas: boolean;
   openapi: boolean;
   ai: boolean;
+  /**
+   * Output format for `--ai` and `--openapi`. Defaults to `"json"`.
+   * `"yaml"` emits YAML 1.2 via {@link openapiToYAML}; useful for
+   * LLM system prompts where the lack of `{`, `}`, `"` and `,` saves
+   * roughly 20–40% of tokens versus JSON for the same payload.
+   *
+   * @since 0.14.2
+   */
+  format?: "json" | "yaml";
   tag?: string;
   method?: string;
   entry?: string;
@@ -70,10 +79,14 @@ Options:
   --check                Run the contract test suite; exit 1 on errors.
   --schemas              Include per-route schema presence (body/query/...).
   --openapi              Print the OpenAPI 3.1 document for the App.
-  --ai                   Print an AI/codegen-friendly JSON dump of the
+  --ai                   Print an AI/codegen-friendly dump of the
                          route catalog with schemas and meta examples
                          (suitable for feeding to an LLM or for writing
-                         to a sibling routes.json).
+                         to a sibling routes.json / routes.yaml).
+  --format <fmt>         Output format for --ai and --openapi: json | yaml
+                         (default: json). YAML saves ~20–40%% of LLM
+                         tokens versus JSON for the same payload.
+  --yaml                 Shorthand for --format yaml.
   --tag <tag>            Only show routes that declare this tag.
   --method <method>      Only show routes for this HTTP method.
   --runtime <r>          (dev) Force the runtime: node | bun | deno.
@@ -98,6 +111,8 @@ Examples:
   daloy inspect --json src/server.ts
   daloy inspect --check
   daloy inspect --openapi > openapi.json
+  daloy inspect --ai --yaml > routes.yaml
+  daloy inspect --openapi --format yaml > openapi.yaml
   daloy dev
   daloy dev src/server.ts
 `;
@@ -239,6 +254,17 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
       case "--ai":
         opts.ai = true;
         break;
+      case "--yaml":
+        opts.format = "yaml";
+        break;
+      case "--format": {
+        const value = readFlagValue(argv, ++i, "--format").toLowerCase();
+        if (value !== "json" && value !== "yaml") {
+          throw new Error(`--format must be one of: json, yaml (got: ${value})`);
+        }
+        opts.format = value;
+        break;
+      }
       case "--tag":
         opts.tag = readFlagValue(argv, ++i, "--tag");
         break;
@@ -316,12 +342,20 @@ export async function runCli(argv: readonly string[], io: CliIO): Promise<CliRes
     const doc = generateOpenAPI(app, {
       info: { title: "App", version: "0.0.0" },
     });
+    if (opts.format === "yaml") {
+      io.stdout(openapiToYAML(doc as unknown as Record<string, unknown>));
+      return { exitCode: 0 };
+    }
     io.stdout(`${JSON.stringify(doc, null, opts.json ? 0 : 2)}\n`);
     return { exitCode: 0 };
   }
 
   if (opts.ai) {
     const dump = buildAiDump(app, opts);
+    if (opts.format === "yaml") {
+      io.stdout(openapiToYAML(dump));
+      return { exitCode: 0 };
+    }
     io.stdout(`${JSON.stringify(dump, null, opts.json ? 0 : 2)}\n`);
     return { exitCode: 0 };
   }

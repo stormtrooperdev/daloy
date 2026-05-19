@@ -129,6 +129,7 @@ existing routes keep working unchanged.
 - [x] **`meta` field on route definitions** (optional): structured `examples`, `summary`, `description`, `tags`, free-form `x-*` extensions, all surfaced into the generated OpenAPI doc as `examples` / `x-daloy-*` vendor extensions.
 - [x] **Machine-readable usage examples**: request/response example pairs validated against the route's Standard Schema at build time, emitted into OpenAPI `examples` and into a sibling `routes.json` consumable by codegen agents and SDK builders (`daloy inspect --ai > routes.json`).
 - [x] **`daloy inspect --ai`**: dumps the route catalog + examples + schemas as a single JSON document suitable for feeding to an LLM or codegen tool.
+- [x] **YAML output for the AI dump and the OpenAPI dump** via `--yaml` / `--format yaml` on both `daloy inspect --ai` and `daloy inspect --openapi` — typically ~30% smaller than the equivalent pretty-printed JSON, which is the realistic shape these dumps take when they end up inside an LLM system prompt. (Shipped as part of the `0.14.x` patch line; zero new runtime dependencies — uses the built-in YAML 1.2 serializer that already powers `GET /openapi.yaml`.)
 - [x] Docs page in `website/app/docs/ai-metadata/` showing how to author examples and how Hey API / agent tooling consumes them.
 
 ---
