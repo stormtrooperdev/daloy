@@ -32,23 +32,34 @@ export default function Page() {
 
       <p>
         All four guards are gated on the resolved environment being{" "}
-        <code>production</code> (sources: <code>app({"{"} env: &quot;production&quot; {"}"})</code>,
-        then <code>app({"{"} production: true {"}"})</code>, then{" "}
-        <code>NODE_ENV === &quot;production&quot;</code>) so dev and CI
+        <code>production</code> (sources:{" "}
+        <code>
+          app({"{"} env: &quot;production&quot; {"}"})
+        </code>
+        , then{" "}
+        <code>
+          app({"{"} production: true {"}"})
+        </code>
+        , then <code>NODE_ENV === &quot;production&quot;</code>) so dev and CI
         workflows keep working with sample secrets and ad-hoc headers. The
         single master escape hatch{" "}
-        <code>app({"{"} secureDefaults: false {"}"})</code> disables every Wave
-        3 guard at once.
+        <code>
+          app({"{"} secureDefaults: false {"}"})
+        </code>{" "}
+        disables every Wave 3 guard at once.
       </p>
 
       <h2>1. Weak session secret refuse-to-boot</h2>
       <p>
-        <code>app.use(session({"{"} secret {"}"}))</code> now refuses to register
-        in production when the secret is shorter than 32 UTF-8 bytes, matches a
-        well-known placeholder (<code>&quot;changeme&quot;</code>,{" "}
+        <code>
+          app.use(session({"{"} secret {"}"}))
+        </code>{" "}
+        now refuses to register in production when the secret is shorter than 32
+        UTF-8 bytes, matches a well-known placeholder (
+        <code>&quot;changeme&quot;</code>,{" "}
         <code>&quot;your-jwt-secret&quot;</code>,{" "}
-        <code>&quot;it-is-very-secret&quot;</code>, …), or is a single
-        repeated character (<code>&quot;a&quot;.repeat(64)</code>,{" "}
+        <code>&quot;it-is-very-secret&quot;</code>, …), or is a single repeated
+        character (<code>&quot;a&quot;.repeat(64)</code>,{" "}
         <code>&quot;0&quot;.repeat(64)</code>). The check runs synchronously
         inside <code>app.use(...)</code> so the process exits during startup,
         not on first request.
@@ -72,12 +83,17 @@ app.use(session({ secret: process.env.SESSION_SECRET! }));`}
         Third-party session implementations can opt into the same check by
         stamping <code>SESSION_HOOK_MARKER</code> and{" "}
         <code>SESSION_SECRETS_MARKER</code> on the returned <code>Hooks</code>{" "}
-        object. The standalone helper <code>assertStrongSecret(secret, scope)</code>{" "}
-        is also exported for use in your own boot code.
+        object. The standalone helper{" "}
+        <code>assertStrongSecret(secret, scope)</code> is also exported for use
+        in your own boot code.
       </p>
 
       <h2>
-        2. <code>cors({"{"} origin: &quot;*&quot; {"}"})</code> refuse-to-boot
+        2.{" "}
+        <code>
+          cors({"{"} origin: &quot;*&quot; {"}"})
+        </code>{" "}
+        refuse-to-boot
       </h2>
       <p>
         A wildcard CORS origin exposes every state-changing route cross-origin
@@ -130,7 +146,10 @@ app.route({
       <p>
         Non-browser apps (machine-to-machine APIs, webhook receivers behind
         bearer auth) can acknowledge that CSRF does not apply with{" "}
-        <code>app({"{"} csrf: &quot;off&quot; {"}"})</code>:
+        <code>
+          app({"{"} csrf: &quot;off&quot; {"}"})
+        </code>
+        :
       </p>
       <CodeBlock
         code={`const app = new App({ env: "production", csrf: "off" });
@@ -143,8 +162,11 @@ app.use(session({ secret: process.env.SESSION_SECRET! }));
         500
       </h2>
       <p>
-        When <code>app({"{"} trustProxy {"}"})</code> is not set and a request
-        arrives carrying <code>X-Forwarded-For</code>,{" "}
+        When{" "}
+        <code>
+          app({"{"} trustProxy {"}"})
+        </code>{" "}
+        is not set and a request arrives carrying <code>X-Forwarded-For</code>,{" "}
         <code>X-Forwarded-Host</code>, <code>X-Forwarded-Proto</code>,{" "}
         <code>X-Forwarded-Port</code>, or <code>X-Real-IP</code>, Daloy refuses
         to dispatch the request and returns a structured{" "}
@@ -172,23 +194,31 @@ const app = new App({ env: "production", secureDefaults: false });`}
       <h2>Migration checklist</h2>
       <ul>
         <li>
-          Audit every <code>session({"{"} secret {"}"})</code> call —
-          regenerate any secret shorter than 32 bytes with{" "}
+          Audit every{" "}
+          <code>
+            session({"{"} secret {"}"})
+          </code>{" "}
+          call — regenerate any secret shorter than 32 bytes with{" "}
           <code>openssl rand -base64 48</code>.
         </li>
         <li>
-          Replace <code>cors({"{"} origin: &quot;*&quot; {"}"})</code> with an
-          explicit allowlist or predicate.
+          Replace{" "}
+          <code>
+            cors({"{"} origin: &quot;*&quot; {"}"})
+          </code>{" "}
+          with an explicit allowlist or predicate.
         </li>
         <li>
           Add <code>app.use(csrf(...))</code> next to{" "}
           <code>app.use(session(...))</code>, or pass{" "}
-          <code>app({"{"} csrf: &quot;off&quot; {"}"})</code> for
-          non-browser-facing apps.
+          <code>
+            app({"{"} csrf: &quot;off&quot; {"}"})
+          </code>{" "}
+          for non-browser-facing apps.
         </li>
         <li>
-          Pick a <code>trustProxy</code> posture explicitly for every
-          production app.
+          Pick a <code>trustProxy</code> posture explicitly for every production
+          app.
         </li>
       </ul>
     </>

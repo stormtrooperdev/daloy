@@ -54,8 +54,8 @@ const app = new App();
       <p>
         If you call <code>app.use(secureHeaders(...))</code> with your own
         configuration, the auto-installed instance is automatically removed so
-        your overrides win instead of being silently shadowed by the framework&apos;s
-        defaults.
+        your overrides win instead of being silently shadowed by the
+        framework&apos;s defaults.
       </p>
       <CodeBlock
         code={`import { App, secureHeaders } from "@daloyjs/core";
@@ -226,10 +226,10 @@ export function myCustomHeaders() {
         nonces default-on, per-content-type body caps, response-schema
         validation in development, conditional
         <code>/openapi.json</code> in production,{" "}
-        <code>frame-ancestors &apos;none&apos;</code> as immovable, trailing-slash
-        canonicalization, etc.). Those will land in additive <code>0.16.x</code>{" "}
-        patches and follow-up minor releases. The four-item slice above is what
-        shipped first because it is the
+        <code>frame-ancestors &apos;none&apos;</code> as immovable,
+        trailing-slash canonicalization, etc.). Those will land in additive{" "}
+        <code>0.16.x</code> patches and follow-up minor releases. The four-item
+        slice above is what shipped first because it is the
         highest-impact-per-line-of-breaking-change subset.
       </p>
     </>

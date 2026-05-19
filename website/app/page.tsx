@@ -5,6 +5,7 @@ import {
   FileCodeIcon,
   LightningIcon,
   LockIcon,
+  RobotIcon,
   RocketLaunchIcon,
   ShieldCheckIcon,
 } from "@phosphor-icons/react/ssr";
@@ -76,6 +77,16 @@ const FEATURES = [
     body: "One route definition is the source of truth for validation, types, OpenAPI 3.1, the typed client, and contract tests, so drift has fewer places to hide.",
   },
   {
+    icon: CubeIcon,
+    title: "Runtime-portable",
+    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel Edge — same app, same tests, five runtimes.",
+  },
+  {
+    icon: RocketLaunchIcon,
+    title: "Hey API typed clients",
+    body: "Run pnpm gen and get a fully typed fetch SDK — for any consumer, in any TS project — generated from your real spec. Or skip codegen with the in-process typed client.",
+  },
+  {
     icon: ShieldCheckIcon,
     title: "Security guardrails built in",
     body: "The core enforces body limits, prototype-pollution-safe JSON, path-traversal rejection, request timeouts, content-type checks, and production 5xx redaction. First-party middleware adds secure headers, CSRF, rate limits, and signed-cookie sessions.",
@@ -86,29 +97,24 @@ const FEATURES = [
     body: "Static routes resolve via a single Map.get (~12.3M ops/sec). Dynamic routes walk a trie in O(segments) regardless of route count.",
   },
   {
-    icon: CubeIcon,
-    title: "Runtime-portable",
-    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel Edge.",
-  },
-  {
     icon: RocketLaunchIcon,
     title: "Streaming & observability",
     body: "Backpressure-safe SSE and NDJSON helpers, plus an OpenTelemetry tracing hook that emits HTTP server spans with semantic-convention attributes.",
   },
   {
-    icon: RocketLaunchIcon,
-    title: "Hey API typed clients",
-    body: "Run pnpm gen and get a fully typed fetch SDK — for any consumer, in any TS project — generated from your real spec. Or skip codegen with the in-process typed client.",
-  },
-  {
-    icon: LockIcon,
-    title: "Supply-chain hardened",
-    body: "Backed by pnpm plus hardened repo defaults: blocked lifecycle scripts, release-age cooldowns, verified installs, SHA-pinned CI actions, and OIDC trusted publishing with provenance.",
+    icon: RobotIcon,
+    title: "AI-native for coding agents",
+    body: "Routes carry machine-readable metadata, and every scaffold ships an AGENTS.md plus skills so Copilot, Claude, and Cursor pick up your conventions without a prompt-engineering ritual.",
   },
   {
     icon: CubeIcon,
     title: "Project ops included",
     body: "pnpm create daloy scaffolder (Node, Bun, Deno, Vercel Edge, Cloudflare Worker), a daloy inspect CLI, multipart with typed file fields, and a Redis rate-limit store.",
+  },
+  {
+    icon: LockIcon,
+    title: "Supply-chain hardened",
+    body: "Backed by pnpm plus hardened repo defaults: blocked lifecycle scripts, release-age cooldowns, verified installs, SHA-pinned CI actions, and OIDC trusted publishing with provenance.",
   },
 ];
 
