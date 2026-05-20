@@ -86,6 +86,9 @@ jobs:
       - name: Verify secret-comparison single source of truth (Wave 8 governance gate)
         run: pnpm verify:secret-comparisons
 
+      - name: Verify Wave 9 pattern-agnostic parity audits (Wave 9 governance gate)
+        run: pnpm verify:wave9-audits
+
       - name: Typecheck
         run: pnpm typecheck
 

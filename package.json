@@ -1,6 +1,6 @@
 {
   "name": "@daloyjs/core",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "description": "DaloyJS is a runtime-portable, contract-first TypeScript web framework with built-in OpenAPI (Hey API), typed client generation, large-scale maintainability, and security-first defaults. Hono-grade portability, Elysia-grade DX, FastAPI-grade docs, Fastify-grade ops — distributed via pnpm.",
   "type": "module",
   "publishConfig": {
@@ -173,6 +173,7 @@
     "verify:lockfile": "node --import tsx scripts/verify-lockfile-sources.ts",
     "verify:no-runtime-deps": "node --import tsx scripts/verify-no-runtime-deps.ts",
     "verify:secret-comparisons": "node --import tsx scripts/verify-secret-comparisons.ts",
+    "verify:wave9-audits": "node --import tsx scripts/verify-wave9-audits.ts",
     "audit": "pnpm audit --prod",
     "prepublishOnly": "pnpm build"
   },
