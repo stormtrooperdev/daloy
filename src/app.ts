@@ -45,6 +45,8 @@ import {
   CORS_ORIGIN_ALLOW_MARKER,
   CORS_WILDCARD_ORIGIN_MARKER,
   CSRF_HOOK_MARKER,
+  REQUIRE_SCOPES_AGGREGATE_KEY,
+  REQUIRE_SCOPES_HOOK_MARKER,
   SECURE_HEADERS_MARKER,
   type CorsOriginAllow,
   type SecureHeadersOptions,
@@ -1937,14 +1939,16 @@ export class App {
         def,
         this.options.validateResponses ?? true,
       );
+      copyContextHeaders(ctx, response);
+      const finalized = await finalizeResponse(response, ctx, allHooks, stripFingerprint);
       if (method === "HEAD") {
-        response = new Response(null, {
-          status: response.status,
-          headers: response.headers,
+        return new Response(null, {
+          status: finalized.status,
+          statusText: finalized.statusText,
+          headers: finalized.headers,
         });
       }
-      copyContextHeaders(ctx, response);
-      return await finalizeResponse(response, ctx, allHooks, stripFingerprint);
+      return finalized;
     } catch (err) {
       const handled = await activeErrorHook?.(err, ctx);
       if (handled instanceof Response) {
@@ -2211,13 +2215,57 @@ function mergeHooks(layers: Hooks[]): Hooks {
     layers
       .map((h) => h[key])
       .filter((f): f is NonNullable<Hooks[K]> => typeof f === "function");
-  return {
+  const requiredScopes = requiredScopesFromHooks(layers);
+  const beforeHandle = mergeBeforeHandle(
+    firstResponse(pick("beforeHandle")),
+    requiredScopes,
+  );
+  const hooks: Hooks = {
     onRequest: chain(pick("onRequest")),
-    beforeHandle: firstResponse(pick("beforeHandle")),
+    beforeHandle,
     afterHandle: pipeline(pick("afterHandle")),
     onError: firstResponse(pick("onError")),
     onSend: responsePipeline(pick("onSend")),
     onResponse: chain(pick("onResponse")),
+  };
+  stampRequiredScopes(hooks, requiredScopes);
+  return hooks;
+}
+
+function requiredScopesFromHooks(layers: Hooks[]): string[] {
+  const out: string[] = [];
+  for (const hooks of layers) {
+    const scopes = (hooks as Record<PropertyKey, unknown>)[REQUIRE_SCOPES_HOOK_MARKER];
+    if (!Array.isArray(scopes)) continue;
+    for (const scope of scopes) {
+      if (typeof scope === "string" && !out.includes(scope)) out.push(scope);
+    }
+  }
+  return out;
+}
+
+function stampRequiredScopes(hooks: Hooks, scopes: readonly string[]): void {
+  if (scopes.length > 0) {
+    (hooks as Record<PropertyKey, unknown>)[REQUIRE_SCOPES_HOOK_MARKER] = [...scopes];
+  }
+}
+
+function mergeBeforeHandle(
+  beforeHandle: NonNullable<Hooks["beforeHandle"]> | undefined,
+  requiredScopes: readonly string[],
+): NonNullable<Hooks["beforeHandle"]> | undefined {
+  if (!beforeHandle && requiredScopes.length === 0) return undefined;
+  return async (ctx) => {
+    if (requiredScopes.length > 0) {
+      const state = ctx.state as Record<string, unknown>;
+      const prior = state[REQUIRE_SCOPES_AGGREGATE_KEY];
+      const aggregate = Array.isArray(prior) ? [...(prior as string[])] : [];
+      for (const scope of requiredScopes) {
+        if (!aggregate.includes(scope)) aggregate.push(scope);
+      }
+      state[REQUIRE_SCOPES_AGGREGATE_KEY] = aggregate;
+    }
+    return beforeHandle?.(ctx);
   };
 }
 

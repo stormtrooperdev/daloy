@@ -85,8 +85,26 @@ export {
   basicAuth,
   csrf,
   CSRF_HOOK_MARKER,
+  requireScopes,
+  REQUIRE_SCOPES_AGGREGATE_KEY,
+  REQUIRE_SCOPES_HOOK_MARKER,
   _resetSharedRateLimitStoresForTests,
 } from "./middleware.js";
+export { etag } from "./etag.js";
+export type { ETagOptions } from "./etag.js";
+export {
+  createJwtSigner,
+  createJwtVerifier,
+  JwtError,
+  DEFAULT_JWT_MAX_LIFETIME_SECONDS,
+} from "./jwt.js";
+export type {
+  JwtAlgorithm,
+  JwtKeyMaterial,
+  JwtSignerOptions,
+  JwtVerifierOptions,
+  JwtVerified,
+} from "./jwt.js";
 export { every, some, except } from "./combine.js";
 export type { ExceptPredicate } from "./combine.js";
 export { ipRestriction } from "./ip-restriction.js";

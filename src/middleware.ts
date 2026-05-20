@@ -1127,5 +1127,126 @@ export function basicAuth(opts: BasicAuthOptions): Hooks {
   };
 }
 
+// ---------- requireScopes (Wave 5 leftover) ----------
+
+/**
+ * Marker stamped on the per-request `state` bag so multiple `requireScopes()`
+ * hooks in the same chain aggregate their required scopes into one combined
+ * `WWW-Authenticate: Bearer scope="..."` challenge instead of each emitting a
+ * separate `401` with only its own scopes.
+ *
+ * @since 0.21.0
+ */
+export const REQUIRE_SCOPES_AGGREGATE_KEY = "__daloyRequiredScopes" as const;
+
+export const REQUIRE_SCOPES_HOOK_MARKER: unique symbol = Symbol.for(
+  "daloyjs.middleware.requireScopes",
+);
+
+function validateScopeList(scopes: unknown): readonly string[] {
+  if (!Array.isArray(scopes) || scopes.length === 0) {
+    throw new Error(
+      "requireScopes(): scopes must be a non-empty array of strings.",
+    );
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of scopes) {
+    if (typeof s !== "string" || s.length === 0) {
+      throw new Error("requireScopes(): every scope must be a non-empty string.");
+    }
+    // RFC 6749 §3.3: scope values must not contain double-quote, backslash, or
+    // control characters; rejecting them at construction time means the
+    // WWW-Authenticate challenge cannot be malformed by user input.
+    if (/["\\\x00-\x1F\x7F]/.test(s)) {
+      throw new Error(`requireScopes(): scope "${s}" contains an illegal character.`);
+    }
+    if (!seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+function readUserScopes(user: unknown): ReadonlySet<string> | null {
+  if (!user || typeof user !== "object") return null;
+  const raw = (user as { scopes?: unknown }).scopes;
+  if (!Array.isArray(raw)) return null;
+  const set = new Set<string>();
+  for (const s of raw) if (typeof s === "string" && s.length > 0) set.add(s);
+  return set;
+}
+
+/**
+ * Declarative scope-check middleware for OAuth2-style bearer credentials.
+ * Reads the typed `ctx.state.user.scopes` written by the upstream auth
+ * helper (`bearerAuth`, `jwt`, …) and refuses the request with `401` (no
+ * credentials) or `403` (valid credentials but insufficient scopes).
+ *
+ * Multiple `requireScopes()` hooks in the same chain aggregate their required
+ * scopes into one combined `WWW-Authenticate: Bearer scope="a b c"` challenge
+ * via {@link REQUIRE_SCOPES_AGGREGATE_KEY} on `ctx.state`.
+ *
+ * @example
+ * ```ts
+ * app.route({
+ *   method: "POST",
+ *   path: "/items",
+ *   hooks: { ...bearerAuth({ validate }), ...requireScopes(["items:write"]) },
+ *   responses: { 200: { description: "ok" } },
+ *   handler: () => ({ status: 200 as const, body: { ok: true } }),
+ * });
+ * ```
+ *
+ * @since 0.21.0
+ */
+export function requireScopes(scopes: readonly string[]): Hooks {
+  const required = validateScopeList(scopes);
+  const hooks: Hooks = {
+    beforeHandle(ctx) {
+      const state = ctx.state as Record<string, unknown>;
+      const prior = state[REQUIRE_SCOPES_AGGREGATE_KEY];
+      const aggregate: string[] = Array.isArray(prior) ? [...(prior as string[])] : [];
+      for (const s of required) if (!aggregate.includes(s)) aggregate.push(s);
+      state[REQUIRE_SCOPES_AGGREGATE_KEY] = aggregate;
+
+      const user = state.user;
+      if (user === undefined || user === null) {
+        const challenge = `Bearer scope="${aggregate.join(" ")}", error="insufficient_scope"`;
+        return new Response(
+          JSON.stringify({
+            type: "https://daloyjs.dev/errors/unauthorized",
+            title: "Unauthorized",
+            status: 401,
+            detail: `Missing credentials. Required scopes: ${aggregate.join(", ")}.`,
+          }),
+          {
+            status: 401,
+            headers: {
+              "content-type": "application/problem+json",
+              "www-authenticate": challenge,
+              "cache-control": "no-store",
+            },
+          },
+        );
+      }
+
+      const owned = readUserScopes(user);
+      const missing = owned === null
+        ? aggregate.slice()
+        : aggregate.filter((s) => !owned.has(s));
+      if (missing.length > 0) {
+        throw new ForbiddenError(
+          `Missing required scope(s): ${missing.join(", ")}.`,
+        );
+      }
+      return undefined;
+    },
+  };
+  (hooks as Record<PropertyKey, unknown>)[REQUIRE_SCOPES_HOOK_MARKER] = required;
+  return hooks;
+}
+
 export { timingSafeEqual };
 
