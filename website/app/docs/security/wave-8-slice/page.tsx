@@ -33,8 +33,8 @@ export default function Page() {
         <strong>Wave 8 — cross-cutting bake-ins</strong> from the
         secure-by-default initiative. Three items are implemented now; the
         remaining cross-cutting bullets (single-source helpers for cookie /
-        client IP / time-claim / secret comparison, the{" "}
-        <code>__Secure-</code> cookie without TLS refuse-to-boot, the{" "}
+        client IP / time-claim / secret comparison, the <code>__Secure-</code>{" "}
+        cookie without TLS refuse-to-boot, the{" "}
         <code>daloy doctor --audit-secrets</code> subcommand, and the
         zero-runtime-dependency governance CI grep gate) remain tracked on the
         roadmap and will land in subsequent additive <code>0.26.x</code>{" "}
@@ -48,9 +48,9 @@ export default function Page() {
         The wholesale escape hatch for the entire Wave 1–7 secure-by-default
         surface now refuses-to-construct in production unless you also pass{" "}
         <code>acknowledgeInsecureDefaults: true</code>. This closes the
-        well-documented &quot;developer flipped the flag off while debugging
-        and shipped to production&quot; footgun by forcing an explicit
-        two-step opt-in:
+        well-documented &quot;developer flipped the flag off while debugging and
+        shipped to production&quot; footgun by forcing an explicit two-step
+        opt-in:
       </p>
       <CodeBlock
         language="ts"
@@ -65,20 +65,29 @@ new App({
 });`}
       />
       <p>
-        Any time the flag is off, a once-per-process <code>error</code>{" "}
-        log is emitted with{" "}
-        <code>{`event: "secure_defaults.disabled"`}</code> enumerating every
-        default it disabled — so the blast radius is loud at boot even when
-        the option was set deep in shared configuration:
+        Any time the flag is off, a once-per-process <code>error</code> log is
+        emitted with <code>{`event: "secure_defaults.disabled"`}</code>{" "}
+        enumerating every default it disabled — so the blast radius is loud at
+        boot even when the option was set deep in shared configuration:
       </p>
       <ul>
-        <li>auto <code>secureHeaders</code> install</li>
+        <li>
+          auto <code>secureHeaders</code> install
+        </li>
         <li>cross-origin guard for state-changing requests</li>
         <li>crash-on-unhandled-rejection (production)</li>
-        <li>first-request <code>X-Forwarded-*</code> / <code>trustProxy</code> guard</li>
-        <li><code>session()</code> + state-changing route requires <code>csrf()</code> boot guard</li>
+        <li>
+          first-request <code>X-Forwarded-*</code> / <code>trustProxy</code>{" "}
+          guard
+        </li>
+        <li>
+          <code>session()</code> + state-changing route requires{" "}
+          <code>csrf()</code> boot guard
+        </li>
         <li>weak session secret refuse-to-boot</li>
-        <li><code>cors({"{ origin: '*' }"})</code> refuse-to-boot</li>
+        <li>
+          <code>cors({"{ origin: '*' }"})</code> refuse-to-boot
+        </li>
         <li>anonymous stateful plugin refuse-to-boot</li>
       </ul>
       <p>
@@ -86,17 +95,17 @@ new App({
         <code>corsCrossOriginGuard: false</code>,{" "}
         <code>crashOnUnhandledRejection: false</code>,{" "}
         <code>trustProxy: false</code>, <code>csrf: &quot;off&quot;</code>)
-        remain available without the production refusal — prefer those when
-        you only need to disable one default rather than the whole surface.
-        Tests can reset the audit-log latch via the exported{" "}
+        remain available without the production refusal — prefer those when you
+        only need to disable one default rather than the whole surface. Tests
+        can reset the audit-log latch via the exported{" "}
         <code>_resetInsecureDefaultsLogForTests()</code> helper, mirroring the
         existing <code>_resetCrashHandlersForTests</code> pattern.
       </p>
 
       <h2>2. JWT HS-secret length refuse-to-construct (RFC 7518 §3.2)</h2>
       <p>
-        <code>createJwtSigner()</code> and <code>createJwtVerifier()</code>{" "}
-        now refuse <code>Uint8Array</code> HS-shaped secrets shorter than{" "}
+        <code>createJwtSigner()</code> and <code>createJwtVerifier()</code> now
+        refuse <code>Uint8Array</code> HS-shaped secrets shorter than{" "}
         <strong>32 bytes</strong> at construction time. RFC 7518 §3.2 sets the
         floor at the hash output size (32 bytes for HS256) — and Daloy applies
         the same floor to HS384 and HS512 because a shorter key does not buy a
@@ -131,11 +140,11 @@ createJwtSigner({ alg: "HS256", key, maxLifetimeSeconds: 60 });`}
       </h2>
       <p>
         <code>secureHeaders()</code> ships two layered defenses against
-        clickjacking: the <code>X-Frame-Options</code> header (legacy
-        browsers) and a CSP <code>frame-ancestors</code> directive (modern
-        spec). The helper now refuses to construct when{" "}
-        <em>both</em> are disabled simultaneously — that combination silently
-        re-opens the clickjacking surface the helper exists to close:
+        clickjacking: the <code>X-Frame-Options</code> header (legacy browsers)
+        and a CSP <code>frame-ancestors</code> directive (modern spec). The
+        helper now refuses to construct when <em>both</em> are disabled
+        simultaneously — that combination silently re-opens the clickjacking
+        surface the helper exists to close:
       </p>
       <CodeBlock
         language="ts"
@@ -170,9 +179,9 @@ secureHeaders({
 });`}
       />
       <p>
-        If you only want to disable one of the two defenses, keep the other
-        one on — the helper&apos;s defaults already wire both layers, so the
-        common case (no options passed) needs no changes.
+        If you only want to disable one of the two defenses, keep the other one
+        on — the helper&apos;s defaults already wire both layers, so the common
+        case (no options passed) needs no changes.
       </p>
 
       <h2>4. Mandatory hardware-backed 2FA for publish access</h2>
@@ -185,30 +194,34 @@ secureHeaders({
       <ul>
         <li>
           <strong>GitHub organization level:</strong>{" "}
-          <code>Settings → Authentication security → Require two-factor authentication</code>{" "}
-          is enforced on the <code>@daloyjs</code> org; every account with
-          write access must have a hardware-backed factor (passkey or security
-          key — TOTP-only accounts are off-boarded).
+          <code>
+            Settings → Authentication security → Require two-factor
+            authentication
+          </code>{" "}
+          is enforced on the <code>@daloyjs</code> org; every account with write
+          access must have a hardware-backed factor (passkey or security key —
+          TOTP-only accounts are off-boarded).
         </li>
         <li>
-          <strong>npm registry level:</strong> <code>npm access 2fa-required</code>{" "}
-          is set on <code>@daloyjs/core</code> and <code>create-daloy</code>;
-          OIDC trusted publishing from the protected{" "}
-          <code>npm-publish</code> environment means publishes themselves
-          carry no long-lived token, but every maintainer who can approve the
-          environment still needs hardware-backed 2FA on the registry account.
+          <strong>npm registry level:</strong>{" "}
+          <code>npm access 2fa-required</code> is set on{" "}
+          <code>@daloyjs/core</code> and <code>create-daloy</code>; OIDC trusted
+          publishing from the protected <code>npm-publish</code> environment
+          means publishes themselves carry no long-lived token, but every
+          maintainer who can approve the environment still needs hardware-backed
+          2FA on the registry account.
         </li>
         <li>
           <strong>Off-boarding:</strong> when a maintainer leaves rotation,
-          their org membership, publish grants, and granular tokens are
-          revoked in the same change.
+          their org membership, publish grants, and granular tokens are revoked
+          in the same change.
         </li>
         <li>
           <strong>Release-checklist audit gate:</strong> before tagging a
           release the maintainer running the release verifies that every
-          contributor who approved the <code>npm-publish</code> Environment
-          for that release has 2FA enabled at both levels (the Wave 8
-          mandatory-2FA audit gate).
+          contributor who approved the <code>npm-publish</code> Environment for
+          that release has 2FA enabled at both levels (the Wave 8 mandatory-2FA
+          audit gate).
         </li>
       </ul>
 
@@ -217,13 +230,12 @@ secureHeaders({
         The remaining Wave 8 bullets stay tracked on the roadmap and will land
         in subsequent <code>0.26.x</code> additive patches: single source of
         truth for cookie writes / client IP / time-claim validation / secret
-        comparison; the <code>__Secure-</code> cookie without TLS
-        refuse-to-boot guard; the <code>daloy doctor --audit-secrets</code>{" "}
-        subcommand; the zero-external-runtime-dependency governance CI grep
-        gate; and the timing-safe-comparison CI grep gate. Together these
-        items remove the last &quot;developer remembered to do X but not
-        Y&quot; failure modes by making the framework&apos;s security surface
-        internally self-consistent.
+        comparison; the <code>__Secure-</code> cookie without TLS refuse-to-boot
+        guard; the <code>daloy doctor --audit-secrets</code> subcommand; the
+        zero-external-runtime-dependency governance CI grep gate; and the
+        timing-safe-comparison CI grep gate. Together these items remove the
+        last &quot;developer remembered to do X but not Y&quot; failure modes by
+        making the framework&apos;s security surface internally self-consistent.
       </p>
     </>
   );
