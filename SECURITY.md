@@ -109,18 +109,22 @@ every HTTP client (browser, mobile, CLI, attacker) are untrusted.
 ### Hardening roadmap (tracked, not yet shipped)
 
 These improvements are on the security roadmap. They are listed publicly so
-operators can plan around them and contributors can pick them up:
+operators can plan around them and contributors can pick them up. Items that
+have shipped are kept here briefly with a `(shipped)` marker so the history
+remains auditable.
 
-- **First-party JWT verification** (`jwt()` middleware over `jose`) with mandatory
-  algorithm allowlist (no `none`, no `alg` from header), JWKS support, and
-  configurable `issuer`/`audience`/`clockTolerance`.
+- **First-party JWT verification** — `createJwtVerifier` / `createJwtSigner`
+  with a mandatory algorithm allowlist (no `none`, no `alg` from header),
+  configurable `issuer`/`audience`/`clockTolerance`, and first-party JWKS
+  resolution via `jwk()`. **(shipped)**
+- **Under-pressure auto-shedding** in the Node adapter (event-loop lag, RSS,
+  heap), returning `503` before the runtime hangs. Exposed as `loadShedding()`
+  with the `LOAD_SHEDDING_MARKER` integration hook. **(shipped)**
 - **First-party WebAuthn / passkeys** via a thin wrapper over a vetted library.
 - **SSRF guard** (`fetchGuard()`) blocking outbound `fetch` to RFC1918,
   loopback, link-local, and metadata-service IPs unless explicitly allowlisted.
 - **Per-route capability-based body limits** derived from the route schema
   (override the global cap when the schema implies a tighter ceiling).
-- **Under-pressure auto-shedding** in the Node adapter (event-loop lag, RSS,
-  heap), returning `503` before the runtime hangs.
 - **SLSA build-level-3 attestations** and **CycloneDX SBOM** generated and
   attested per release, beyond the existing npm provenance attestation.
 - **`npm audit signatures`** (or equivalent registry-signature verification)
@@ -229,6 +233,30 @@ chalk/debug/node-ipc phishing campaigns.
 6. Confirm the GitHub actor on the publish run is listed in the ACTIVE block
    of [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md). The Wave 10 release
    gate refuses to publish otherwise.
+
+### Mapping to the 5 pillars of a Secure SDLC
+
+Operators occasionally ask how Daloy maps onto the generic Secure-SDLC
+checklists that show up in vendor blog posts (e.g. Aikido's
+["Secure SDLC for Engineering Teams"](https://www.aikido.dev/blog/secure-sdlc)
+five-pillar model: Visibility, Early Feedback, Developer Adoption,
+Consistency, Actionability). We are an open-source backend framework, not an
+organization with a security program, so the mapping is necessarily narrower
+than an internal SSDLC — but every pillar has a concrete control or a
+documented out-of-scope boundary. We list them here so the answer is one
+link, not a guessing game.
+
+| Pillar | What Daloy ships | What is out of scope (and why) |
+| --- | --- | --- |
+| **Visibility** | Public source tree, public [`PROJECT_HISTORY.md`](PROJECT_HISTORY.md) changelog, `@daloyjs/core`'s **zero runtime dependencies** (enforced by [`pnpm verify:no-runtime-deps`](scripts/verify-no-runtime-deps.ts)) so the transitive tree is exactly the dev/test deps in [`pnpm-lock.yaml`](pnpm-lock.yaml). Every published tarball carries an npm **provenance attestation** (Sigstore + OIDC) that binds the bytes to the source commit and the `release.yml` run. `pnpm audit --prod` runs on every PR and every publish. Roadmap: CycloneDX SBOM attested per release (see roadmap above). | Inventorying the *consumer's* applications, cloud assets, or running deployments. That is an operator-side ASPM concern (Aikido, Snyk, Wiz, etc.) and the framework cannot do it for them. |
+| **Early Feedback** | Security feedback runs **inside the PR**, not at release time: `zizmor` ([`.github/workflows/zizmor.yml`](.github/workflows/zizmor.yml)) statically rejects unsafe workflow patterns; CodeQL ([`.github/workflows/codeql.yml`](.github/workflows/codeql.yml)) runs JavaScript/TypeScript and `actions` queries; OpenSSF Scorecard ([`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml)) publishes a continuous score; `pnpm verify:wave9-audits` / `verify:wave10-audits` / `verify:wave11-audits` / `verify:wave12-audits` / `verify:secret-comparisons` / `verify:no-runtime-deps` / `verify:lockfile` enforce the documented security floor on every PR; Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) opens PRs weekly for actions and npm deps. CODEOWNERS ([`.github/CODEOWNERS`](.github/CODEOWNERS)) requires a maintainer to approve any change under `.github/`, `package.json`, `pnpm-lock.yaml`, or `.npmrc`. | Author-time IDE feedback (SAST in the editor). We do not bundle a proprietary scanner — operators who want that should layer Snyk / Aikido / Semgrep / GitHub Advanced Security on top, none of which conflict with our gates. |
+| **Developer Adoption** | Security gates live in the same commands developers already run: `pnpm typecheck`, `pnpm test`, `pnpm coverage`, `pnpm coverage:branches`, and the `verify:*` family are documented in [`AGENTS.md`](AGENTS.md) as the quality gate for every change. The list is short and reused for human contributors, CI, and AI agents — there is no separate "security checklist" that drifts out of sync. The scaffolded templates ([`packages/create-daloy/templates/`](packages/create-daloy/templates)) inherit the same defaults (`.npmrc` with `ignore-scripts=true` and `minimum-release-age=1440`, `_gitignore` excluding `.env*`, etc.) so consumer apps start with the framework's security posture, not a stripped-down one. | Adoption inside the *consumer's* org. That is a cultural change owned by the consumer's engineering leadership; the most we can do is ship safe defaults and document them. |
+| **Consistency** | The **Wave 10 governance floor** (above) is enforced by [`pnpm verify:wave10-audits`](scripts/verify-wave10-audits.ts) on every PR: it refuses to merge a change that removes top-level `permissions:`, `persist-credentials: false`, a SHA-pin on a third-party action, `step-security/harden-runner` on workflows that use third-party actions, a runtime dep on `@daloyjs/core`, [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md), or [`.github/CODEOWNERS`](.github/CODEOWNERS). Removal of any control requires a documented `SECURITY.md` entry and maintainer-quorum sign-off. The same `verify:*` family runs identically in `ci.yml` and the pre-publish `verify` job in `release.yml`, so a PR cannot pass CI under one rule set and be published under a weaker one. | Enforcing the same rules across *consumer* repositories. We document the recommended posture (see § Supply-chain security and the per-incident tables above) and ship the same defaults in scaffolded templates, but we cannot police a downstream project's CI. |
+| **Actionability** | When an incident in the broader ecosystem matches a Daloy-relevant attack pattern, we publish a step-by-step mapping table (see the `shopsprint`, `node-ipc 2026-05-14`, GitHub VS Code-extension, and ToxicSkills tables above) that says, per attack step, which Daloy control catches it and which steps are explicitly out of scope. The recurring quarterly **disclosure exercise** (above) verifies that the private-report inbox, the active maintainer rotation, the `npm-publish` Environment, the `verify:wave10-audits` gate, and every active contact's recovery-email domain are still working — a missed quarter fails CI loud. [`PROJECT_HISTORY.md`](PROJECT_HISTORY.md) records the date and outcome of each exercise. | Prioritizing findings *inside the consumer's* application. Daloy does not bundle an ASPM dashboard; consumers who need one should pair the framework with their existing AppSec stack. |
+
+If an SSDLC checklist surfaces an item that maps onto a class of attack the
+framework should defend against and currently does not, treat the gap as a
+release-blocking bug and open a private advisory.
 
 ### Wave 10 governance floor (reaffirmed)
 
