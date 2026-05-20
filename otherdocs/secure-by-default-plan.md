@@ -36,7 +36,7 @@ The initiative is **mostly about flipping defaults**, not building from scratch.
 
 ### Kept as written
 
-Headers (preload HSTS, nosniff, frame-deny, referrer strict, strip `Server` / `X-Powered-By`), cookie defaults (Secure + HttpOnly + SameSite=Lax), CORS deny cross-origin state-changing methods unless allowlisted, a password hashing helper with no exposed knobs, weak-secret refuse-to-boot, logging redaction defaults, per-content-type body caps, duplicate `Host` / `Content-Length` rejection, connection-draining shutdown, crash-on-unhandled-rejection in prod, rate-limited + auth-required health/readiness primitive, opt-in one-liners (WS/GraphQL rate-limit adapters, webhook HMAC verify, login slow-down preset, session rotation on privilege change, file-upload magic-byte guard, static server hardening).
+Headers (preload HSTS, nosniff, frame-deny, referrer strict, strip `Server` / `X-Powered-By`), cookie defaults (Secure + HttpOnly + SameSite=Lax), CORS deny cross-origin state-changing methods unless allowlisted, a password hashing helper with no exposed knobs, weak-secret refuse-to-boot, logging redaction defaults, per-content-type body caps, duplicate `Host` / `Content-Length` rejection, connection-draining shutdown, crash-on-unhandled-rejection in prod, rate-limited + auth-required health/readiness primitive, opt-in one-liners (WebSocket rate-limit adapter, webhook HMAC verify, login slow-down preset, session rotation on privilege change, file-upload magic-byte guard, static server hardening).
 
 ### Reshaped
 
@@ -106,7 +106,7 @@ Migration guide required. `create-daloy` templates updated in the same release p
 
 ### Wave 5 — opt-in one-liners (target: `0.18.x` patch line, additive)
 
-- `wsRateLimit()` adapter and `graphqlRateLimit()` adapter (sub-exports).
+- `wsRateLimit()` adapter (sub-export).
 - `loginThrottle()` preset (per-IP + per-username slow-down + lockout).
 - `rotateSession()` helper invokable on privilege change.
 - File-upload guard: MIME + magic-byte + size in one call on the multipart pipeline.
