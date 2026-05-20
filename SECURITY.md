@@ -258,6 +258,49 @@ If an SSDLC checklist surfaces an item that maps onto a class of attack the
 framework should defend against and currently does not, treat the gap as a
 release-blocking bug and open a private advisory.
 
+### Mapping to Aikido Package Health (consumer-facing scoring rubric)
+
+Aikido's 2026-02-03
+[Package Health Score](https://www.aikido.dev/blog/introducing-aikido-package-health)
+rates an npm package on **five weighted categories** — *Dependencies*,
+*Maintainer Stability*, *Maturity*, *Supply-Chain Scripts*, *Attestations* —
+that a consumer can look up at <https://intel.aikido.dev/packages> before
+installing. Operators occasionally ask which Daloy controls back each
+category so the answer is one link, not guesswork. The mapping below is
+explicit, and every claim either points at a file in this repo or at a
+governance gate that runs in CI.
+
+| Aikido category | What it measures | DaloyJS control |
+| --- | --- | --- |
+| **Dependencies** | "How stable the dependency tree is between versions." Penalises churn in the transitive tree. | `@daloyjs/core` declares **zero runtime dependencies** ([`package.json`](package.json)). [`pnpm verify:no-runtime-deps`](scripts/verify-no-runtime-deps.ts) and the Wave 10 governance floor refuse a PR that adds one. There is no transitive runtime tree to churn — installing `@daloyjs/core` adds the bytes of the package itself, nothing more. Adapter bindings (`hono`, `@cloudflare/workers-types`, `zod`, etc.) are `peerDependencies` chosen by the consumer. |
+| **Maintainer Stability** | "How consistent the release authors are and whether maintainership has shifted unexpectedly." Penalises unexpected handovers. | Active release authors are documented in [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md) and verified each quarter by the Wave 10 disclosure exercise (above). Off-boarding is a step on the release checklist (§ Maintainer accounts). Every release tag is signed and every release commit is signed, so the chain of release authors is cryptographically inspectable from the git log. The pre-publish `verify` job in [`release.yml`](.github/workflows/release.yml) refuses to publish unless the actor on the publish run is listed in the **Active** block of [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md) (Wave 10 release gate). |
+| **Maturity** | "How long the project has existed, how predictably it evolves, and whether releases follow a sensible cadence." Penalises rewritten history and erratic versioning. | Semantic versioning is enforced by hand at release time; the full ordered history of every shipped change lives in [`PROJECT_HISTORY.md`](PROJECT_HISTORY.md) (`## 9. Change log going forward`, newest at the top, one entry per release). Releases are tagged as signed `v*` tags and the tag/version match is verified before `pnpm publish` runs (§ npm publishing). The release-history is append-only: we have never force-pushed `main` and we have never deleted a published version from npm. |
+| **Supply-Chain Scripts** | "How safe the package's lifecycle scripts are and whether they introduce unnecessary risk during installation." Penalises any of `preinstall` / `install` / `postinstall` / `prepare` / `preprepare` / `postprepare` / `prepublish`. | Both published packages (`@daloyjs/core`, `create-daloy`) declare **zero install-time lifecycle scripts**. Only `prepublishOnly` ships — that hook runs *on the maintainer's CI* during publish and is never executed by a consumer's `pnpm install`. The new [`pnpm verify:no-lifecycle-scripts`](scripts/verify-no-lifecycle-scripts.ts) governance gate fails a PR that adds any forbidden hook to either published manifest and runs in both [`ci.yml`](.github/workflows/ci.yml) and the pre-publish `verify` job in [`release.yml`](.github/workflows/release.yml). Consumer-side defence-in-depth: every scaffolded template ships `.npmrc` with `ignore-scripts=true`, so even an upstream dep that *does* declare a lifecycle hook will not run it on a fresh `create-daloy` project. |
+| **Attestations** | "Whether the project includes verifiable provenance to prove that builds are authentic and reproducible." | Every `@daloyjs/core` and `create-daloy` tarball is published with `--provenance` (root [`.npmrc`](.npmrc) sets `provenance=true`), which binds the bytes to the source commit and the `release.yml` workflow run via npm trusted publishing (OIDC) and Sigstore. Consumers can verify the published bytes against the source commit and reject any release whose attestation cannot be re-derived from the GitHub source (§ npm publishing). CycloneDX SBOM attestation per release is on the roadmap (above). |
+
+What this **does not** defend against, and we say so explicitly:
+
+- A consumer who installs a *different* package that happens to have a
+  poor Aikido Package Health score. The score is per-package, not
+  ecosystem-wide, and Daloy can only speak to `@daloyjs/core` and
+  `create-daloy`. For every other package in the consumer's tree the
+  consumer should run their own Aikido / Snyk / Socket lookup.
+- Aikido changing the weighting of any category. The mapping above
+  describes *what we ship*, not *what score Aikido renders*. If Aikido
+  reweights "Supply-Chain Scripts" tomorrow, the underlying control —
+  zero install-time hooks, enforced by `verify:no-lifecycle-scripts` —
+  does not change.
+- A future contributor adding a runtime dep or a `postinstall` hook
+  through a non-`@daloyjs/core` package in the workspace (e.g. a new
+  package under [`packages/`](packages)). The current
+  `verify:no-lifecycle-scripts` gate checks the two published manifests
+  by name; extending it to any new publishable package is a
+  release-blocking task when that package is added.
+
+If a future Aikido category lands that maps onto a class of attack the
+framework should defend against and currently does not, treat the gap as a
+release-blocking bug and open a private advisory.
+
 ### Wave 10 governance floor (reaffirmed)
 
 Every supply-chain control listed above is the documented governance floor.
