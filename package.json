@@ -1,6 +1,6 @@
 {
   "name": "@daloyjs/core",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "DaloyJS is a runtime-portable, contract-first TypeScript web framework with built-in OpenAPI (Hey API), typed client generation, large-scale maintainability, and security-first defaults. Hono-grade portability, Elysia-grade DX, FastAPI-grade docs, Fastify-grade ops — distributed via pnpm.",
   "type": "module",
   "publishConfig": {
@@ -136,6 +136,10 @@
     "./etag": {
       "types": "./dist/etag.d.ts",
       "import": "./dist/etag.js"
+    },
+    "./compression": {
+      "types": "./dist/compression.d.ts",
+      "import": "./dist/compression.js"
     }
   },
   "devDependencies": {

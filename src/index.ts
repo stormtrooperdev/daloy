@@ -119,6 +119,15 @@ export {
 export { etag } from "./etag.js";
 export type { ETagOptions } from "./etag.js";
 export {
+  compression,
+  COMPRESSION_HOOK_MARKER,
+  _resetCompressionRuntimeProbeForTests,
+} from "./compression.js";
+export type {
+  CompressionEncoding,
+  CompressionOptions,
+} from "./compression.js";
+export {
   createJwtSigner,
   createJwtVerifier,
   JwtError,

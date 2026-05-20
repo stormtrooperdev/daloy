@@ -188,7 +188,7 @@ app.route({
         limit, compression off by default, a non-zero idle timeout, and a 1 MiB
         inbound payload cap. In production under <code>secureDefaults</code>,
         <code>perMessageDeflate: true</code> is refused. Daloy also refuses a
-        <code>maxPayloadLength</code> larger than a route body schema's declared
+        <code>maxPayloadLength</code> larger than a route body schema&apos;s declared
         maximum when the schema exposes one.
       </p>
       <CodeBlock

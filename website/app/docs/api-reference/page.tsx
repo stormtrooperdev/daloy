@@ -83,6 +83,7 @@ cors({ origin, methods?, allowedHeaders?, exposedHeaders?, credentials?, maxAgeS
 rateLimit({ windowMs, max, keyGenerator?, store?, trustProxyHeaders?, retryAfter? })
 loginThrottle({ windowMs?, max?, groupId?, keyGenerator?, delayAfter?, delayMs?, maxDelayMs? })
 timing(headerName?)
+compression({ minimumSize?, encodings?, excludeContentTypes?, authCookieNames? })
 bearerAuth({ validate, realm? })`}
       />
 
@@ -240,6 +241,21 @@ toEdgeHandler (app): (req: Request) => Promise<Response>`}
       <CodeBlock
         code={`isStandardSchema(value): boolean
 validate(schema, input): { ok: true; value } | { ok: false; issues }`}
+      />
+
+      <h2>
+        <code>@daloyjs/core/compression</code>
+      </h2>
+      <CodeBlock
+        code={`compression({
+  minimumSize?: number;                 // default 1024
+  encodings?: ("br" | "gzip" | "deflate")[];
+  excludeContentTypes?: string[];
+  authCookieNames?: string[];
+}): Hooks
+
+COMPRESSION_HOOK_MARKER
+_resetCompressionRuntimeProbeForTests() // test-only`}
       />
 
       <h2>
