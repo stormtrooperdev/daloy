@@ -61,6 +61,7 @@ import {
 } from "./session.js";
 import { loadShedding as loadSheddingMiddleware, type LoadSheddingOptions } from "./load-shedding.js";
 import { securitySchemeRequiresPayloadAuth } from "./security-schemes.js";
+import { assertBehindProxy, type BehindProxyConfig } from "./conn-info.js";
 
 const AUTO_SECURE_HEADERS_MARKER: unique symbol = Symbol.for(
   "daloyjs.app.autoSecureHeaders",
@@ -210,6 +211,28 @@ export interface AppOptions {
    * @since 0.17.0
    */
   trustProxy?: boolean;
+
+  /**
+   * Declarative reverse-proxy posture (Wave 6 — `0.24.0`). Supersedes the
+   * boolean {@link AppOptions.trustProxy} with a structured value that
+   * simultaneously configures rate-limit keying, TLS enforcement, request-IP
+   * resolution, and the `X-Forwarded-*` accept policy from a single source
+   * of truth.
+   *
+   * - `"none"` — refuse `X-Forwarded-*` entirely.
+   * - `"loopback"` — trust only when the immediate peer is `127.0.0.1` / `::1`.
+   * - `{ hops: N }` — trust the proxy chain when exactly N hops sit between
+   *   Daloy and the public internet; reads the (N+1)-from-rightmost IP.
+   * - `{ cidrs: [...] }` — trust only when the immediate peer's address
+   *   falls inside one of the supplied CIDR ranges.
+   *
+   * When supplied, the legacy {@link AppOptions.trustProxy} guard is
+   * considered satisfied (the framework knows what to do with forwarded
+   * headers without further input).
+   *
+   * @since 0.24.0
+   */
+  behindProxy?: BehindProxyConfig;
 
   /**
    * Opt-out for the Wave 3 boot guard that refuses to start an App which
@@ -384,6 +407,26 @@ export interface PluginInstalledEvent {
   name?: string;
   /** Effective mount prefix after parent/group prefixes are applied. */
   prefix: string;
+}
+
+/**
+ * Lifecycle-hook contribution declared by a plugin (Wave 6 item 10).
+ * Combined with `before` / `after` ordering hints so security middleware
+ * order is deterministic regardless of plugin-registration order.
+ *
+ * @since 0.24.0
+ */
+export interface PluginExtension {
+  /** Unique extension name. Referenced by `before` / `after` on siblings. */
+  name: string;
+  /** Lifecycle event the handler attaches to. */
+  event: "onRequest" | "beforeHandle" | "afterHandle" | "onSend" | "onError";
+  /** Hook handler. The shape mirrors the matching {@link Hooks} entry. */
+  handler: (...args: any[]) => any;
+  /** Extension names this one must run before. */
+  before?: readonly string[];
+  /** Extension names this one must run after. */
+  after?: readonly string[];
 }
 
 /** Information passed to {@link App.onShutdown} listeners. */
@@ -644,6 +687,7 @@ export class App {
 
     this.warnOnEnvMismatch();
     this.assertDisconnectStatusCode();
+    assertBehindProxy(this.options.behindProxy);
     if (this.options.hooks) this.assertSecureHookConfig(this.options.hooks);
     this.installSecureDefaults();
     this.maybeInstallCrashHandlers();
@@ -942,6 +986,10 @@ export class App {
   private assertTrustProxyConfigured(request: Request): void {
     if (this.options.secureDefaults === false) return;
     if (this.options.trustProxy !== undefined) return;
+    // Wave 6: `behindProxy` is the declarative successor — when supplied,
+    // the framework already knows how to interpret forwarded headers and
+    // the legacy unconfigured-proxy guard is satisfied.
+    if (this.options.behindProxy !== undefined) return;
     // Same risk-register clause as the session/CSRF guard: only enforce
     // in production. Dev/CI surfaces routinely test forwarded headers
     // without configuring a reverse-proxy posture.
@@ -1599,7 +1647,43 @@ export class App {
    * @param value - Value bound to that property on every request.
    * @returns This `App` instance for chaining.
    */
-  decorate<K extends string, V>(key: K, value: V): this {
+  /**
+   * Apply an ordered list of plugin extensions (Wave 6 item 10) to the
+   * group-level hook chain. Each extension's `handler` is wrapped into a
+   * single-event {@link Hooks} bundle so subsequent route registrations
+   * pick it up via the normal hook composition path.
+   * @internal
+   */
+  private applyExtensions(ordered: PluginExtension[]): void {
+    for (const ext of ordered) {
+      const hooks: Hooks = { [ext.event]: ext.handler } as unknown as Hooks;
+      this.groupHooks.push(hooks);
+    }
+  }
+
+  decorate<K extends string, V>(
+    key: K,
+    value: V,
+    opts: { override?: boolean } = {},
+  ): this {
+    if (
+      Object.prototype.hasOwnProperty.call(this.decorations, key) &&
+      opts.override !== true
+    ) {
+      // Wave 6 item 9: namespace-protected decorators. Refuse to silently
+      // shadow an existing decoration; emit a once-per-process warn naming
+      // both decorators on the explicit-override path.
+      throw new Error(
+        `decorate(): key "${key}" is already decorated. ` +
+          `Pass { override: true } to replace, or rename to avoid the collision.`,
+      );
+    }
+    if (opts.override === true && Object.prototype.hasOwnProperty.call(this.decorations, key)) {
+      this.log.warn(
+        { event: "decorate.override", key },
+        `decorate("${key}") replaced an existing decoration.`,
+      );
+    }
     this.decorations[key] = value;
     return this;
   }
@@ -1645,11 +1729,35 @@ export class App {
   }
 
   /**
-   * Encapsulated plugin registration (Fastify-style). Receives a child App; routes/hooks are scoped.
+   * Encapsulated plugin registration (Fastify-style). Receives a child App;
+   * routes/hooks declared on the child are scoped to the plugin by default
+   * (Wave 6 item 15 \u2014 encapsulation default `local`).
+   *
+   * Wave 6 (`0.24.0`) additions on the plugin descriptor object:
+   *
+   * - `dependencies: string[]` \u2014 prerequisite plugin names; the framework
+   *   refuses-to-boot at registration time when any declared dependency has
+   *   not been installed first (item 8).
+   * - `seed: string` \u2014 differentiator for parameterized instances of the
+   *   same plugin (item 16). Dedup key becomes `${name}#${seed}`.
+   * - `stateful: boolean` \u2014 when `true` AND `name` is absent AND the app is
+   *   in production with `secureDefaults` on, registration refuses-to-boot
+   *   so silent double-installs of global-state-mutating plugins are caught
+   *   loud (item 16).
+   * - `extensions: [{ event, handler, before?, after? }]` \u2014 declarative
+   *   lifecycle-hook ordering with topological-sort + cycle detection
+   *   (item 10). Refuses-at-registration on cycles.
    */
   register(
     plugin:
-      | { name?: string; register: (app: App) => void | Promise<void> }
+      | {
+          name?: string;
+          seed?: string;
+          stateful?: boolean;
+          dependencies?: readonly string[];
+          extensions?: ReadonlyArray<PluginExtension>;
+          register?: (app: App) => void | Promise<void>;
+        }
       | ((app: App) => void | Promise<void>),
     config: {
       prefix?: PathString;
@@ -1658,13 +1766,38 @@ export class App {
       auth?: RouteDefinition["auth"];
     } = {},
   ): this {
-    const fn = typeof plugin === "function" ? plugin : plugin.register;
-    const name = typeof plugin === "function" ? undefined : plugin.name;
-    if (name) {
-      if (this.installedPlugins.has(name)) {
-        throw new Error(`Plugin "${name}" already registered`);
+    const fn = typeof plugin === "function" ? plugin : (plugin.register ?? (() => {}));
+    const descriptor = typeof plugin === "function" ? undefined : plugin;
+    const name = descriptor?.name;
+    const seed = descriptor?.seed;
+    const dedupKey = name ? (seed ? `${name}#${seed}` : name) : undefined;
+    const dependencies = descriptor?.dependencies ?? [];
+    const stateful = descriptor?.stateful ?? false;
+
+    if (stateful && !name && this.isProduction() && this.options.secureDefaults !== false) {
+      throw new Error(
+        "register(): anonymous stateful plugin refused in production. " +
+          "Declare { name } (and optional { seed }) so the plugin can be deduplicated.",
+      );
+    }
+    for (const dep of dependencies) {
+      if (!this.installedPlugins.has(dep)) {
+        throw new Error(
+          `register(): plugin ${JSON.stringify(name ?? "<anonymous>")} declares ` +
+            `dependency on "${dep}" but no plugin with that name has been registered yet.`,
+        );
       }
-      this.installedPlugins.add(name);
+    }
+    if (dedupKey) {
+      if (this.installedPlugins.has(dedupKey)) {
+        throw new Error(`Plugin "${dedupKey}" already registered`);
+      }
+      this.installedPlugins.add(dedupKey);
+    }
+    if (descriptor?.extensions && descriptor.extensions.length > 0) {
+      // Wave 6 item 10: topological sort with cycle detection.
+      const ordered = topoSortExtensions(descriptor.extensions);
+      this.applyExtensions(ordered);
     }
     const prefix = config.prefix ?? ("/" as PathString);
     const event: PluginInstalledEvent = {
@@ -2211,6 +2344,61 @@ function corsOriginAllowsFromHooks(layers: Hooks[]): CorsOriginAllow[] {
     }
   }
   return allows;
+}
+
+/**
+ * Topological sort of plugin extensions (Wave 6 item 10). Refuses-at-call
+ * on cyclic ordering with a structured error naming the cycle.
+ * @internal
+ */
+export function topoSortExtensions(
+  exts: ReadonlyArray<PluginExtension>,
+): PluginExtension[] {
+  const byName = new Map<string, PluginExtension>();
+  for (const e of exts) {
+    if (byName.has(e.name)) {
+      throw new Error(`Duplicate plugin extension name: ${JSON.stringify(e.name)}.`);
+    }
+    byName.set(e.name, e);
+  }
+  // Build adjacency: edge from A -> B means A must run before B.
+  const edges = new Map<string, Set<string>>();
+  for (const e of exts) edges.set(e.name, new Set());
+  for (const e of exts) {
+    for (const b of e.before ?? []) {
+      if (byName.has(b)) edges.get(e.name)!.add(b);
+    }
+    for (const a of e.after ?? []) {
+      if (byName.has(a)) edges.get(a)!.add(e.name);
+    }
+  }
+  // Kahn's algorithm.
+  const indeg = new Map<string, number>();
+  for (const name of edges.keys()) indeg.set(name, 0);
+  for (const [, outs] of edges) {
+    for (const v of outs) indeg.set(v, (indeg.get(v) ?? 0) + 1);
+  }
+  const queue: string[] = [];
+  for (const [name, d] of indeg) if (d === 0) queue.push(name);
+  const out: PluginExtension[] = [];
+  while (queue.length > 0) {
+    const name = queue.shift()!;
+    out.push(byName.get(name)!);
+    for (const v of edges.get(name)!) {
+      const d = (indeg.get(v) ?? 0) - 1;
+      indeg.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+  if (out.length !== exts.length) {
+    const remaining = Array.from(byName.keys()).filter(
+      (n) => !out.some((e) => e.name === n),
+    );
+    throw new Error(
+      `Plugin extension cycle detected among: ${remaining.map((n) => JSON.stringify(n)).join(", ")}.`,
+    );
+  }
+  return out;
 }
 
 function securityMarkersFromHooks(

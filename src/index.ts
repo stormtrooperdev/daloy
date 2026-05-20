@@ -10,8 +10,31 @@ export type {
   CspReportRouteOptions,
   IntrospectedRoute,
   PluginInstalledEvent,
+  PluginExtension,
   ShutdownEvent,
 } from "./app.js";
+export {
+  getConnInfo,
+  setConnInfo,
+  assertBehindProxy,
+  resolveClientIp,
+  readRemoteAddress,
+  readRemotePort,
+  pickForwardedForByHops,
+} from "./conn-info.js";
+export type { BehindProxyConfig, ConnInfo } from "./conn-info.js";
+export {
+  subdomains,
+  PSL_SNAPSHOT_DATE,
+  PSL_PUBLIC_SUFFIXES,
+  MAX_SNAPSHOT_AGE_DAYS,
+} from "./subdomains.js";
+export type { SubdomainsOptions, SubdomainsResult } from "./subdomains.js";
+export { defineDependency, DEPENDENCY_MARKER } from "./dependency.js";
+export type {
+  DependencyHooks,
+  DependencyOptions,
+} from "./dependency.js";
 
 export type {
   RouteDefinition,
@@ -24,6 +47,8 @@ export type {
   Hooks,
   BaseContext,
   AppState,
+  AuthScheme,
+  AuthContext,
   HandlerReturn,
   InferRequest,
   ParamsOf,

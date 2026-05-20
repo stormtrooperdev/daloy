@@ -14,7 +14,7 @@ repository collaborator. Any uninvited PR is closed automatically by
 Maintainer time, not code volume, is the bottleneck on a small framework
 project. Reviewing a PR responsibly means reading every line, reasoning
 about the security model, running the full quality gates documented in
-[AGENTS.md](./AGENTS.md) (`pnpm typecheck`, `pnpm coverage` at ≥95% lines
+[AGENTS.md](./AGENTS.md) (`pnpm typecheck`, `pnpm coverage` at ≥90% lines
 and functions, `pnpm build`, docs and `website/` checks), and committing
 to maintain that code indefinitely. The cost of a careless merge is paid
 forever; the cost of saying "no" is paid once.

@@ -234,6 +234,31 @@ export interface AuthSpec {
 export interface AppState {}
 
 /**
+ * Scheme-aware auth contract (Wave 6 item 13). Every shipped first-party
+ * auth helper writes through to `ctx.state.auth` with a discriminated
+ * `scheme` tag so audit logs, revocation hooks, and per-scheme
+ * `verify(credentials, ctx)` callbacks know which scheme issued the
+ * credential. Prevents the "session-cookie revocation list applied to a
+ * bearer-token request" class of cross-scheme confusion.
+ *
+ * @since 0.24.0
+ */
+export type AuthScheme =
+  | "bearer"
+  | "basic"
+  | "jwt"
+  | "jwk"
+  | "webhook"
+  | "session"
+  | "apiKey";
+
+/** @since 0.24.0 */
+export interface AuthContext<TCredentials = unknown> {
+  readonly scheme: AuthScheme;
+  readonly credentials: TCredentials;
+}
+
+/**
  * The context object passed to every route handler and hook.
  *
  * Contains the original `Request`, the four pieces of validated request data

@@ -61,6 +61,10 @@ export interface CliOptions {
   version: boolean;
   /** Override runtime detection for `daloy dev`. */
   runtime?: DevRuntime;
+  /** `daloy doctor` — also scan env vars for leaked secrets. */
+  auditSecrets?: boolean;
+  /** `daloy doctor` — disable the default-defaults audit. */
+  noAuditDefaults?: boolean;
 }
 
 const HELP = `daloy — DaloyJS CLI
@@ -73,6 +77,10 @@ Commands:
   dev     [entry]        Start the entry file with the host runtime's
                          native watch mode (tsx --watch on Node, --hot on
                          Bun, --watch on Deno).
+  doctor  [entry]        Audit a loaded App's secure-by-default posture
+                         (Wave 6). Exits non-zero on any violation so the
+                         command can guard container HEALTHCHECK and CI
+                         deploy steps.
 
 Options:
   --json                 Print machine-readable JSON instead of a table.
@@ -92,6 +100,10 @@ Options:
   --runtime <r>          (dev) Force the runtime: node | bun | deno.
                          Useful from package.json scripts where the CLI
                          shebang would otherwise always select Node.
+  --audit-secrets        (doctor) Also scan environment variables for
+                         leaked HMAC secrets and known-weak placeholders.
+  --audit-defaults       (doctor) Also audit framework defaults (default
+                         on; pass --no-audit-defaults to skip).
   -h, --help             Show this help.
   -v, --version          Print the @daloyjs/core version this CLI ships from.
 
@@ -231,7 +243,7 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
   };
   let command = "inspect";
   let i = 0;
-  if (argv[0] === "inspect" || argv[0] === "dev" || argv[0] === "help") {
+  if (argv[0] === "inspect" || argv[0] === "dev" || argv[0] === "help" || argv[0] === "doctor") {
     command = argv[0];
     i = 1;
   }
@@ -287,6 +299,12 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
       case "--version":
         opts.version = true;
         break;
+      case "--audit-secrets":
+        opts.auditSecrets = true;
+        break;
+      case "--no-audit-defaults":
+        opts.noAuditDefaults = true;
+        break;
       default:
         if (a.startsWith("-")) {
           throw new Error(`Unknown flag: ${a}`);
@@ -324,6 +342,9 @@ export async function runCli(argv: readonly string[], io: CliIO): Promise<CliRes
   }
   if (command === "dev") {
     return runDev(opts, io);
+  }
+  if (command === "doctor") {
+    return runDoctor(opts, io);
   }
   if (command !== "inspect") {
     io.stderr(`Unknown command: ${command}\n\n${HELP}`);
@@ -445,6 +466,105 @@ function formatContract(report: Awaited<ReturnType<typeof runContractTests>>): s
   if (report.ok) out.push("OK.");
   else out.push("FAIL.");
   return `${out.join("\n")}\n`;
+}
+
+/**
+ * `daloy doctor` — boot-time + CLI audit (Wave 6 item 3). Loads the user's
+ * App entry and runs the secure-by-default checklist. Exits non-zero on any
+ * finding so the command can guard container `HEALTHCHECK` and CI deploy
+ * steps.
+ *
+ * @internal
+ */
+async function runDoctor(opts: CliOptions, io: CliIO): Promise<CliResult> {
+  type Finding = { level: "error" | "warn"; code: string; message: string };
+  const findings: Finding[] = [];
+
+  let app: App | undefined;
+  try {
+    app = await loadApp(opts.entry, io);
+  } catch (err) {
+    io.stderr(`${(err as Error).message}\n`);
+    return { exitCode: 1 };
+  }
+
+  const o = (app as unknown as { options: Record<string, unknown> }).options;
+  const isProd =
+    (o.env as string) === "production" ||
+    o.production === true ||
+    (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === "production";
+
+  if (opts.noAuditDefaults !== true) {
+    if (isProd && o.trustProxy === undefined && o.behindProxy === undefined) {
+      findings.push({
+        level: "error",
+        code: "behindProxy.unset",
+        message:
+          "behindProxy / trustProxy is unset in production. Forwarded headers will be refused or trusted ambiguously. " +
+          "Declare app({ behindProxy: 'none' | 'loopback' | { hops } | { cidrs } }) explicitly.",
+      });
+    }
+    if (o.secureDefaults === false) {
+      findings.push({
+        level: "warn",
+        code: "secureDefaults.off",
+        message: "secureDefaults: false disables every Wave 1–5 hardening default.",
+      });
+    }
+    if (o.requestTimeoutMs === 0) {
+      findings.push({
+        level: "error",
+        code: "requestTimeout.zero",
+        message: "requestTimeoutMs is 0 — slow-loris attacks can hold connections forever.",
+      });
+    }
+    if (o.disconnectStatusCode !== undefined && o.disconnectStatusCode !== 0) {
+      const v = o.disconnectStatusCode as number;
+      if (!Number.isInteger(v) || v < 400 || v > 499) {
+        findings.push({
+          level: "error",
+          code: "disconnectStatusCode.range",
+          message: `disconnectStatusCode ${v} outside [400, 499].`,
+        });
+      }
+    }
+  }
+
+  if (opts.auditSecrets === true) {
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+    const weak = new Set(["changeme", "secret", "password", "your-secret", "it-is-very-secret"]);
+    for (const [key, val] of Object.entries(env)) {
+      if (!val) continue;
+      if (!/(secret|token|key|password|signing)/i.test(key)) continue;
+      if (weak.has(val.toLowerCase())) {
+        findings.push({
+          level: "error",
+          code: "secret.weak",
+          message: `${key} matches a known-weak placeholder.`,
+        });
+      } else if (val.length < 32 && isProd) {
+        findings.push({
+          level: "warn",
+          code: "secret.short",
+          message: `${key} is shorter than 32 bytes (production).`,
+        });
+      }
+    }
+  }
+
+  if (opts.json) {
+    io.stdout(`${JSON.stringify({ ok: findings.length === 0, findings }, null, 2)}\n`);
+  } else {
+    if (findings.length === 0) {
+      io.stdout("daloy doctor: OK — no findings.\n");
+    } else {
+      io.stdout(`daloy doctor: ${findings.length} finding${findings.length === 1 ? "" : "s"}.\n`);
+      for (const f of findings) {
+        io.stdout(`  [${f.level}] ${f.code}: ${f.message}\n`);
+      }
+    }
+  }
+  return { exitCode: findings.some((f) => f.level === "error") ? 1 : 0 };
 }
 
 async function runDev(opts: CliOptions, io: CliIO): Promise<CliResult> {

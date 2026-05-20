@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.7
+# Container-first defaults for a DaloyJS app (Wave 6 item 4).
+#
+# Hardening shipped out of the box:
+#   - Non-root runtime user (uid 1001).
+#   - Read-only root filesystem at runtime (use `--read-only` or set
+#     `readOnlyRootFilesystem: true` in your orchestrator).
+#   - `STOPSIGNAL SIGTERM` so the framework's graceful-shutdown drain
+#     (Wave 4) fires on container stop.
+#   - `HEALTHCHECK` wired to `app.healthcheck()` / `app.readinesscheck()`
+#     (mount the routes via `app.healthcheck()` / `app.readinesscheck()`).
+#   - `tini` as PID 1 for proper signal forwarding and zombie reaping.
+
+ARG NODE_VERSION=24-alpine
+
+FROM node:${NODE_VERSION} AS builder
+WORKDIR /app
+COPY package.json pnpm-lock.yaml* ./
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm install --frozen-lockfile --ignore-scripts
+COPY . .
+RUN pnpm build
+
+FROM node:${NODE_VERSION} AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# tini for clean signal handling at PID 1.
+RUN apk add --no-cache tini curl && \
+    addgroup -S app -g 1001 && \
+    adduser -S app -G app -u 1001
+COPY --from=builder --chown=app:app /app/dist ./dist
+COPY --from=builder --chown=app:app /app/node_modules ./node_modules
+COPY --from=builder --chown=app:app /app/package.json ./package.json
+USER app
+EXPOSE 3000
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3000/readyz || exit 1
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "dist/index.js"]

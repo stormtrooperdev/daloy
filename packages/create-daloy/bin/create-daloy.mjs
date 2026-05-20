@@ -59,6 +59,8 @@ const RENAME_ON_COPY = new Map([
   ["_npmrc", ".npmrc"],
   ["_env.example", ".env.example"],
   ["_github", ".github"],
+  ["_Dockerfile", "Dockerfile"],
+  ["_dockerignore", ".dockerignore"],
   // Directory: holds skill files for AI coding agents under
   // `.agents/skills/<skill-name>/SKILL.md`. Templates author this as
   // `_agents/` so npm pack does not drop the dotfolder during publish.
