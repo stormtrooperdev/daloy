@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   App,
   MemorySessionStore,
+  rotateSession,
   session,
   signValue,
   verifySignedValue,
@@ -657,6 +658,92 @@ test("session: store async get returning a value works", async () => {
   });
   const body = (await r2.json()) as { name: string };
   assert.equal(body.name, "alice");
+});
+
+test("rotateSession() rotates automatically when watched privilege data changes", async () => {
+  const store = new MemorySessionStore();
+  const ids = ["sid-1", "sid-2", "sid-3"];
+  const app = new App({ logger: false });
+  app.use(
+    session({
+      secret: SECRET,
+      store,
+      saveUninitialized: true,
+      generator: () => ids.shift() ?? `sid-${Date.now()}`,
+    }),
+  );
+  app.use(rotateSession({ watch: "role" }));
+  app.route({
+    method: "POST",
+    path: "/promote",
+    responses: { 200: { description: "ok" } },
+    handler: async ({ state }) => {
+      state.session.set("role", "admin");
+      return { status: 200 as const, body: { idDuringHandler: state.session.id } };
+    },
+  });
+  app.route({
+    method: "GET",
+    path: "/role",
+    responses: { 200: { description: "ok" } },
+    handler: async ({ state }) => ({
+      status: 200 as const,
+      body: { id: state.session.id, role: state.session.get("role") },
+    }),
+  });
+
+  const promoted = await app.request("/promote", { method: "POST" });
+  assert.equal(promoted.status, 200);
+  const body = (await promoted.json()) as { idDuringHandler: string };
+  assert.equal(body.idDuringHandler, "sid-1");
+  const cookie = readCookie(promoted)!;
+  assert.ok(cookie.startsWith("sid-2."));
+
+  const role = await app.request("/role", {
+    headers: { cookie: `__Host-daloy.sid=${encodeURIComponent(cookie)}` },
+  });
+  assert.deepEqual(await role.json(), { id: "sid-2", role: "admin" });
+  assert.equal(await store.get("sid-1"), null);
+});
+
+test("rotateSession() skips when the handler already regenerated", async () => {
+  const ids = ["a", "b", "c"];
+  const app = new App({ logger: false });
+  app.use(
+    session({
+      secret: SECRET,
+      saveUninitialized: true,
+      generator: () => ids.shift() ?? "fallback",
+    }),
+  );
+  app.use(rotateSession({ watch: (ctx) => ctx.state.session.get("role") }));
+  app.route({
+    method: "POST",
+    path: "/manual",
+    responses: { 200: { description: "ok" } },
+    handler: async ({ state }) => {
+      state.session.set("role", "admin");
+      const rotated = await state.session.regenerate();
+      return { status: 200 as const, body: { rotated } };
+    },
+  });
+  const res = await app.request("/manual", { method: "POST" });
+  const body = (await res.json()) as { rotated: string };
+  assert.equal(body.rotated, "b");
+  assert.ok(readCookie(res)!.startsWith("b."));
+});
+
+test("rotateSession() requires session() to be mounted first", async () => {
+  const app = new App({ logger: false });
+  app.use(rotateSession());
+  app.route({
+    method: "GET",
+    path: "/x",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  const res = await app.request("/x");
+  assert.equal(res.status, 500);
 });
 
 

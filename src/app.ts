@@ -1,5 +1,9 @@
 import { Router } from "./router.js";
-import { WebSocketRegistry, type WebSocketHandler } from "./websocket.js";
+import {
+  WebSocketRegistry,
+  normalizeWebSocketOptions,
+  type WebSocketHandler,
+} from "./websocket.js";
 import {
   BadRequestError,
   ForbiddenError,
@@ -56,6 +60,7 @@ import {
   SESSION_SECRETS_MARKER,
 } from "./session.js";
 import { loadShedding as loadSheddingMiddleware, type LoadSheddingOptions } from "./load-shedding.js";
+import { securitySchemeRequiresPayloadAuth } from "./security-schemes.js";
 
 const AUTO_SECURE_HEADERS_MARKER: unique symbol = Symbol.for(
   "daloyjs.app.autoSecureHeaders",
@@ -865,6 +870,20 @@ export class App {
     }
   }
 
+  private assertRouteAuthPayloadConfig(
+    route: RouteDefinition<any, any, any, any>,
+  ): void {
+    const auth = route.auth;
+    if (!auth || auth.payload !== false) return;
+    const scheme = this.options.openapi?.securitySchemes?.[auth.scheme];
+    if (!securitySchemeRequiresPayloadAuth(scheme)) return;
+    throw new Error(
+      `Route ${route.method} ${route.path} declares auth.payload: false, ` +
+        `but security scheme "${auth.scheme}" requires payload authentication. ` +
+        `Remove the route-level opt-out or use a scheme without requirePayloadAuth: true.`,
+    );
+  }
+
   private resetWave3BootGuardCache(): void {
     this.wave3BootGuard.checked = false;
     this.wave3BootGuard.error = undefined;
@@ -1139,6 +1158,7 @@ export class App {
       tags: [...(this.groupTags ?? []), ...(def.tags ?? [])],
       auth: def.auth ?? this.groupAuth,
     };
+    this.assertRouteAuthPayloadConfig(merged);
     const sources: Hooks[] = [...this.groupHooks, def.hooks ?? {}];
     const hooks = mergeHooks(sources);
     const corsOriginAllows = corsOriginAllowsFromHooks(sources);
@@ -1174,10 +1194,15 @@ export class App {
     handler: WebSocketHandler<P, any, TData>,
   ): this {
     const fullPath = joinPath(this.prefix, path) as PathString;
+    const options = normalizeWebSocketOptions(handler, {
+      production: this.isProduction(),
+      secureDefaults: this.options.secureDefaults !== false,
+    });
     this.webSocketRoutes.add(
       fullPath,
       handler as WebSocketHandler<any, any, any>,
       () => ({ ...this.decorations }),
+      options,
     );
     return this;
   }

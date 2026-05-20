@@ -16,7 +16,7 @@
  * works on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge.
  */
 
-import type { Hooks } from "./types.js";
+import type { BaseContext, Hooks } from "./types.js";
 import { timingSafeEqual } from "./security.js";
 
 const DEFAULT_COOKIE_NAME = "__Host-daloy.sid";
@@ -581,6 +581,116 @@ export function session(opts: SessionOptions): Hooks {
   (hooks as Record<PropertyKey, unknown>)[SESSION_HOOK_MARKER] = true;
   (hooks as Record<PropertyKey, unknown>)[SESSION_SECRETS_MARKER] = secrets.slice();
   return hooks;
+}
+
+// ---------- Privilege-change rotation helper ----------
+
+export interface RotateSessionOptions {
+  /**
+   * Session data keys to watch, or a custom selector. When the watched value
+   * changes during a handler, the helper calls `ctx.state.session.regenerate()`.
+   * Default keys cover common privilege-bearing fields.
+   */
+  watch?:
+    | string
+    | readonly string[]
+    | ((ctx: BaseContext<any, any>) => unknown | Promise<unknown>);
+  /** Carry existing data across the regenerated session id. Default: true. */
+  keepData?: boolean;
+}
+
+const ROTATE_SESSION_SNAPSHOT_KEY = "__daloyRotateSessionSnapshot" as const;
+const DEFAULT_ROTATE_SESSION_KEYS = [
+  "userId",
+  "accountId",
+  "tenantId",
+  "role",
+  "roles",
+  "scopes",
+  "permissions",
+  "privileges",
+  "isAdmin",
+] as const;
+
+interface RotateSessionSnapshot {
+  id: string;
+  value: string;
+}
+
+function sessionFromContext(ctx: BaseContext<any, any>): SessionContext {
+  const value = (ctx.state as Record<string, unknown>)[STATE_KEY];
+  if (!value || typeof value !== "object" || typeof (value as SessionContext).regenerate !== "function") {
+    throw new Error("rotateSession(): session() must run before rotateSession().");
+  }
+  return value as SessionContext;
+}
+
+async function readRotationWatchValue(
+  ctx: BaseContext<any, any>,
+  watch: RotateSessionOptions["watch"],
+): Promise<unknown> {
+  if (typeof watch === "function") return watch(ctx);
+  const sessionCtx = sessionFromContext(ctx);
+  const keys =
+    typeof watch === "string"
+      ? [watch]
+      : Array.isArray(watch)
+        ? watch
+        : DEFAULT_ROTATE_SESSION_KEYS;
+  const out: Record<string, unknown> = {};
+  for (const key of keys) out[key] = sessionCtx.data[key];
+  return out;
+}
+
+function stableSnapshot(value: unknown): string {
+  if (value === undefined) return "undefined";
+  if (typeof value === "function") return `function:${value.name}`;
+  if (typeof value === "symbol") return String(value);
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableSnapshot).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableSnapshot(record[key])}`)
+    .join(",")}}`;
+}
+
+/**
+ * Automatically rotate the signed session id when privilege-bearing session
+ * data changes during a handler. Mount after `session()` and before routes
+ * that mutate login / role / scope / tenant state.
+ *
+ * This is a thin guard over `ctx.state.session.regenerate()`, so it inherits
+ * session key-rotation arrays: old cookies verify with any configured secret
+ * and rotated cookies are re-signed with the first/current secret.
+ *
+ * @since 0.23.0
+ */
+export function rotateSession(opts: RotateSessionOptions = {}): Hooks {
+  const keepData = opts.keepData !== false;
+  return {
+    async beforeHandle(ctx) {
+      const sessionCtx = sessionFromContext(ctx);
+      const value = await readRotationWatchValue(ctx, opts.watch);
+      (ctx.state as Record<string, unknown>)[ROTATE_SESSION_SNAPSHOT_KEY] = {
+        id: sessionCtx.id,
+        value: stableSnapshot(value),
+      } satisfies RotateSessionSnapshot;
+    },
+    async afterHandle(ctx, result) {
+      const snapshot = (ctx.state as Record<string, unknown>)[
+        ROTATE_SESSION_SNAPSHOT_KEY
+      ] as RotateSessionSnapshot | undefined;
+      if (!snapshot) return result;
+      const sessionCtx = sessionFromContext(ctx);
+      if (sessionCtx.id !== snapshot.id) return result;
+      const value = await readRotationWatchValue(ctx, opts.watch);
+      if (stableSnapshot(value) !== snapshot.value) {
+        await sessionCtx.regenerate({ keepData });
+      }
+      return result;
+    },
+  };
 }
 
 // ---------- Low-level signing helpers (re-exported for advanced use) ----------

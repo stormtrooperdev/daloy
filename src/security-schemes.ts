@@ -15,16 +15,22 @@ export interface HttpBearerSchemeOptions {
   /** Hint about the bearer token format (e.g. "JWT"). */
   bearerFormat?: string;
   description?: string;
+  /** Require payload/body authentication for routes using this scheme. */
+  requirePayloadAuth?: boolean;
 }
 
 export interface HttpBasicSchemeOptions {
   description?: string;
+  /** Require payload/body authentication for routes using this scheme. */
+  requirePayloadAuth?: boolean;
 }
 
 export interface ApiKeySchemeOptions {
   in: ApiKeyLocation;
   name: string;
   description?: string;
+  /** Require payload/body authentication for routes using this scheme. */
+  requirePayloadAuth?: boolean;
 }
 
 export interface OAuth2ImplicitFlow {
@@ -62,40 +68,50 @@ export interface OAuth2Flows {
 export interface OAuth2SchemeOptions {
   flows: OAuth2Flows;
   description?: string;
+  /** Require payload/body authentication for routes using this scheme. */
+  requirePayloadAuth?: boolean;
 }
 
 export interface OpenIdConnectSchemeOptions {
   openIdConnectUrl: string;
   description?: string;
+  /** Require payload/body authentication for routes using this scheme. */
+  requirePayloadAuth?: boolean;
 }
 
-export interface HttpBearerScheme {
+export const REQUIRE_PAYLOAD_AUTH_EXTENSION = "x-daloy-require-payload-auth" as const;
+
+export interface RequirePayloadAuthExtension {
+  readonly [REQUIRE_PAYLOAD_AUTH_EXTENSION]?: true;
+}
+
+export interface HttpBearerScheme extends RequirePayloadAuthExtension {
   type: "http";
   scheme: "bearer";
   bearerFormat?: string;
   description?: string;
 }
 
-export interface HttpBasicScheme {
+export interface HttpBasicScheme extends RequirePayloadAuthExtension {
   type: "http";
   scheme: "basic";
   description?: string;
 }
 
-export interface ApiKeyScheme {
+export interface ApiKeyScheme extends RequirePayloadAuthExtension {
   type: "apiKey";
   in: ApiKeyLocation;
   name: string;
   description?: string;
 }
 
-export interface OAuth2Scheme {
+export interface OAuth2Scheme extends RequirePayloadAuthExtension {
   type: "oauth2";
   flows: OAuth2Flows;
   description?: string;
 }
 
-export interface OpenIdConnectScheme {
+export interface OpenIdConnectScheme extends RequirePayloadAuthExtension {
   type: "openIdConnect";
   openIdConnectUrl: string;
   description?: string;
@@ -107,6 +123,36 @@ export type SecurityScheme =
   | ApiKeyScheme
   | OAuth2Scheme
   | OpenIdConnectScheme;
+
+function markRequirePayloadAuth<T extends RequirePayloadAuthExtension>(
+  scheme: T,
+  options: { requirePayloadAuth?: boolean },
+): T {
+  if (options.requirePayloadAuth === true) {
+    (scheme as Record<string, unknown>)[REQUIRE_PAYLOAD_AUTH_EXTENSION] = true;
+  }
+  return scheme;
+}
+
+export function securitySchemeRequiresPayloadAuth(scheme: unknown): boolean {
+  if (!scheme || typeof scheme !== "object") return false;
+  const record = scheme as Record<string, unknown>;
+  return (
+    record[REQUIRE_PAYLOAD_AUTH_EXTENSION] === true ||
+    record.requirePayloadAuth === true
+  );
+}
+
+export function toOpenAPISecurityScheme(scheme: unknown): unknown {
+  if (!scheme || typeof scheme !== "object") return scheme;
+  const record = scheme as Record<string, unknown>;
+  if (!("requirePayloadAuth" in record)) return scheme;
+  const out: Record<string, unknown> = { ...record };
+  const requiresPayloadAuth = securitySchemeRequiresPayloadAuth(record);
+  delete out.requirePayloadAuth;
+  if (requiresPayloadAuth) out[REQUIRE_PAYLOAD_AUTH_EXTENSION] = true;
+  return out;
+}
 
 /**
  * Build an OpenAPI Security Scheme Object for HTTP Bearer authentication
@@ -132,7 +178,7 @@ export function httpBearerScheme(options: HttpBearerSchemeOptions = {}): HttpBea
   const scheme: HttpBearerScheme = { type: "http", scheme: "bearer" };
   if (options.bearerFormat !== undefined) scheme.bearerFormat = options.bearerFormat;
   if (options.description !== undefined) scheme.description = options.description;
-  return scheme;
+  return markRequirePayloadAuth(scheme, options);
 }
 
 /**
@@ -146,7 +192,7 @@ export function httpBearerScheme(options: HttpBearerSchemeOptions = {}): HttpBea
 export function httpBasicScheme(options: HttpBasicSchemeOptions = {}): HttpBasicScheme {
   const scheme: HttpBasicScheme = { type: "http", scheme: "basic" };
   if (options.description !== undefined) scheme.description = options.description;
-  return scheme;
+  return markRequirePayloadAuth(scheme, options);
 }
 
 /**
@@ -178,7 +224,7 @@ export function apiKeyScheme(options: ApiKeySchemeOptions): ApiKeyScheme {
     name: options.name,
   };
   if (options.description !== undefined) scheme.description = options.description;
-  return scheme;
+  return markRequirePayloadAuth(scheme, options);
 }
 
 /**
@@ -216,7 +262,7 @@ export function oauth2Scheme(options: OAuth2SchemeOptions): OAuth2Scheme {
   }
   const scheme: OAuth2Scheme = { type: "oauth2", flows };
   if (options.description !== undefined) scheme.description = options.description;
-  return scheme;
+  return markRequirePayloadAuth(scheme, options);
 }
 
 /**
@@ -242,5 +288,5 @@ export function openIdConnectScheme(
     openIdConnectUrl: options.openIdConnectUrl,
   };
   if (options.description !== undefined) scheme.description = options.description;
-  return scheme;
+  return markRequirePayloadAuth(scheme, options);
 }

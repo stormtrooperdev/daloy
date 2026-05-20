@@ -178,17 +178,17 @@ app.use(
         <code>basicAuth()</code>, and the new <code>jwk()</code>.
       </p>
 
-      <h2>What did not ship in 0.22.0</h2>
+      <h2>What shipped next</h2>
       <p>
         The remaining Wave 5 leftover items — the <code>wsRateLimit()</code>{" "}
         adapter, <code>loginThrottle()</code> preset,{" "}
         <code>rotateSession()</code> helper, the file-upload MIME + magic-byte +
         size guard, the <code>requirePayloadAuth</code> scheme flag, and the
-        WebSocket-helper safe defaults — remain tracked in{" "}
-        <a href="https://github.com/daloyjs/daloy/blob/main/ROADMAP.md">
-          ROADMAP.md
-        </a>{" "}
-        and will land in subsequent additive releases.
+        WebSocket-helper safe defaults — shipped in the{" "}
+        <a href="/docs/security/wave-5-remaining">
+          Wave 5 remaining slice (0.23.0)
+        </a>
+        .
       </p>
     </>
   );

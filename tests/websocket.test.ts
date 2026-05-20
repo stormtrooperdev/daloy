@@ -5,7 +5,12 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 import {
   App,
+  rateLimit,
+  wsRateLimit,
   computeAcceptKey,
+  DEFAULT_WS_BACKPRESSURE_LIMIT,
+  DEFAULT_WS_IDLE_TIMEOUT_SECONDS,
+  DEFAULT_WS_MAX_PAYLOAD_LENGTH,
   decodeClosePayload,
   defineWebSocket,
   encodeClosePayload,
@@ -18,12 +23,14 @@ import {
   validateSelectedSubprotocol,
   validateUpgrade,
   WebSocketProtocolError,
+  WebSocketPayloadTooLargeError,
   WebSocketRegistry,
   WS_CLOSE_CODE,
   WS_GUID,
   WS_MAX_CONTROL_PAYLOAD,
   WS_OPCODE,
   WS_READY_STATE,
+  _resetSharedRateLimitStoresForTests,
 } from "../src/index.js";
 import { serve as serveNode } from "../src/adapters/node.js";
 import { serve as serveBun } from "../src/adapters/bun.js";
@@ -429,6 +436,32 @@ test("FrameSink surfaces protocol errors from parseFrame (e.g. RSV)", () => {
   assert.equal(events[0]!.type, "error");
 });
 
+test("FrameSink rejects messages over maxPayloadLength", () => {
+  const events: Array<{ type: string; reason?: string }> = [];
+  const sink = new FrameSink({
+    requireMask: true,
+    maxPayloadLength: 2,
+    onMessage: () => events.push({ type: "message" }),
+    onPing: () => {},
+    onPong: () => {},
+    onClose: () => {},
+    onProtocolError: (err) => {
+      assert.ok(err instanceof WebSocketPayloadTooLargeError);
+      events.push({ type: "error", reason: err.message });
+    },
+  });
+  sink.push(
+    encodeFrame({
+      opcode: WS_OPCODE.TEXT,
+      payload: new TextEncoder().encode("abc"),
+      mask: true,
+    }),
+  );
+  assert.equal(events.length, 1);
+  assert.equal(events[0]!.type, "error");
+  assert.match(events[0]!.reason!, /maxPayloadLength/);
+});
+
 test("FrameSink propagates non-protocol errors", () => {
   const sink = new FrameSink({
     requireMask: true,
@@ -465,6 +498,79 @@ test("App.ws registers WebSocket routes and they are discoverable via webSocketR
   assert.ok(match);
   assert.deepEqual(match!.params, { room: "general" });
   assert.equal(opened, 0);
+});
+
+test("App.ws applies safe defaults and validates unsafe overrides", () => {
+  const app = new App({ logger: false });
+  app.ws("/safe", { open: () => {} });
+  const match = app.webSocketRoutes.find("/safe");
+  assert.ok(match);
+  assert.deepEqual(match!.handler.options, {
+    closeOnBackpressureLimit: true,
+    backpressureLimit: DEFAULT_WS_BACKPRESSURE_LIMIT,
+    perMessageDeflate: false,
+    idleTimeout: DEFAULT_WS_IDLE_TIMEOUT_SECONDS,
+    maxPayloadLength: DEFAULT_WS_MAX_PAYLOAD_LENGTH,
+  });
+
+  assert.throws(
+    () => new App({ env: "production", logger: false }).ws("/compressed", {
+      perMessageDeflate: true,
+      open: () => {},
+    }),
+    /perMessageDeflate/,
+  );
+  assert.throws(
+    () => app.ws("/idle", { idleTimeout: 0, open: () => {} }),
+    /idleTimeout/,
+  );
+  assert.throws(
+    () => app.ws("/backpressure", { backpressureLimit: 0, open: () => {} }),
+    /backpressureLimit/,
+  );
+
+  const tinySchema = {
+    "~standard": {
+      version: 1,
+      vendor: "daloy-test",
+      validate: (value: unknown) => ({ value }),
+    },
+    toJSONSchema: () => ({ type: "string", maxLength: 2 }),
+  } as any;
+  assert.throws(
+    () => app.ws("/schema", {
+      request: { body: tinySchema },
+      maxPayloadLength: 3,
+      open: () => {},
+    }),
+    /route body schema maximum/,
+  );
+});
+
+test("WebSocketRegistry runtimeOptions aggregates route limits", () => {
+  const registry = new WebSocketRegistry();
+  assert.equal(registry.runtimeOptions().maxPayloadLength, DEFAULT_WS_MAX_PAYLOAD_LENGTH);
+  registry.add("/small", {
+    maxPayloadLength: 10,
+    idleTimeout: 5,
+    backpressureLimit: 10,
+    open: () => {},
+  });
+  registry.add("/large", {
+    maxPayloadLength: 20,
+    idleTimeout: 15,
+    backpressureLimit: 30,
+    closeOnBackpressureLimit: false,
+    perMessageDeflate: true,
+    open: () => {},
+  });
+  assert.deepEqual(registry.runtimeOptions(), {
+    closeOnBackpressureLimit: false,
+    backpressureLimit: 30,
+    perMessageDeflate: true,
+    idleTimeout: 5,
+    maxPayloadLength: 20,
+  });
 });
 
 test("App.ws inherits group prefix", () => {
@@ -597,6 +703,25 @@ test("Node adapter performs handshake and echoes text/binary frames", async () =
   }
 });
 
+test("Node adapter closes oversized WebSocket messages with 1009", async () => {
+  const app = new App({ logger: false });
+  app.ws("/small", { maxPayloadLength: 1, open: () => {}, message: () => {} });
+  const handle = await startApp(app);
+  try {
+    const port = (handle.server.address() as AddressInfo).port;
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/small`);
+    await waitOpen(ws);
+    const closed = new Promise<CloseEvent>((resolve) => {
+      ws.addEventListener("close", (ev) => resolve(ev), { once: true });
+    });
+    ws.send("too large");
+    const ev = await closed;
+    assert.equal(ev.code, WS_CLOSE_CODE.MESSAGE_TOO_BIG);
+  } finally {
+    await handle.close();
+  }
+});
+
 test("Node adapter rejects upgrades to unknown paths and bad versions", async () => {
   const { handle, ready } = startNodeApp({ open: () => {} });
   await ready;
@@ -667,6 +792,39 @@ test("Node adapter honors beforeUpgrade rejection (Response) and protocol select
     assert.equal(badProto, 400);
   } finally {
     await handle.close();
+  }
+});
+
+test("wsRateLimit() spends from the same bucket as HTTP rateLimit()", async () => {
+  _resetSharedRateLimitStoresForTests();
+  const app = new App({ logger: false });
+  const limit = {
+    windowMs: 60_000,
+    max: 1,
+    groupId: "login-flow",
+    keyGenerator: () => "alice",
+  };
+  app.route({
+    method: "POST",
+    path: "/login",
+    hooks: rateLimit(limit),
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  app.ws("/session", {
+    beforeUpgrade: wsRateLimit(limit),
+    open: () => {},
+  });
+  const handle = await startApp(app);
+  try {
+    const port = (handle.server.address() as AddressInfo).port;
+    const first = await fetch(`http://127.0.0.1:${port}/login`, { method: "POST" });
+    assert.equal(first.status, 200);
+    const status = await rawUpgrade(port, "/session", {});
+    assert.equal(status, 429);
+  } finally {
+    await handle.close();
+    _resetSharedRateLimitStoresForTests();
   }
 });
 
@@ -1034,6 +1192,13 @@ test("Bun adapter wires websocket config and routes upgrades", async () => {
       beforeUpgrade: () => "not-offered",
       open: () => {},
     });
+    app.ws("/small", {
+      maxPayloadLength: 1,
+      open: () => {},
+      message: () => {
+        throw new Error("oversized messages should close before message()");
+      },
+    });
     serveBun(app, { port: 1234 });
 
     // websocket config present
@@ -1042,6 +1207,11 @@ test("Bun adapter wires websocket config and routes upgrades", async () => {
     assert.equal(typeof wsConfig.websocket.message, "function");
     assert.equal(typeof wsConfig.websocket.close, "function");
     assert.equal(typeof wsConfig.websocket.drain, "function");
+    assert.equal(wsConfig.websocket.closeOnBackpressureLimit, true);
+    assert.equal(wsConfig.websocket.backpressureLimit, DEFAULT_WS_BACKPRESSURE_LIMIT);
+    assert.equal(wsConfig.websocket.perMessageDeflate, false);
+    assert.equal(wsConfig.websocket.idleTimeout, DEFAULT_WS_IDLE_TIMEOUT_SECONDS);
+    assert.equal(wsConfig.websocket.maxPayloadLength, DEFAULT_WS_MAX_PAYLOAD_LENGTH);
 
     // Non-upgrade requests pass through fetch normally.
     const normalRes = await wsConfig.fetch(
@@ -1112,6 +1282,48 @@ test("Bun adapter wires websocket config and routes upgrades", async () => {
     assert.equal(msgCalls.length, 2);
     assert.equal(msgCalls[0]!.isBinary, false);
     assert.equal(msgCalls[1]!.isBinary, true);
+
+    const smallReq = new Request("http://x.test/small", {
+      headers: { upgrade: "websocket" },
+    });
+    await wsConfig.fetch(smallReq, fakeServer as any);
+    const smallWs: FakeWs = {
+      data: upgrades[upgrades.length - 1]!.opts.data,
+      readyState: 1,
+      binaryType: "uint8array",
+      sends: [],
+      pings: [],
+      pongs: [],
+      terminated: false,
+      closeArgs: undefined,
+    } as any;
+    Object.assign(smallWs, {
+      send(d: any) {
+        smallWs.sends.push(d);
+        return 1;
+      },
+      close(code?: number, reason?: string) {
+        smallWs.closeArgs = [code, reason];
+      },
+      terminate() {
+        smallWs.terminated = true;
+      },
+      ping(d: any) {
+        smallWs.pings.push(d);
+        return 1;
+      },
+      pong(d: any) {
+        smallWs.pongs.push(d);
+        return 1;
+      },
+      getBufferedAmount: () => 0,
+    });
+    wsConfig.websocket.open(smallWs);
+    wsConfig.websocket.message(smallWs, "too big");
+    assert.deepEqual(smallWs.closeArgs, [
+      WS_CLOSE_CODE.MESSAGE_TOO_BIG,
+      "maxPayloadLength exceeded",
+    ]);
 
     wsConfig.websocket.drain(ws);
     assert.equal(drainCalls.length, 1);

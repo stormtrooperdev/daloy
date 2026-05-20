@@ -31,7 +31,12 @@
  * serve(app, { port: 3000 });
  * ```
  */
-import { Router, type RouteMatch } from "./router.js"; import type { AppState, PathString, PathParams } from "./types.js";
+import { HttpError, InternalError } from "./errors.js";
+import { rateLimit, type RateLimitOptions } from "./middleware.js";
+import { getFileFieldOptions } from "./multipart.js";
+import { Router, type RouteMatch } from "./router.js";
+import type { StandardSchemaV1 } from "./schema.js";
+import type { AppState, BaseContext, PathString, PathParams } from "./types.js";
 /** RFC 6455 magic GUID used to compute `Sec-WebSocket-Accept`. */
 export const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -69,6 +74,9 @@ export const WS_CLOSE_CODE = {
 
 /** Maximum payload length permitted on a single control frame (RFC 6455 §5.5). */
 export const WS_MAX_CONTROL_PAYLOAD = 125;
+export const DEFAULT_WS_BACKPRESSURE_LIMIT = 1024 * 1024;
+export const DEFAULT_WS_MAX_PAYLOAD_LENGTH = 1024 * 1024;
+export const DEFAULT_WS_IDLE_TIMEOUT_SECONDS = 120;
 
 // ---------- Public types ----------
 
@@ -131,6 +139,18 @@ export interface WebSocketHandler<
   S = AppState,
   TData = unknown,
 > {
+  /** Optional schema used for payload-size consistency checks. */
+  request?: { body?: StandardSchemaV1 };
+  /** Close the connection when queued outbound bytes exceed backpressureLimit. Default: true. */
+  closeOnBackpressureLimit?: boolean;
+  /** Maximum queued outbound bytes before backpressure handling triggers. Default: 1 MiB. */
+  backpressureLimit?: number;
+  /** Per-message compression. Default: false; refused in production secureDefaults. */
+  perMessageDeflate?: boolean;
+  /** Idle timeout in seconds. Default: 120; `0` is refused. */
+  idleTimeout?: number;
+  /** Maximum inbound message payload length in bytes. Default: 1 MiB. */
+  maxPayloadLength?: number;
   beforeUpgrade?(
     request: Request,
     ctx: WebSocketContext<P, S>,
@@ -153,6 +173,136 @@ export interface WebSocketHandler<
   drain?(conn: WebSocketConnection<TData>): void | Promise<void>;
 }
 
+export interface NormalizedWebSocketOptions {
+  closeOnBackpressureLimit: boolean;
+  backpressureLimit: number;
+  perMessageDeflate: boolean;
+  idleTimeout: number;
+  maxPayloadLength: number;
+}
+
+function assertPositiveWebSocketInteger(name: string, value: number): void {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`app.ws(): ${name} must be a positive integer.`);
+  }
+}
+
+function schemaToJson(schema: StandardSchemaV1 | undefined): unknown {
+  const converter = (schema as unknown as { toJSONSchema?: () => unknown } | undefined)?.toJSONSchema;
+  if (typeof converter !== "function") return undefined;
+  try {
+    return converter.call(schema);
+  } catch {
+    return undefined;
+  }
+}
+
+function declaredSchemaMaxBytes(schema: StandardSchemaV1 | undefined): number | undefined {
+  const fileOptions = getFileFieldOptions(schema);
+  if (fileOptions?.maxBytes !== undefined) return fileOptions.maxBytes;
+  const jsonSchema = schemaToJson(schema);
+  if (!jsonSchema || typeof jsonSchema !== "object") return undefined;
+  const record = jsonSchema as Record<string, unknown>;
+  const maxLength = record.maxLength;
+  if (typeof maxLength === "number" && Number.isFinite(maxLength) && maxLength >= 0) {
+    return Math.floor(maxLength);
+  }
+  const maxBytes = record["x-max-bytes"] ?? record.maxBytes;
+  if (typeof maxBytes === "number" && Number.isFinite(maxBytes) && maxBytes >= 0) {
+    return Math.floor(maxBytes);
+  }
+  return undefined;
+}
+
+export function normalizeWebSocketOptions(
+  handler: WebSocketHandler<any, any, any>,
+  context: { production: boolean; secureDefaults: boolean },
+): NormalizedWebSocketOptions {
+  const closeOnBackpressureLimit = handler.closeOnBackpressureLimit ?? true;
+  const backpressureLimit = handler.backpressureLimit ?? DEFAULT_WS_BACKPRESSURE_LIMIT;
+  const perMessageDeflate = handler.perMessageDeflate ?? false;
+  const idleTimeout = handler.idleTimeout ?? DEFAULT_WS_IDLE_TIMEOUT_SECONDS;
+  const maxPayloadLength = handler.maxPayloadLength ?? DEFAULT_WS_MAX_PAYLOAD_LENGTH;
+
+  assertPositiveWebSocketInteger("backpressureLimit", backpressureLimit);
+  assertPositiveWebSocketInteger("idleTimeout", idleTimeout);
+  assertPositiveWebSocketInteger("maxPayloadLength", maxPayloadLength);
+  if (typeof closeOnBackpressureLimit !== "boolean") {
+    throw new Error("app.ws(): closeOnBackpressureLimit must be a boolean.");
+  }
+  if (typeof perMessageDeflate !== "boolean") {
+    throw new Error("app.ws(): perMessageDeflate must be a boolean.");
+  }
+  if (perMessageDeflate && context.secureDefaults && context.production) {
+    throw new Error(
+      "app.ws(): perMessageDeflate: true is refused in production under secureDefaults. " +
+        "Leave it false or pass app({ secureDefaults: false }) only for a reviewed deployment.",
+    );
+  }
+  const schemaMaxBytes = declaredSchemaMaxBytes(handler.request?.body);
+  if (schemaMaxBytes !== undefined && maxPayloadLength > schemaMaxBytes) {
+    throw new Error(
+      `app.ws(): maxPayloadLength (${maxPayloadLength}) exceeds the route body schema maximum (${schemaMaxBytes}).`,
+    );
+  }
+  return {
+    closeOnBackpressureLimit,
+    backpressureLimit,
+    perMessageDeflate,
+    idleTimeout,
+    maxPayloadLength,
+  };
+}
+
+export type WebSocketBeforeUpgrade<P extends string = string, S = AppState> = NonNullable<
+  WebSocketHandler<P, S>["beforeUpgrade"]
+>;
+
+/**
+ * Adapt `rateLimit({ groupId })` to the WebSocket upgrade boundary. Use it as
+ * a `beforeUpgrade` handler to spend from the same shared buckets as HTTP
+ * routes (for example, login and WebSocket session-establishment endpoints).
+ *
+ * @since 0.23.0
+ */
+export function wsRateLimit<P extends string = string, S = AppState>(
+  options: RateLimitOptions,
+): WebSocketBeforeUpgrade<P, S> {
+  const hooks = rateLimit(options);
+  return async (request, wsContext) => {
+    const setHeaders = new Headers();
+    const ctx: BaseContext<any, any> = {
+      request,
+      params: wsContext.params,
+      query: wsContext.query,
+      headers: wsContext.headers,
+      body: undefined,
+      state: wsContext.state as AppState & Record<string, unknown>,
+      set: { headers: setHeaders },
+    };
+    try {
+      const result = await hooks.beforeHandle?.(ctx);
+      if (result instanceof Response) {
+        copyWsRateLimitHeaders(setHeaders, result);
+        return result;
+      }
+      return undefined;
+    } catch (err) {
+      const response = err instanceof HttpError
+        ? err.toResponse()
+        : new InternalError(err instanceof Error ? err.message : "WebSocket rate limit failed").toResponse();
+      copyWsRateLimitHeaders(setHeaders, response);
+      return response;
+    }
+  };
+}
+
+function copyWsRateLimitHeaders(headers: Headers, response: Response): void {
+  headers.forEach((value, key) => {
+    if (!response.headers.has(key)) response.headers.set(key, value);
+  });
+}
+
 /** Helper for declaring a handler with full type-inference. */
 export function defineWebSocket<
   P extends string,
@@ -168,6 +318,7 @@ export interface WebSocketRouteEntry {
   path: PathString;
   handler: WebSocketHandler<any, any, any>;
   createState: WebSocketStateFactory;
+  options: NormalizedWebSocketOptions;
 }
 
 type WebSocketStateFactory = () => Record<string, unknown>;
@@ -181,8 +332,19 @@ type WebSocketStateFactory = () => Record<string, unknown>;
  */
 export class WebSocketRegistry {
   private router = new Router<WebSocketRouteEntry>(); private _size = 0;
-  add(path: PathString, handler: WebSocketHandler<any, any, any>, createState: WebSocketStateFactory = () => ({})): void {
-    this.router.add("GET", path, { path, handler, createState });
+  private entries: WebSocketRouteEntry[] = [];
+  add(
+    path: PathString,
+    handler: WebSocketHandler<any, any, any>,
+    createState: WebSocketStateFactory = () => ({}),
+    options: NormalizedWebSocketOptions = normalizeWebSocketOptions(handler, {
+      production: false,
+      secureDefaults: true,
+    }),
+  ): void {
+    const entry = { path, handler, createState, options };
+    this.router.add("GET", path, entry);
+    this.entries.push(entry);
     this._size += 1;
   }
 
@@ -192,6 +354,27 @@ export class WebSocketRegistry {
 
   get size(): number {
     return this._size;
+  }
+
+  runtimeOptions(): NormalizedWebSocketOptions {
+    if (this.entries.length === 0) {
+      return {
+        closeOnBackpressureLimit: true,
+        backpressureLimit: DEFAULT_WS_BACKPRESSURE_LIMIT,
+        perMessageDeflate: false,
+        idleTimeout: DEFAULT_WS_IDLE_TIMEOUT_SECONDS,
+        maxPayloadLength: DEFAULT_WS_MAX_PAYLOAD_LENGTH,
+      };
+    }
+    return {
+      closeOnBackpressureLimit: this.entries.every(
+        (entry) => entry.options.closeOnBackpressureLimit,
+      ),
+      backpressureLimit: Math.max(...this.entries.map((entry) => entry.options.backpressureLimit)),
+      perMessageDeflate: this.entries.some((entry) => entry.options.perMessageDeflate),
+      idleTimeout: Math.min(...this.entries.map((entry) => entry.options.idleTimeout)),
+      maxPayloadLength: Math.max(...this.entries.map((entry) => entry.options.maxPayloadLength)),
+    };
   }
 }
 
@@ -554,6 +737,16 @@ export class WebSocketProtocolError extends Error {
   }
 }
 
+export class WebSocketPayloadTooLargeError extends WebSocketProtocolError {
+  constructor(
+    readonly limit: number,
+    readonly actual: number,
+  ) {
+    super(`WebSocket message exceeds maxPayloadLength (${actual} > ${limit})`);
+    this.name = "WebSocketPayloadTooLargeError";
+  }
+}
+
 // ---------- Streaming frame parser ----------
 
 /**
@@ -585,10 +778,14 @@ export class FrameSink {
   private buffer: Uint8Array = new Uint8Array(0);
   private fragments: Uint8Array[] = [];
   private fragmentOpcode = -1;
+  private fragmentBytes = 0;
   private closed = false;
 
   constructor(
-    private readonly opts: FrameSinkEvents & { requireMask?: boolean },
+    private readonly opts: FrameSinkEvents & {
+      requireMask?: boolean;
+      maxPayloadLength?: number;
+    },
   ) {}
 
   push(chunk: Uint8Array): void {
@@ -643,6 +840,7 @@ export class FrameSink {
           "Continuation frame without an initial data frame",
         );
       }
+      this.assertMessageSize(frame.payload.length);
       this.fragments.push(frame.payload.slice());
     } else {
       if (this.fragmentOpcode !== -1) {
@@ -651,6 +849,7 @@ export class FrameSink {
         );
       }
       this.fragmentOpcode = frame.opcode;
+      this.assertMessageSize(frame.payload.length);
       this.fragments.push(frame.payload.slice());
     }
 
@@ -665,6 +864,7 @@ export class FrameSink {
       const isBinary = this.fragmentOpcode === WS_OPCODE.BINARY;
       this.fragments = [];
       this.fragmentOpcode = -1;
+      this.fragmentBytes = 0;
       if (isBinary) {
         this.opts.onMessage({ data: joined, isBinary: true });
       } else {
@@ -677,6 +877,15 @@ export class FrameSink {
         this.opts.onMessage({ data: text, isBinary: false });
       }
     }
+  }
+
+  private assertMessageSize(nextPayloadLength: number): void {
+    const limit = this.opts.maxPayloadLength;
+    const nextTotal = this.fragmentBytes + nextPayloadLength;
+    if (limit !== undefined && nextTotal > limit) {
+      throw new WebSocketPayloadTooLargeError(limit, nextTotal);
+    }
+    this.fragmentBytes = nextTotal;
   }
 }
 

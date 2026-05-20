@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import {
   App,
   rateLimit,
+  loginThrottle,
   every,
   some,
   except,
   ipRestriction,
   bearerAuth,
+  httpBearerScheme,
   _resetSharedRateLimitStoresForTests,
 } from "../src/index.js";
 import type { Hooks } from "../src/index.js";
@@ -85,6 +87,150 @@ test("rateLimit({ groupId }) namespaces keys so groups don't collide in a custom
   });
   await app.fetch(new Request("http://x/x"));
   assert.equal(seen[0], "g1:global");
+});
+
+test("loginThrottle() shares one login bucket across related routes", async () => {
+  _resetSharedRateLimitStoresForTests();
+  const options = {
+    windowMs: 60_000,
+    max: 2,
+    delayAfter: 0,
+    delayMs: 1,
+    maxDelayMs: 1,
+    keyGenerator: () => "alice",
+  };
+  const app = new App({ env: "development" });
+  app.route({
+    method: "POST",
+    path: "/login",
+    hooks: loginThrottle(options),
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  app.route({
+    method: "POST",
+    path: "/password-reset",
+    hooks: loginThrottle(options),
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+
+  assert.equal((await app.fetch(new Request("http://x/login", { method: "POST" }))).status, 200);
+  assert.equal((await app.fetch(new Request("http://x/password-reset", { method: "POST" }))).status, 200);
+  const limited = await app.fetch(new Request("http://x/login", { method: "POST" }));
+  assert.equal(limited.status, 429);
+  assert.equal(limited.headers.get("x-ratelimit-limit"), "2");
+  assert.ok(limited.headers.get("retry-after"));
+});
+
+test("loginThrottle() validates its timing options", () => {
+  assert.throws(() => loginThrottle({ windowMs: 0 }), /windowMs/);
+  assert.throws(() => loginThrottle({ max: 0 }), /max/);
+  assert.throws(() => loginThrottle({ delayAfter: -1 }), /delayAfter/);
+  assert.throws(() => loginThrottle({ delayMs: -1 }), /delayMs/);
+  assert.throws(() => loginThrottle({ maxDelayMs: -1 }), /maxDelayMs/);
+});
+
+test("loginThrottle() does not trust proxy IP headers until opted in", async () => {
+  _resetSharedRateLimitStoresForTests();
+  const app = new App({ env: "development" });
+  app.route({
+    method: "POST",
+    path: "/login",
+    hooks: loginThrottle({ windowMs: 60_000, max: 1, delayAfter: 0, delayMs: 0 }),
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+
+  assert.equal(
+    (await app.fetch(new Request("http://x/login", {
+      method: "POST",
+      headers: { "x-real-ip": "10.0.0.1" },
+    }))).status,
+    200,
+  );
+  assert.equal(
+    (await app.fetch(new Request("http://x/login", {
+      method: "POST",
+      headers: { "x-real-ip": "10.0.0.2" },
+    }))).status,
+    429,
+  );
+});
+
+test("loginThrottle() can key by trusted proxy headers", async () => {
+  _resetSharedRateLimitStoresForTests();
+  const app = new App({ env: "development" });
+  app.route({
+    method: "POST",
+    path: "/login",
+    hooks: loginThrottle({
+      windowMs: 60_000,
+      max: 1,
+      delayAfter: 0,
+      delayMs: 0,
+      trustProxyHeaders: true,
+    }),
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+
+  assert.equal(
+    (await app.fetch(new Request("http://x/login", {
+      method: "POST",
+      headers: { "x-forwarded-for": "10.0.0.1" },
+    }))).status,
+    200,
+  );
+  assert.equal(
+    (await app.fetch(new Request("http://x/login", {
+      method: "POST",
+      headers: { "x-forwarded-for": "10.0.0.2" },
+    }))).status,
+    200,
+  );
+});
+
+test("auth schemes can require payload auth and refuse route-level opt-out", () => {
+  const app = new App({
+    env: "development",
+    openapi: {
+      securitySchemes: {
+        webhook: httpBearerScheme({ requirePayloadAuth: true }),
+      },
+    },
+  });
+  assert.throws(
+    () =>
+      app.route({
+        method: "POST",
+        path: "/webhook",
+        auth: { scheme: "webhook", payload: false },
+        responses: { 204: { description: "ok" } },
+        handler: () => ({ status: 204 as const, body: undefined }),
+      }),
+    /requires payload authentication/,
+  );
+});
+
+test("requirePayloadAuth emits an OpenAPI-safe extension", () => {
+  const app = new App({ env: "development" });
+  app.route({
+    method: "GET",
+    path: "/me",
+    auth: { scheme: "bearer" },
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  const doc = generateOpenAPI(app, {
+    info: { title: "t", version: "1" },
+    securitySchemes: {
+      bearer: { type: "http", scheme: "bearer", requirePayloadAuth: true },
+    },
+  }) as any;
+  const scheme = doc.components.securitySchemes.bearer;
+  assert.equal(scheme.requirePayloadAuth, undefined);
+  assert.equal(scheme["x-daloy-require-payload-auth"], true);
 });
 
 // ---------- Wave 5: combine() primitives ----------

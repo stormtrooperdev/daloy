@@ -196,6 +196,16 @@ export interface AuthSpec {
   scheme: string;
   /** Optional scopes/permissions, surfaces in OpenAPI security requirement */
   scopes?: string[];
+  /**
+   * Route-level payload/body-auth participation. Defaults to `true` when
+   * omitted. Setting `false` opts the route out of payload authentication;
+   * Daloy refuses that opt-out at route registration time when the referenced
+   * security scheme declares `requirePayloadAuth: true` (or the OpenAPI-safe
+   * `x-daloy-require-payload-auth: true` extension).
+   *
+   * @since 0.23.0
+   */
+  payload?: boolean;
 }
 
 // ---------- Context ----------

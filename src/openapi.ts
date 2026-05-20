@@ -22,6 +22,7 @@ import type {
 } from "./types.js";
 import type { StandardSchemaV1 } from "./schema.js";
 import type { SecurityScheme } from "./security-schemes.js";
+import { toOpenAPISecurityScheme } from "./security-schemes.js";
 import { getFileFieldOptions, getMultipartShape } from "./multipart.js";
 
 export {
@@ -169,7 +170,9 @@ export function generateOpenAPI(app: App, options: OpenAPIOptions): Record<strin
     paths,
     ...(webhooks ? { webhooks } : {}),
     components: {
-      ...(options.securitySchemes ? { securitySchemes: options.securitySchemes } : {}),
+      ...(options.securitySchemes
+        ? { securitySchemes: normalizeSecuritySchemes(options.securitySchemes) }
+        : {}),
       schemas: {
         Problem: {
           type: "object",
@@ -195,6 +198,17 @@ export function generateOpenAPI(app: App, options: OpenAPIOptions): Record<strin
       },
     },
   };
+}
+
+function normalizeSecuritySchemes(
+  schemes: SecuritySchemeMap | undefined,
+): SecuritySchemeMap | undefined {
+  if (!schemes) return undefined;
+  const out: SecuritySchemeMap = {};
+  for (const [name, scheme] of Object.entries(schemes)) {
+    out[name] = toOpenAPISecurityScheme(scheme) as SecurityScheme | Record<string, unknown>;
+  }
+  return out;
 }
 
 type OperationLike =
@@ -266,6 +280,9 @@ function buildOperation(
           }
           if (fileOpts.maxBytes !== undefined) {
             propSchema["x-max-bytes"] = fileOpts.maxBytes;
+          }
+          if (fileOpts.magicBytes !== undefined) {
+            propSchema["x-magic-bytes"] = fileOpts.magicBytes === true ? true : "custom";
           }
           properties[name] = propSchema;
           if (!fileOpts.optional) required.push(name);

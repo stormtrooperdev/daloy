@@ -85,6 +85,62 @@ test("fileField rejects file when type is unknown and accept is set", async () =
   assert.match(r.issues![0]!.message, /unknown/);
 });
 
+test("fileField verifies inferred magic bytes", async () => {
+  const f = fileField({ accept: ["image/png"], magicBytes: true });
+  const png = new File(
+    [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])],
+    "x.png",
+    { type: "image/png" },
+  );
+  assert.equal((await validate(f, png)).issues, undefined);
+
+  const forged = new File(["not-a-png"], "x.png", { type: "image/png" });
+  const result = await validate(f, forged);
+  assert.ok(result.issues);
+  assert.match(result.issues![0]!.message, /magic bytes/);
+});
+
+test("fileField rejects payload bytes that disagree with the declared MIME", async () => {
+  const f = fileField({ accept: ["image/png", "image/jpeg"], magicBytes: true });
+  const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xdb, 0x00]);
+  const disguised = new File([jpegBytes], "x.png", { type: "image/png" });
+  const result = await validate(f, disguised);
+  assert.ok(result.issues);
+  assert.match(result.issues![0]!.message, /Declared MIME/);
+});
+
+test("fileField accepts custom magic-byte signatures", async () => {
+  const f = fileField({
+    accept: ["application/x-daloy"],
+    magicBytes: [{ mime: "application/x-daloy", bytes: [0x44, 0x4c, 0x59], offset: 1 }],
+  });
+  const ok = new File([new Uint8Array([0x00, 0x44, 0x4c, 0x59])], "x.daloy", {
+    type: "application/x-daloy",
+  });
+  assert.equal((await validate(f, ok)).issues, undefined);
+
+  const bad = new File([new Uint8Array([0x44, 0x4c, 0x59])], "x.daloy", {
+    type: "application/x-daloy",
+  });
+  const result = await validate(f, bad);
+  assert.ok(result.issues);
+});
+
+test("fileField validates magic-byte options", () => {
+  assert.throws(
+    () => fileField({ magicBytes: [{ mime: "text/plain", bytes: [] }] }),
+    /bytes/,
+  );
+  assert.throws(
+    () => fileField({ magicBytes: [{ mime: "text/plain", bytes: [256] }] }),
+    /bytes/,
+  );
+  assert.throws(
+    () => fileField({ magicBytes: [{ mime: "text/plain", bytes: [0], offset: -1 }] }),
+    /offset/,
+  );
+});
+
 test("fileField runs filename matcher", async () => {
   const f = fileField({ filename: (n) => n.endsWith(".csv") });
   const ok = new File(["x"], "x.csv", { type: "text/csv" });
@@ -317,6 +373,7 @@ test("OpenAPI generator emits multipart/form-data for multipartObject bodies", (
         file: fileField({
           maxBytes: 1024,
           accept: ["image/png", "image/jpeg"],
+          magicBytes: true,
         }),
         cover: fileField({ optional: true }),
       }),
@@ -340,6 +397,7 @@ test("OpenAPI generator emits multipart/form-data for multipartObject bodies", (
     "image/jpeg",
   ]);
   assert.equal(schema.properties.file["x-max-bytes"], 1024);
+  assert.equal(schema.properties.file["x-magic-bytes"], true);
   assert.equal(schema.properties.cover.format, "binary");
 });
 

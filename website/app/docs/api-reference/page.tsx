@@ -7,7 +7,11 @@ export const metadata = buildMetadata({
   description:
     "Complete API reference for DaloyJS: App, route, middleware, plugins, errors, security helpers, and runtime adapters — with TypeScript signatures.",
   path: "/docs/api-reference",
-  keywords: ["DaloyJS API reference", "DaloyJS docs", "TypeScript framework API"],
+  keywords: [
+    "DaloyJS API reference",
+    "DaloyJS docs",
+    "TypeScript framework API",
+  ],
   type: "article",
 });
 
@@ -17,9 +21,14 @@ export default function Page() {
       <h1>API reference</h1>
       <p>{`The complete public surface of DaloyJS v${CORE_PACKAGE_VERSION}, organized by import path.`}</p>
 
-      <h2><code>@daloyjs/core</code> (root)</h2>
-      <h3><code>class App</code></h3>
-      <CodeBlock code={`new App(options?: {
+      <h2>
+        <code>@daloyjs/core</code> (root)
+      </h2>
+      <h3>
+        <code>class App</code>
+      </h3>
+      <CodeBlock
+        code={`new App(options?: {
   bodyLimitBytes?:        number; // default 1 MiB
   allowedContentTypes?:   string[]; // default ["application/json"]
   requestTimeoutMs?:      number; // default 30_000
@@ -37,10 +46,12 @@ app.ready(): Promise<void>
 app.fetch(req: Request): Promise<Response>
 app.request(input, init?): Promise<Response>
 app.introspect(): RouteInfo[]
-app.shutdown(timeoutMs?): Promise<void>`} />
+app.shutdown(timeoutMs?): Promise<void>`}
+      />
 
       <h3>Errors</h3>
-      <CodeBlock code={`HttpError                    // base — { status, title, type?, detail?, instance? }
+      <CodeBlock
+        code={`HttpError                    // base — { status, title, type?, detail?, instance? }
 BadRequestError              // 400
 UnauthorizedError            // 401
 ForbiddenError               // 403
@@ -51,26 +62,33 @@ PayloadTooLargeError         // 413
 UnsupportedMediaTypeError    // 415
 ValidationError              // 422
 TooManyRequestsError         // 429 — sets Retry-After
-InternalError                // 500 — detail redacted in production`} />
+InternalError                // 500 — detail redacted in production`}
+      />
 
       <h3>Security primitives</h3>
-      <CodeBlock code={`readBodyLimited(req, limit): Promise<Uint8Array>
+      <CodeBlock
+        code={`readBodyLimited(req, limit): Promise<Uint8Array>
 safeJsonParse(text): unknown
 sanitizeHeaderName(name): string
 sanitizeHeaderValue(value): string
 timingSafeEqual(a, b): boolean
-randomId(): string`} />
+randomId(): string`}
+      />
 
       <h3>Built-in middleware</h3>
-      <CodeBlock code={`requestId({ header?, trustIncoming?, generator? })
+      <CodeBlock
+        code={`requestId({ header?, trustIncoming?, generator? })
 secureHeaders({ csp?, hsts?, frameOptions?, referrerPolicy?, permissionsPolicy?, coop?, corp?, noSniff?, xssProtection? })
 cors({ origin, methods?, allowedHeaders?, exposedHeaders?, credentials?, maxAgeSeconds? })
 rateLimit({ windowMs, max, keyGenerator?, store?, trustProxyHeaders?, retryAfter? })
+loginThrottle({ windowMs?, max?, groupId?, keyGenerator?, delayAfter?, delayMs?, maxDelayMs? })
 timing(headerName?)
-bearerAuth({ validate, realm? })`} />
+bearerAuth({ validate, realm? })`}
+      />
 
       <h3>Logger</h3>
-      <CodeBlock code={`createLogger({ level?, bindings?, write? }): Logger
+      <CodeBlock
+        code={`createLogger({ level?, bindings?, write? }): Logger
 noopLogger: Logger
 
 interface Logger {
@@ -81,10 +99,14 @@ interface Logger {
   error(obj?, msg?): void;
   fatal(obj?, msg?): void;
   child(bindings): Logger;
-}`} />
+}`}
+      />
 
-      <h2><code>@daloyjs/core/openapi</code></h2>
-      <CodeBlock code={`generateOpenAPI(app, {
+      <h2>
+        <code>@daloyjs/core/openapi</code>
+      </h2>
+      <CodeBlock
+        code={`generateOpenAPI(app, {
   info: { title: string; version: string; description?: string };
   servers?: { url: string; description?: string }[];
   securitySchemes?: Record<string, SecurityScheme>;
@@ -92,11 +114,13 @@ interface Logger {
 }): OpenAPIDocument
 
 // Builders for OpenAPI 3.1 Security Scheme objects (also re-exported from "@daloyjs/core")
-httpBearerScheme({ bearerFormat?, description? }):           HttpBearerScheme
-httpBasicScheme({ description? }):                           HttpBasicScheme
-apiKeyScheme({ in: "header"|"query"|"cookie", name, description? }): ApiKeyScheme
-oauth2Scheme({ flows, description? }):                       OAuth2Scheme
-openIdConnectScheme({ openIdConnectUrl, description? }):     OpenIdConnectScheme
+httpBearerScheme({ bearerFormat?, description?, requirePayloadAuth? }): HttpBearerScheme
+httpBasicScheme({ description?, requirePayloadAuth? }):                 HttpBasicScheme
+apiKeyScheme({ in: "header"|"query"|"cookie", name, description?, requirePayloadAuth? }): ApiKeyScheme
+oauth2Scheme({ flows, description?, requirePayloadAuth? }):             OAuth2Scheme
+openIdConnectScheme({ openIdConnectUrl, description?, requirePayloadAuth? }): OpenIdConnectScheme
+securitySchemeRequiresPayloadAuth(scheme): boolean
+toOpenAPISecurityScheme(scheme): unknown
 
 // Webhook (OpenAPI 3.1 top-level webhooks). Mirrors RouteDefinition minus
 // path + handler.
@@ -110,60 +134,128 @@ interface WebhookDefinition {
   request?: RequestSchemas;
   responses: ResponsesMap;
   auth?: AuthSpec;
-}`} />
+}`}
+      />
 
-      <h2><code>@daloyjs/core/client</code></h2>
-      <CodeBlock code={`createClient<App>(app, {
+      <h2>
+        <code>@daloyjs/core/client</code>
+      </h2>
+      <CodeBlock
+        code={`createClient<App>(app, {
   baseUrl: string;
   fetch?:  typeof fetch;
   headers?: Record<string, string>;
 }): Client<App>
 // returns an object keyed by operationId; each method takes
 // { params?, query?, headers?, body? } and returns
-// { status, body, headers } as a discriminated union by status.`} />
+// { status, body, headers } as a discriminated union by status.`}
+      />
 
-      <h2><code>@daloyjs/core/contract</code></h2>
-      <CodeBlock code={`runContractTests(app, opts?: {
+      <h2>
+        <code>@daloyjs/core/contract</code>
+      </h2>
+      <CodeBlock
+        code={`runContractTests(app, opts?: {
   requireOperationId?:    boolean; // default true
   allowBodyOnSafeMethods?: boolean; // default false
-}): Promise<{ ok: boolean; checked: number; issues: Issue[] }>`} />
+}): Promise<{ ok: boolean; checked: number; issues: Issue[] }>`}
+      />
 
-      <h2><code>@daloyjs/core/docs</code></h2>
-      <CodeBlock code={`scalarHtml({ specUrl, title, assets?, scriptNonce? }): string
+      <h2>
+        <code>@daloyjs/core/docs</code>
+      </h2>
+      <CodeBlock
+        code={`scalarHtml({ specUrl, title, assets?, scriptNonce? }): string
 swaggerUiHtml({ specUrl, title, assets?, scriptNonce? }): string
 docsContentSecurityPolicy({ assetOrigins?, scriptNonce?, allowInlineStyles? }): string
-htmlResponse(html, { assetOrigins?, scriptNonce?, allowInlineStyles?, contentSecurityPolicy? }): Response`} />
+htmlResponse(html, { assetOrigins?, scriptNonce?, allowInlineStyles?, contentSecurityPolicy? }): Response`}
+      />
 
-      <h2><code>@daloyjs/core/node</code></h2>
-      <CodeBlock code={`serve(app, opts?: {
+      <h2>
+        <code>@daloyjs/core/multipart</code>
+      </h2>
+      <CodeBlock
+        code={`fileField({ maxBytes?, accept?, filename?, magicBytes?, optional?, format? })
+multipartObject(shape, { strict? })
+isFileFieldSchema(value): boolean
+isMultipartObjectSchema(value): boolean`}
+      />
+
+      <h2>
+        <code>@daloyjs/core/session</code>
+      </h2>
+      <CodeBlock
+        code={`session({ secret, store?, cookieName?, cookieOptions?, rolling?, saveUninitialized? })
+rotateSession({ watch?, keepData? })
+signValue(value, secret): Promise<string>
+verifySignedValue(value, secret): Promise<string | null>
+new MemorySessionStore()`}
+      />
+
+      <h2>
+        <code>@daloyjs/core/node</code>
+      </h2>
+      <CodeBlock
+        code={`serve(app, opts?: {
   port?:                number; // default 3000
   hostname?:            string; // default "0.0.0.0"
   connectionTimeoutMs?: number;
   shutdownTimeoutMs?:   number;
   handleSignals?:       boolean; // default true
   maxHeaderBytes?:      number;  // default 16 KiB
-}): { port: number; close(): Promise<void> }`} />
+}): { port: number; close(): Promise<void> }`}
+      />
 
-      <h2><code>@daloyjs/core/bun</code></h2>
-      <CodeBlock code={`serve(app, opts?: {
+      <h2>
+        <code>@daloyjs/core/bun</code>
+      </h2>
+      <CodeBlock
+        code={`serve(app, opts?: {
   port?:               number; // default 3000
   hostname?:           string; // default "0.0.0.0"
   maxRequestBodySize?: number; // default 16 MiB
-}): { port: number; stop(): Promise<void> }`} />
+}): { port: number; stop(): Promise<void> }`}
+      />
 
-      <h2><code>@daloyjs/core/deno</code></h2>
-      <CodeBlock code={`serve(app, opts?: {
+      <h2>
+        <code>@daloyjs/core/deno</code>
+      </h2>
+      <CodeBlock
+        code={`serve(app, opts?: {
   port?:     number; // default 3000
   hostname?: string; // default "0.0.0.0"
-}): { shutdown(): Promise<void> }`} />
+}): { shutdown(): Promise<void> }`}
+      />
 
-      <h2><code>@daloyjs/core/cloudflare</code> · <code>@daloyjs/core/vercel</code></h2>
-      <CodeBlock code={`toFetchHandler(app): { fetch(req: Request, env?: unknown, ctx?: unknown): Promise<Response> }
-toEdgeHandler (app): (req: Request) => Promise<Response>`} />
+      <h2>
+        <code>@daloyjs/core/cloudflare</code> ·{" "}
+        <code>@daloyjs/core/vercel</code>
+      </h2>
+      <CodeBlock
+        code={`toFetchHandler(app): { fetch(req: Request, env?: unknown, ctx?: unknown): Promise<Response> }
+toEdgeHandler (app): (req: Request) => Promise<Response>`}
+      />
 
       <h2>Schema utilities</h2>
-      <CodeBlock code={`isStandardSchema(value): boolean
-validate(schema, input): { ok: true; value } | { ok: false; issues }`} />
+      <CodeBlock
+        code={`isStandardSchema(value): boolean
+validate(schema, input): { ok: true; value } | { ok: false; issues }`}
+      />
+
+      <h2>
+        <code>@daloyjs/core/websocket</code>
+      </h2>
+      <CodeBlock
+        code={`defineWebSocket(handler): WebSocketHandler
+    wsRateLimit({ windowMs, max, groupId?, keyGenerator?, store? }): WebSocketBeforeUpgrade
+    normalizeWebSocketOptions(handler, context): NormalizedWebSocketOptions
+
+    DEFAULT_WS_BACKPRESSURE_LIMIT       // 1 MiB
+    DEFAULT_WS_MAX_PAYLOAD_LENGTH       // 1 MiB
+    DEFAULT_WS_IDLE_TIMEOUT_SECONDS     // 120
+    WebSocketPayloadTooLargeError
+    FrameSink`}
+      />
     </>
   );
 }

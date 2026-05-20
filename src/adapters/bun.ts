@@ -13,6 +13,7 @@ import {
   parseSubprotocols,
   validateSelectedSubprotocol,
   WebSocketProtocolError,
+  type NormalizedWebSocketOptions,
   type WebSocketConnection,
   type WebSocketContext,
   type WebSocketHandler,
@@ -153,6 +154,7 @@ interface BunUpgradeData {
   handler: WebSocketHandler<any, any, any>;
   ctx: WebSocketContext;
   protocol: string;
+  options?: NormalizedWebSocketOptions;
   conn?: BunWebSocketConnection;
 }
 
@@ -191,18 +193,33 @@ async function tryBunUpgrade(
 
   const headers: Record<string, string> = {};
   if (chosenProtocol) headers["sec-websocket-protocol"] = chosenProtocol;
-  const data: BunUpgradeData = { handler, ctx, protocol: chosenProtocol };
+  const data: BunUpgradeData = {
+    handler,
+    ctx,
+    protocol: chosenProtocol,
+    options: match.handler.options,
+  };
   const ok = server.upgrade(req, { data, headers });
   if (!ok) return new Response("Upgrade Failed", { status: 500 });
   return undefined;
 }
 
 function buildBunWebSocketConfig(app: App) {
+  const runtimeOptions = app.webSocketRoutes.runtimeOptions();
   return {
+    closeOnBackpressureLimit: runtimeOptions.closeOnBackpressureLimit,
+    backpressureLimit: runtimeOptions.backpressureLimit,
+    perMessageDeflate: runtimeOptions.perMessageDeflate,
+    idleTimeout: runtimeOptions.idleTimeout,
+    maxPayloadLength: runtimeOptions.maxPayloadLength,
     open(ws: BunNativeWebSocket) {
       const data = ws.data as BunUpgradeData | undefined;
       if (!data) return;
-      const conn = new BunWebSocketConnection(ws, data.protocol);
+      const conn = new BunWebSocketConnection(
+        ws,
+        data.protocol,
+        data.options ?? runtimeOptions,
+      );
       data.conn = conn;
       invokeBunHandler(
         app,
@@ -219,6 +236,14 @@ function buildBunWebSocketConfig(app: App) {
       const data = ws.data as BunUpgradeData | undefined;
       if (!data?.conn) return;
       const isBinary = typeof msg !== "string";
+      const options = data.options ?? runtimeOptions;
+      if (payloadByteLength(msg) > options.maxPayloadLength) {
+        data.conn.close(
+          WS_CLOSE_CODE.MESSAGE_TOO_BIG,
+          "maxPayloadLength exceeded",
+        );
+        return;
+      }
       invokeBunHandler(
         app,
         data,
@@ -257,6 +282,7 @@ class BunWebSocketConnection implements WebSocketConnection {
   constructor(
     private ws: BunNativeWebSocket,
     readonly protocol: string,
+    private options: NormalizedWebSocketOptions,
   ) {}
 
   get binaryType(): "arraybuffer" | "nodebuffer" {
@@ -273,20 +299,32 @@ class BunWebSocketConnection implements WebSocketConnection {
 
   send(data: string | ArrayBufferLike | ArrayBufferView): void {
     if (this.readyState !== WS_READY_STATE.OPEN) return;
+    let sent = 0;
     if (typeof data === "string") {
-      this.ws.send(data);
+      sent = this.ws.send(data, this.options.perMessageDeflate);
     } else if (data instanceof ArrayBuffer) {
-      this.ws.send(data);
+      sent = this.ws.send(data, this.options.perMessageDeflate);
     } else if (ArrayBuffer.isView(data)) {
-      this.ws.send(
+      sent = this.ws.send(
         new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+        this.options.perMessageDeflate,
       );
     } else {
-      this.ws.send(new Uint8Array(data as ArrayBufferLike));
+      sent = this.ws.send(
+        new Uint8Array(data as ArrayBufferLike),
+        this.options.perMessageDeflate,
+      );
+    }
+    void sent;
+    if (
+      this.options.closeOnBackpressureLimit &&
+      this.bufferedAmount > this.options.backpressureLimit
+    ) {
+      this.close(WS_CLOSE_CODE.MESSAGE_TOO_BIG, "backpressure limit exceeded");
     }
   }
 
-  close(code = WS_CLOSE_CODE.NORMAL_CLOSURE, reason = ""): void {
+  close(code: number = WS_CLOSE_CODE.NORMAL_CLOSURE, reason = ""): void {
     if (this.readyState >= WS_READY_STATE.CLOSING) return;
     this.readyState = WS_READY_STATE.CLOSING;
     this.ws.close(code, reason);
@@ -353,6 +391,14 @@ function validateControlPayload(
   ) {
     throw new WebSocketProtocolError("Control frame payload exceeds 125 bytes");
   }
+}
+
+function payloadByteLength(
+  data: string | Buffer | Uint8Array | ArrayBuffer,
+): number {
+  if (typeof data === "string") return new TextEncoder().encode(data).byteLength;
+  if (data instanceof ArrayBuffer) return data.byteLength;
+  return data.byteLength;
 }
 
 function toBunBinary(

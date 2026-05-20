@@ -1,11 +1,11 @@
-import { CodeBlock } from "../../../components/code-block"
+import { CodeBlock } from "../../../components/code-block";
 
-import { buildMetadata } from "@/lib/seo"
+import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "WebSocket primitives (Node & Bun)",
   description:
-    "Register typed WebSocket routes in DaloyJS with the same Bun-style handler shape running on both Node and Bun adapters. Includes the runtime-agnostic RFC 6455 frame protocol, `app.ws()` registration, `defineWebSocket()` helper, and graceful close semantics.",
+    "Register typed WebSocket routes in DaloyJS with the same Bun-style handler shape running on both Node and Bun adapters, safe defaults, upgrade rate limiting, and graceful close semantics.",
   path: "/docs/websocket",
   keywords: [
     "WebSocket",
@@ -14,9 +14,12 @@ export const metadata = buildMetadata({
     "Bun WebSocket",
     "Node WebSocket",
     "DaloyJS websocket",
+    "wsRateLimit",
+    "maxPayloadLength",
+    "perMessageDeflate",
   ],
   type: "article",
-})
+});
 
 export default function Page() {
   return (
@@ -38,6 +41,15 @@ export default function Page() {
         at least one WS route is registered, so apps that don&apos;t use
         WebSockets pay zero overhead. On Bun the adapter forwards to{" "}
         <code>Bun.serve</code>&apos;s native <code>websocket</code> config.
+      </p>
+      <p>
+        Since <strong>0.23.0</strong>, <code>app.ws()</code> also normalizes
+        safe runtime defaults: <code>closeOnBackpressureLimit: true</code>, a 1
+        MiB <code>backpressureLimit</code>,{" "}
+        <code>perMessageDeflate: false</code>, a non-zero{" "}
+        <code>idleTimeout</code>, and a 1 MiB <code>maxPayloadLength</code>.
+        Production apps running with <code>secureDefaults</code> refuse{" "}
+        <code>perMessageDeflate: true</code>.
       </p>
 
       <h2>Quick start</h2>
@@ -162,6 +174,53 @@ app.ws("/chat/:room", chatHandler);`}
 });`}
       />
 
+      <h2>Upgrade rate limiting</h2>
+      <p>
+        Use <code>wsRateLimit()</code> in <code>beforeUpgrade</code> when a
+        WebSocket route belongs to the same login or session-establishment
+        surface as HTTP endpoints. It spends from the same{" "}
+        <code>rateLimit({`{ groupId }`})</code> bucket and preserves rate-limit
+        headers on rejection.
+      </p>
+      <CodeBlock
+        code={`import { wsRateLimit } from "@daloyjs/core";
+
+app.ws("/session", {
+  beforeUpgrade: wsRateLimit({
+    windowMs: 60_000,
+    max: 10,
+    groupId: "auth-entry",
+    keyGenerator: (ctx) => ctx.request.headers.get("x-user-key") ?? "global",
+  }),
+  open(conn) {
+    conn.send("ready");
+  },
+});`}
+        language="ts"
+      />
+
+      <h2>Payload and backpressure limits</h2>
+      <p>
+        Override safe defaults per route when a connection needs tighter bounds.{" "}
+        <code>idleTimeout</code>, <code>backpressureLimit</code>, and{" "}
+        <code>maxPayloadLength</code> must be positive integers. If your
+        WebSocket handler declares a body schema with a maximum size, Daloy
+        refuses a larger <code>maxPayloadLength</code> at registration time.
+      </p>
+      <CodeBlock
+        code={`app.ws("/events", {
+  idleTimeout: 120,
+  maxPayloadLength: 64 * 1024,
+  closeOnBackpressureLimit: true,
+  backpressureLimit: 1 * 1024 * 1024,
+  perMessageDeflate: false,
+  message(conn, data) {
+    conn.send(data);
+  },
+});`}
+        language="ts"
+      />
+
       <h2>Graceful shutdown</h2>
       <p>
         The Node adapter tracks every upgraded socket. When <code>close()</code>{" "}
@@ -198,5 +257,5 @@ app.ws("/chat/:room", chatHandler);`}
         for you.
       </p>
     </>
-  )
+  );
 }

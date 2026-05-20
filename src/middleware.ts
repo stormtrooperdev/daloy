@@ -543,9 +543,11 @@ export interface RateLimitOptions {
  * @internal
  */
 const SHARED_RATE_LIMIT_STORES = new Map<string, MemoryStore>();
+const SHARED_LOGIN_THROTTLE_BUCKETS = new Map<string, Map<string, { count: number; resetMs: number }>>();
 
 export function _resetSharedRateLimitStoresForTests(): void {
   SHARED_RATE_LIMIT_STORES.clear();
+  SHARED_LOGIN_THROTTLE_BUCKETS.clear();
 }
 
 class MemoryStore implements RateLimitStore {
@@ -638,6 +640,130 @@ export function rateLimit(opts: RateLimitOptions): Hooks {
         throw new TooManyRequestsError(opts.retryAfter !== false ? retry : undefined);
       }
       return undefined;
+    },
+  };
+}
+
+// ---------- Login throttle ----------
+
+export interface LoginThrottleOptions {
+  /** Fixed-window length in ms. Default: 15 minutes. */
+  windowMs?: number;
+  /** Maximum attempts before returning 429. Default: 5. */
+  max?: number;
+  /** Shared bucket id. Default: `"login"`. */
+  groupId?: string;
+  /** Derive the caller key. Defaults to trusted proxy headers only when enabled. */
+  keyGenerator?: (ctx: BaseContext<any, any>) => string;
+  /** Shared store for the hard limit. Uses rateLimit()'s in-memory group bucket by default. */
+  store?: RateLimitStore;
+  /** Trust x-forwarded-for / x-real-ip when deriving the default key. Default: false. */
+  trustProxyHeaders?: boolean;
+  /** When true, set Retry-After header on 429. Default: true. */
+  retryAfter?: boolean;
+  /** Start slowing responses after this many attempts in the same window. Default: 2. */
+  delayAfter?: number;
+  /** Added delay per attempt beyond delayAfter, in ms. Default: 250. */
+  delayMs?: number;
+  /** Maximum slowdown delay in ms. Default: 2000. */
+  maxDelayMs?: number;
+}
+
+function assertNonNegativeInteger(name: string, value: number): void {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`loginThrottle(): ${name} must be a non-negative integer.`);
+  }
+}
+
+function assertPositiveInteger(name: string, value: number): void {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`loginThrottle(): ${name} must be a positive integer.`);
+  }
+}
+
+function defaultLoginThrottleKey(
+  trustProxyHeaders: boolean | undefined,
+): (ctx: BaseContext<any, any>) => string {
+  return (ctx) => {
+    if (trustProxyHeaders) {
+      const forwardedFor = ctx.request.headers.get("x-forwarded-for");
+      const firstForwarded = forwardedFor ? forwardedFor.split(",")[0]!.trim() : "";
+      return firstForwarded || ctx.request.headers.get("x-real-ip") || "global";
+    }
+    return "global";
+  };
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Login throttle preset for `/login`, `/login/otp`, password reset, and
+ * adjacent credential-entry routes. It combines a shared `rateLimit({ groupId })`
+ * bucket with a small progressive slowdown before the hard 429 kicks in.
+ *
+ * Mount the same `loginThrottle()` instance (or multiple instances with the
+ * same `groupId`) across related routes so an attacker cannot bypass the limit
+ * by rotating between password, OTP, and reset endpoints.
+ *
+ * @since 0.23.0
+ */
+export function loginThrottle(opts: LoginThrottleOptions = {}): Hooks {
+  const windowMs = opts.windowMs ?? 15 * 60_000;
+  const max = opts.max ?? 5;
+  const delayAfter = opts.delayAfter ?? 2;
+  const delayMs = opts.delayMs ?? 250;
+  const maxDelayMs = opts.maxDelayMs ?? 2_000;
+
+  assertPositiveInteger("windowMs", windowMs);
+  assertPositiveInteger("max", max);
+  assertNonNegativeInteger("delayAfter", delayAfter);
+  assertNonNegativeInteger("delayMs", delayMs);
+  assertNonNegativeInteger("maxDelayMs", maxDelayMs);
+
+  const groupId = opts.groupId ?? "login";
+  const keyGenerator = opts.keyGenerator ?? defaultLoginThrottleKey(opts.trustProxyHeaders);
+  const limiter = rateLimit({
+    windowMs,
+    max,
+    groupId,
+    keyGenerator,
+    ...(opts.store ? { store: opts.store } : {}),
+    ...(opts.trustProxyHeaders !== undefined
+      ? { trustProxyHeaders: opts.trustProxyHeaders }
+      : {}),
+    ...(opts.retryAfter !== undefined ? { retryAfter: opts.retryAfter } : {}),
+  });
+  let slowdownBuckets = SHARED_LOGIN_THROTTLE_BUCKETS.get(groupId);
+  if (!slowdownBuckets) {
+    slowdownBuckets = new Map<string, { count: number; resetMs: number }>();
+    SHARED_LOGIN_THROTTLE_BUCKETS.set(groupId, slowdownBuckets);
+  }
+
+  return {
+    async beforeHandle(ctx) {
+      const now = Date.now();
+      const key = `${groupId}:${keyGenerator(ctx)}`;
+      let bucket = slowdownBuckets.get(key);
+      if (!bucket || bucket.resetMs <= now) {
+        bucket = { count: 0, resetMs: now + windowMs };
+        slowdownBuckets.set(key, bucket);
+      }
+      bucket.count += 1;
+      if (slowdownBuckets.size > 10_000) {
+        for (const [bucketKey, value] of slowdownBuckets) {
+          if (value.resetMs <= now) slowdownBuckets.delete(bucketKey);
+        }
+      }
+      if (bucket.count > delayAfter && delayMs > 0 && maxDelayMs > 0) {
+        const delay = Math.min(
+          maxDelayMs,
+          (bucket.count - delayAfter) * delayMs,
+        );
+        if (delay > 0) await wait(delay);
+      }
+      return limiter.beforeHandle?.(ctx);
     },
   };
 }

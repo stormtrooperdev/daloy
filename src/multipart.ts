@@ -55,6 +55,22 @@ export const MULTIPART_SCHEMA_MARKER = "~daloy.multipart" as const;
 /** Marker key for individual file fields. */
 export const FILE_FIELD_MARKER = "~daloy.file" as const;
 
+export interface FileMagicBytesSignature {
+  /** Byte sequence that must appear in the file. */
+  bytes: readonly number[] | Uint8Array;
+  /** Offset where `bytes` must start. Default: `0`. */
+  offset?: number;
+  /** Declared MIME type(s) this signature is valid for. */
+  mime?: string | readonly string[];
+  /** Human-readable label used in validation errors and OpenAPI hints. */
+  label?: string;
+}
+
+export type FileMagicBytesOption =
+  | true
+  | FileMagicBytesSignature
+  | readonly FileMagicBytesSignature[];
+
 /** Options for {@link fileField}. */
 export interface FileFieldOptions {
   /** Reject the file if its `size` exceeds this many bytes. */
@@ -70,6 +86,12 @@ export interface FileFieldOptions {
    * truthy for the file to be accepted. Useful for forcing extensions.
    */
   filename?: (name: string) => boolean;
+  /**
+   * Verify file signatures before the handler receives the upload. `true`
+   * derives known signatures from `accept` (PNG/JPEG/GIF/WebP/PDF/ZIP/GZIP).
+   * Custom signatures can be supplied for domain-specific formats.
+   */
+  magicBytes?: FileMagicBytesOption;
   /** When true, accept `null`/`undefined` values. Default: false. */
   optional?: boolean;
   /** OpenAPI hint for documentation purposes. Default: `"binary"`. */
@@ -106,6 +128,151 @@ function mimeMatches(actual: string, pattern: string): boolean {
   return a === p;
 }
 
+interface InternalMagicSignature {
+  label: string;
+  mimes: readonly string[];
+  readLength: number;
+  match(bytes: Uint8Array): boolean;
+}
+
+const KNOWN_MAGIC_SIGNATURES: readonly InternalMagicSignature[] = [
+  fixedMagic("png", ["image/png"], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  {
+    label: "jpeg",
+    mimes: ["image/jpeg"],
+    readLength: 3,
+    match: (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff,
+  },
+  {
+    label: "gif",
+    mimes: ["image/gif"],
+    readLength: 6,
+    match: (bytes) =>
+      bytes[0] === 0x47 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x38 &&
+      (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+      bytes[5] === 0x61,
+  },
+  {
+    label: "webp",
+    mimes: ["image/webp"],
+    readLength: 12,
+    match: (bytes) =>
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50,
+  },
+  fixedMagic("pdf", ["application/pdf"], [0x25, 0x50, 0x44, 0x46, 0x2d]),
+  {
+    label: "zip",
+    mimes: ["application/zip", "application/x-zip-compressed"],
+    readLength: 4,
+    match: (bytes) =>
+      bytes[0] === 0x50 &&
+      bytes[1] === 0x4b &&
+      ((bytes[2] === 0x03 && bytes[3] === 0x04) ||
+        (bytes[2] === 0x05 && bytes[3] === 0x06) ||
+        (bytes[2] === 0x07 && bytes[3] === 0x08)),
+  },
+  fixedMagic("gzip", ["application/gzip", "application/x-gzip"], [0x1f, 0x8b]),
+] as const;
+
+function fixedMagic(
+  label: string,
+  mimes: readonly string[],
+  expected: readonly number[],
+): InternalMagicSignature {
+  return {
+    label,
+    mimes,
+    readLength: expected.length,
+    match: (bytes) => expected.every((byte, index) => bytes[index] === byte),
+  };
+}
+
+function normalizeCustomMagicSignature(
+  value: FileMagicBytesSignature,
+): InternalMagicSignature {
+  const offset = value.offset ?? 0;
+  if (!Number.isInteger(offset) || offset < 0) {
+    throw new Error("fileField(): magicBytes.offset must be a non-negative integer.");
+  }
+  const bytes = Array.from(value.bytes as readonly number[]);
+  if (bytes.length === 0) {
+    throw new Error("fileField(): magicBytes.bytes must contain at least one byte.");
+  }
+  for (const byte of bytes) {
+    if (!Number.isInteger(byte) || byte < 0 || byte > 255) {
+      throw new Error("fileField(): magicBytes.bytes entries must be integers in [0, 255].");
+    }
+  }
+  const mimes = value.mime === undefined
+    ? []
+    : typeof value.mime === "string"
+      ? [value.mime]
+      : [...value.mime];
+  return {
+    label: value.label ?? bytes.map((byte) => byte.toString(16).padStart(2, "0")).join(" "),
+    mimes,
+    readLength: offset + bytes.length,
+    match: (fileBytes) => bytes.every((byte, index) => fileBytes[offset + index] === byte),
+  };
+}
+
+function normalizeMagicBytesOption(
+  option: FileMagicBytesOption | undefined,
+  accept: readonly string[] | undefined,
+): InternalMagicSignature[] {
+  if (option === undefined) return [];
+  if (option === true) {
+    const patterns = accept ?? [];
+    const signatures = KNOWN_MAGIC_SIGNATURES.filter((signature) =>
+      signature.mimes.some((mime) => patterns.some((pattern) => mimeMatches(mime, pattern))),
+    );
+    if (signatures.length === 0) {
+      throw new Error(
+        "fileField(): magicBytes: true requires accept to include a known sniffable MIME type.",
+      );
+    }
+    return signatures.slice();
+  }
+  const signatures = Array.isArray(option) ? option : [option];
+  return signatures.map(normalizeCustomMagicSignature);
+}
+
+async function verifyMagicBytes(
+  file: UploadedFile,
+  signatures: readonly InternalMagicSignature[],
+): Promise<string | undefined> {
+  if (signatures.length === 0) return undefined;
+  const readLength = Math.max(...signatures.map((signature) => signature.readLength));
+  const bytes = new Uint8Array(await file.slice(0, readLength).arrayBuffer());
+  const matched = signatures.filter((signature) => signature.match(bytes));
+  if (matched.length === 0) {
+    return `File magic bytes did not match: ${signatures.map((signature) => signature.label).join(", ")}`;
+  }
+  const declared = file.type || "";
+  if (declared) {
+    const mimeAwareMatches = matched.filter((signature) => signature.mimes.length > 0);
+    if (
+      mimeAwareMatches.length > 0 &&
+      !mimeAwareMatches.some((signature) =>
+        signature.mimes.some((mime) => mimeMatches(declared, mime)),
+      )
+    ) {
+      return `Declared MIME "${declared}" does not match sniffed magic bytes: ${matched.map((signature) => signature.label).join(", ")}`;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Validator for a single uploaded `File`/`Blob` field.
  *
@@ -124,12 +291,13 @@ export function fileField(
     format: options.format ?? "binary",
     ...options,
   };
+  const magicSignatures = normalizeMagicBytesOption(opts.magicBytes, opts.accept);
 
   const schema: FileFieldSchema<UploadedFile | null | undefined> = {
     "~standard": {
       version: 1,
       vendor: "daloyjs",
-      validate(value): StandardSchemaV1.Result<UploadedFile | null | undefined> {
+      async validate(value): Promise<StandardSchemaV1.Result<UploadedFile | null | undefined>> {
         if (value === undefined || value === null) {
           if (opts.optional) {
             return { value };
@@ -171,6 +339,8 @@ export function fileField(
             };
           }
         }
+        const magicError = await verifyMagicBytes(file, magicSignatures);
+        if (magicError) return { issues: [{ message: magicError }] };
         return { value: file };
       },
     },

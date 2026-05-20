@@ -24,6 +24,8 @@ import {
   WS_READY_STATE,
   WS_MAX_CONTROL_PAYLOAD,
   WebSocketProtocolError,
+  WebSocketPayloadTooLargeError,
+  type NormalizedWebSocketOptions,
   type WebSocketConnection,
   type WebSocketContext,
   type WebSocketHandler,
@@ -250,15 +252,19 @@ async function handleUpgrade(
     responseLines.push(`Sec-WebSocket-Protocol: ${chosenProtocol}`);
   socket.write(responseLines.join("\r\n") + "\r\n\r\n");
 
-  // Disable Node's idle timeout on the raw socket — WS connections are long-lived.
-  (socket as unknown as { setTimeout: (n: number) => void }).setTimeout(0);
   (socket as unknown as { setNoDelay: (b: boolean) => void }).setNoDelay(true);
 
+  const routeOptions = match.handler.options;
   const conn = new NodeWebSocketConnection(
     socket,
     handler,
     chosenProtocol,
     app,
+    routeOptions,
+  );
+  (socket as unknown as { setTimeout: (n: number, cb?: () => void) => void }).setTimeout(
+    routeOptions.idleTimeout * 1000,
+    () => conn.close(WS_CLOSE_CODE.GOING_AWAY, "idle timeout"),
   );
   // If the upgrade arrived with extra bytes already in the buffer, feed them first.
   if (head.length > 0) conn._ingest(head);
@@ -314,9 +320,11 @@ class NodeWebSocketConnection implements WebSocketConnection {
     private handler: WebSocketHandler<any, any, any>,
     readonly protocol: string,
     private app: App,
+    private options: NormalizedWebSocketOptions,
   ) {
     this.sink = new FrameSink({
       requireMask: true,
+      maxPayloadLength: options.maxPayloadLength,
       onMessage: (ev) => {
         if (ev.isBinary && this.binaryType === "arraybuffer") {
           const buf = ev.data as Uint8Array;
@@ -351,7 +359,12 @@ class NodeWebSocketConnection implements WebSocketConnection {
       },
       onProtocolError: (err) => {
         this._invokeError(err);
-        this.close(WS_CLOSE_CODE.PROTOCOL_ERROR, err.message);
+        this.close(
+          err instanceof WebSocketPayloadTooLargeError
+            ? WS_CLOSE_CODE.MESSAGE_TOO_BIG
+            : WS_CLOSE_CODE.PROTOCOL_ERROR,
+          err.message,
+        );
       },
     });
   }
@@ -428,9 +441,23 @@ class NodeWebSocketConnection implements WebSocketConnection {
 
   private _writeFrame(opcode: number, payload: Uint8Array): void {
     const frame = encodeFrame({ opcode, payload });
-    this.socket.write(
+    const flushed = this.socket.write(
       Buffer.from(frame.buffer, frame.byteOffset, frame.byteLength),
     );
+    if (!flushed) {
+      this.socket.once("drain", () =>
+        this._invokeHandler("WebSocket drain() handler threw", () =>
+          this.handler.drain?.(this),
+        ),
+      );
+    }
+    if (
+      this.options.closeOnBackpressureLimit &&
+      this.readyState === WS_READY_STATE.OPEN &&
+      this.bufferedAmount > this.options.backpressureLimit
+    ) {
+      this.close(WS_CLOSE_CODE.MESSAGE_TOO_BIG, "backpressure limit exceeded");
+    }
   }
 
   _invokeError(err: unknown): void {

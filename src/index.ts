@@ -80,6 +80,7 @@ export {
   CORS_ORIGIN_ALLOW_MARKER,
   CORS_WILDCARD_ORIGIN_MARKER,
   rateLimit,
+  loginThrottle,
   timing,
   bearerAuth,
   basicAuth,
@@ -135,6 +136,7 @@ export type {
   CorsOriginAllow,
   RateLimitOptions,
   RateLimitStore,
+  LoginThrottleOptions,
   CsrfOptions,
   CsrfCookieOptions,
   BasicAuthOptions,
@@ -179,6 +181,9 @@ export {
   apiKeyScheme,
   oauth2Scheme,
   openIdConnectScheme,
+  REQUIRE_PAYLOAD_AUTH_EXTENSION,
+  securitySchemeRequiresPayloadAuth,
+  toOpenAPISecurityScheme,
 } from "./security-schemes.js";
 export type {
   ApiKeyLocation,
@@ -198,6 +203,7 @@ export type {
   OpenIdConnectScheme,
   OpenIdConnectSchemeOptions,
   SecurityScheme,
+  RequirePayloadAuthExtension,
 } from "./security-schemes.js";
 
 export { discriminator, discriminatedUnion } from "./discriminator.js";
@@ -209,6 +215,7 @@ export type {
 
 export {
   session,
+  rotateSession,
   signValue,
   verifySignedValue,
   MemorySessionStore,
@@ -222,6 +229,7 @@ export type {
   SessionRecord,
   SessionStore,
   SessionState,
+  RotateSessionOptions,
 } from "./session.js";
 
 export {
@@ -233,6 +241,8 @@ export {
 export type {
   FileFieldSchema,
   FileFieldOptions,
+  FileMagicBytesOption,
+  FileMagicBytesSignature,
   MultipartObjectOptions,
   MultipartShape,
   UploadedFile,
@@ -258,11 +268,15 @@ export {
   defineWebSocket,
   WebSocketRegistry,
   WebSocketProtocolError,
+  WebSocketPayloadTooLargeError,
   WS_GUID,
   WS_READY_STATE,
   WS_OPCODE,
   WS_CLOSE_CODE,
   WS_MAX_CONTROL_PAYLOAD,
+  DEFAULT_WS_BACKPRESSURE_LIMIT,
+  DEFAULT_WS_MAX_PAYLOAD_LENGTH,
+  DEFAULT_WS_IDLE_TIMEOUT_SECONDS,
   computeAcceptKey,
   parseSubprotocols,
   validateSelectedSubprotocol,
@@ -272,6 +286,8 @@ export {
   encodeClosePayload,
   decodeClosePayload,
   encodeSendPayload,
+  normalizeWebSocketOptions,
+  wsRateLimit,
   FrameSink,
   FRAME_INCOMPLETE,
 } from "./websocket.js";
@@ -280,6 +296,8 @@ export type {
   WebSocketContext,
   WebSocketHandler,
   WebSocketRouteEntry,
+  NormalizedWebSocketOptions,
+  WebSocketBeforeUpgrade,
   HandshakeResult,
   ParsedFrame,
   MessageEvent as WebSocketMessageEvent,

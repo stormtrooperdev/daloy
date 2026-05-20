@@ -105,6 +105,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Composition & network (0.19.0)", href: "/docs/security/composition-network" },
       { title: "Wave 4 leftovers (0.20.0)", href: "/docs/security/wave-4-leftovers" },
       { title: "Wave 5 auth slice (0.22.0)", href: "/docs/security/wave-5-auth" },
+      { title: "Wave 5 remaining slice (0.23.0)", href: "/docs/security/wave-5-remaining" },
       { title: "CSRF protection", href: "/docs/security/csrf" },
       { title: "Sessions", href: "/docs/security/session" },
       {

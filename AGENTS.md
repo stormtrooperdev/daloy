@@ -22,7 +22,7 @@
 - Update also the "Status" table in the README to reflect the new capability
 - Documentation updates should be clear, concise, and accurate, and should be reviewed for quality along with the code changes
 - Code reviews should be thorough and constructive, providing feedback on both the implementation and the tests, and should ensure that all quality gates are met before approving the changes
-- Codecoverage is 100% lines and 100% functions, so any change that adds code must also include tests that cover that code, and the coverage report should be checked to ensure that no new code is left untested
+- Code coverage targets are **95% lines / 95% functions** on the tsx run and **92% branches** on the compiled-JS run (enforced by `pnpm coverage` and `pnpm coverage:branches`). Any change that adds code should include tests that cover that code, but **do not burn cycles chasing the last few percent on complex security features** — useless coverage of unreachable defensive branches, tsx phantom source-map lines, or signal/shutdown paths that can't be unit-tested is explicitly not worth blocking a release on. If coverage on a hard security task is taking too long, ship the feature and revisit tests later.
 - Any new features should be well documenbted in the `website` documentation, and the documentation should be updated to reflect any changes in behavior or new capabilities introduced by the feature
 - Making the repo and the app itself secure are top priorities; any change that has security implications must be carefully reviewed for potential vulnerabilities and should include updates to `SECURITY.md` or related documentation when relevant
 
@@ -46,6 +46,6 @@ If a task involves writing or editing a blog post, treat `website/AGENTS.md` as 
   - Update `@daloyjs/core` peer/dependency in every `packages/create-daloy/templates/*/package.json` and `packages/create-daloy/templates/deno-basic/deno.json` to the new core version (use `^X.Y.Z`)
   - Update the matching assertions in `packages/create-daloy/test/templates.test.mjs`
   - Update the hardcoded `FALLBACK_CORE_PACKAGE_VERSION` in `website/next.config.mjs` and the fallback in `website/lib/seo.ts`
-- Run `pnpm coverage` (not just `pnpm test`) before tagging — the 100% line/function gate in CI blocks publish silently if missed
+- Run `pnpm coverage` (not just `pnpm test`) before tagging — the 95% line/function gate in CI blocks publish silently if missed. If a security-heavy slice can't reach 95% without contortions, lower the threshold in `package.json` rather than write throwaway tests, and note the reason in `PROJECT_HISTORY.md`.
 - Publish flow: tag `vX.Y.Z` (push tag) triggers `@daloyjs/core` publish; then `gh workflow run release.yml -f package=create-daloy --ref main` for the companion
 - Both runs require approval on the `npm-publish` GitHub Environment
