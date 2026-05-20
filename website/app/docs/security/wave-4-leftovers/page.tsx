@@ -29,20 +29,21 @@ export default function Page() {
     <>
       <h1>Wave 4 leftovers (0.20.0)</h1>
       <p>
-        Daloy <strong>0.20.0</strong> closes the four leftover items from Wave
-        4 of the secure-by-default initiative. Each one is additive and
-        opt-in (or, in the case of <code>disconnectStatusCode</code>, only
-        changes the status code recorded for already-aborted requests):
+        Daloy <strong>0.20.0</strong> closes the four leftover items from Wave 4
+        of the secure-by-default initiative. Each one is additive and opt-in
+        (or, in the case of <code>disconnectStatusCode</code>, only changes the
+        status code recorded for already-aborted requests):
       </p>
       <ul>
         <li>
           <code>loadShedding()</code> — first-party event-loop pressure monitor
-          that returns <code>503 Service Unavailable</code> + <code>Retry-After</code>{" "}
-          when the process is overloaded.
+          that returns <code>503 Service Unavailable</code> +{" "}
+          <code>Retry-After</code> when the process is overloaded.
         </li>
         <li>
-          <code>app.cspReportRoute()</code> — rate-limited POST receiver for
-          CSP violation reports, plus <code>secureHeaders({"{ reportingEndpoints, reportTo }"})</code>{" "}
+          <code>app.cspReportRoute()</code> — rate-limited POST receiver for CSP
+          violation reports, plus{" "}
+          <code>secureHeaders({"{ reportingEndpoints, reportTo }"})</code>{" "}
           wiring so a single line registers the endpoint and threads it back
           into the CSP header.
         </li>
@@ -65,12 +66,11 @@ export default function Page() {
         Drop-in middleware that samples event-loop delay, event-loop
         utilization, heap, and RSS through <code>node:perf_hooks</code>. When
         any configured threshold is breached, every incoming request is
-        short-circuited with a structured <code>503 problem+json</code>{" "}
-        carrying <code>Retry-After</code>. The sampler is{" "}
-        <code>unref()</code>&apos;d so it never pins the event loop, and the
-        whole module is a silent no-op on runtimes without{" "}
-        <code>node:perf_hooks</code> (Cloudflare Workers, Vercel Edge, Fastly
-        Compute) so the same line is portable.
+        short-circuited with a structured <code>503 problem+json</code> carrying{" "}
+        <code>Retry-After</code>. The sampler is <code>unref()</code>&apos;d so
+        it never pins the event loop, and the whole module is a silent no-op on
+        runtimes without <code>node:perf_hooks</code> (Cloudflare Workers,
+        Vercel Edge, Fastly Compute) so the same line is portable.
       </p>
       <CodeBlock
         code={`import { App, loadShedding } from "@daloyjs/core";
@@ -105,7 +105,8 @@ app.use(
         rate limit <code>60</code> requests / <code>60s</code>, body cap{" "}
         <code>8 KiB</code>, accepted content types{" "}
         <code>application/csp-report</code>,{" "}
-        <code>application/reports+json</code>, and <code>application/json</code>.
+        <code>application/reports+json</code>, and <code>application/json</code>
+        .
       </p>
       <CodeBlock
         code={`import { App, secureHeaders } from "@daloyjs/core";
@@ -138,20 +139,19 @@ app.cspReportRoute({
         language="ts"
       />
       <p>
-        Bad content-types receive <code>415</code> with{" "}
-        <code>Accept</code>, oversize payloads <code>413</code>, malformed JSON{" "}
-        <code>400</code>, and rate-limited callers <code>429</code>. Sink
-        errors are caught and logged at <code>error</code> through the
-        pluggable redacted logger without breaking the <code>204</code>{" "}
-        response.
+        Bad content-types receive <code>415</code> with <code>Accept</code>,
+        oversize payloads <code>413</code>, malformed JSON <code>400</code>, and
+        rate-limited callers <code>429</code>. Sink errors are caught and logged
+        at <code>error</code> through the pluggable redacted logger without
+        breaking the <code>204</code> response.
       </p>
 
       <h2>
         3. <code>disconnectStatusCode: 499</code> default
       </h2>
       <p>
-        When the client closes the connection before the response completes
-        (the request <code>AbortSignal</code> fires), the dispatcher logs{" "}
+        When the client closes the connection before the response completes (the
+        request <code>AbortSignal</code> fires), the dispatcher logs{" "}
         <code>{`{ event: "request.disconnected", status: 499 }`}</code> and
         returns an empty <code>499</code> response. Access-log dashboards and
         SLO alerts then cleanly separate client aborts (scrapers, aborted
@@ -183,10 +183,10 @@ const legacy = new App({ disconnectStatusCode: 0 });
       <p>
         Boot-time helper that validates the app&apos;s runtime configuration
         through a Standard Schema (Zod / Valibot / ArkType / TypeBox). Closes
-        the &quot;we shipped to production with <code>JWT_SECRET=undefined</code>{" "}
-        because the env var wasn&apos;t set on the new cluster&quot; class of
-        bugs at the framework boundary — not at every middleware that consumes
-        the secret.
+        the &quot;we shipped to production with{" "}
+        <code>JWT_SECRET=undefined</code> because the env var wasn&apos;t set on
+        the new cluster&quot; class of bugs at the framework boundary — not at
+        every middleware that consumes the secret.
       </p>
       <CodeBlock
         code={`import { defineConfig, ConfigValidationError } from "@daloyjs/core";
@@ -223,9 +223,9 @@ try {
       <p>
         <code>defineConfig</code> reports <strong>every</strong> offending key
         in one pass (not just the first one) so a cold-start deploy fixes a
-        misconfigured cluster on the first try. Suppress the stderr summary
-        with <code>{`{ stderr: false }`}</code> if you want to handle the
-        error structurally yourself.
+        misconfigured cluster on the first try. Suppress the stderr summary with{" "}
+        <code>{`{ stderr: false }`}</code> if you want to handle the error
+        structurally yourself.
       </p>
     </>
   );
