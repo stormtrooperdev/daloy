@@ -60,6 +60,15 @@ at least once per quarter with a simulated report. The exercise verifies that:
 3. The protected `npm-publish` Environment still requires explicit approval
    before any publish job executes.
 4. The CI gate `pnpm verify:wave10-audits` exits zero on `main`.
+5. The GitHub **and** npm account-recovery email address for every handle in
+   the **Active** list above still resolves to a domain the contact
+   personally owns, or to a custodial provider (e.g. Gmail, iCloud, Fastmail)
+   where the contact still has an active account. This guards against the
+   `node-ipc` 2026-05-14 attack pattern, where a dormant maintainer was
+   compromised by re-registering the lapsed domain of their npm recovery
+   email and triggering a standard password reset. A lapsed-domain finding
+   blocks the next publish until the affected contact rotates their
+   recovery address and the change is recorded in `PROJECT_HISTORY.md`.
 
 The most recent exercise must be recorded as a one-line bullet in
 [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) using the form:

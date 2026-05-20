@@ -263,6 +263,12 @@ quarter with a simulated report. Each exercise verifies that:
 3. The protected `npm-publish` GitHub Environment still requires explicit
    approval before any publish job executes.
 4. `pnpm verify:wave10-audits` exits zero on `main`.
+5. The GitHub and npm account-recovery email address for every handle in
+   the **Active** rotation still resolves to a domain the contact
+   personally owns, or to a custodial provider where the contact still has
+   an active account. (Added 2026-05-20 in response to the `node-ipc`
+   2026-05-14 reload, where a dormant maintainer was compromised via a
+   lapsed recovery-email domain — see `otherdocs/security-incidence.md`.)
 
 The most recent exercise is recorded as a one-line bullet in
 [`PROJECT_HISTORY.md`](PROJECT_HISTORY.md) using the form
@@ -321,6 +327,39 @@ What this **does not** defend against, and we say so explicitly:
 
 If a future incident report describes an attack step that any control in
 the table above should have blocked, treat the gap as a release-blocking
+bug and open a private advisory.
+
+### Import-time CJS payload + dormant-maintainer takeover (node-ipc 2026-05-14 reload)
+
+Socket's 2026-05-14 disclosure of the
+[`node-ipc` reload](https://socket.dev/blog/node-ipc-package-compromised)
+(malicious versions `9.1.6`, `9.2.3`, `12.0.1`) is listed here because it
+combines two attack characteristics that earlier entries did not. We map
+them explicitly so reviewers don't have to re-derive which Daloy control
+catches each step.
+
+| Attack step | DaloyJS / template control |
+| --- | --- |
+| Malicious code appended as an IIFE to a **CJS** entrypoint (`node-ipc.cjs`) and executed at `require()` time — *not* via `postinstall`, `preinstall`, or `prepare` | `ignore-scripts=true` would **not** have helped here; `minimum-release-age=1440` (root `.npmrc` + every template `_npmrc`) is what blocks install of a freshly published trojan version inside the typical detect-and-unpublish window. All three malicious `node-ipc` versions were removed inside that window. |
+| Transitive load of the poisoned CJS bundle through a seemingly unrelated dependency | `@daloyjs/core` ships **zero runtime dependencies** (enforced by [`pnpm verify:no-runtime-deps`](scripts/verify-no-runtime-deps.ts) and the Wave 10 governance floor). Importing `@daloyjs/core` cannot pull in a transitive package at all, poisoned or otherwise. |
+| Downstream consumer's `require()` chain re-entering a CJS variant of the framework | `@daloyjs/core` is **ESM-only** — `"type": "module"` in `package.json` and every entry in the `exports` field exposes only an `import` condition, no `require` condition. There is no CJS bundle of the framework that an attacker could append an IIFE to even if a future compromise tried. |
+| Access vector: **dormant maintainer account** whose npm recovery-email domain had **lapsed and been re-registered** by the attacker, allowing a standard password reset to capture publish rights | This is upstream of any package-manager control — npm will honor a legitimate password reset to whatever address is on file. Our equivalent surface is every handle in [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md) § Active. The quarterly disclosure exercise now explicitly verifies that each active contact's GitHub and npm recovery-email addresses still resolve to a domain the contact personally owns (or to a custodial provider the contact still has an active account with). A lapsed-domain finding blocks the next publish. |
+| DNS-TXT exfiltration via a lookalike bootstrap resolver (`sh[.]azurestaticprovider[.]net`) during a CI/release run | `step-security/harden-runner` on the publish workflow blocks egress to anything outside the npm registry, GitHub, and the Sigstore endpoints. The framework cannot block runtime DNS exfiltration inside *consumer* applications — that is the operator's network-policy responsibility. |
+
+What this **does not** defend against, and we say so explicitly:
+
+- A consumer who chooses to `require()` a malicious CommonJS package in
+  their own code. Daloy can keep itself ESM-only and dependency-free; it
+  cannot police what the application loads.
+- An attacker who compromises the recovery email of a Daloy maintainer
+  *between* quarterly exercises. The exercise shortens the window; it
+  does not eliminate it. Hardware-backed 2FA on the maintainer's GitHub
+  and npm accounts remains the primary guard, and the
+  `npm-publish` GitHub Environment still requires explicit approval
+  from a second listed contact.
+
+If a future incident report describes an attack step that any control in
+either table above should have blocked, treat the gap as a release-blocking
 bug and open a private advisory.
 
 
