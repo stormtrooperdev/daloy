@@ -83,6 +83,9 @@ jobs:
       - name: Verify zero runtime dependencies (Wave 8 governance gate)
         run: pnpm verify:no-runtime-deps
 
+      - name: Verify no install-time lifecycle scripts (Aikido Package Health "Supply-Chain Scripts" gate)
+        run: pnpm verify:no-lifecycle-scripts
+
       - name: Verify secret-comparison single source of truth (Wave 8 governance gate)
         run: pnpm verify:secret-comparisons
 
