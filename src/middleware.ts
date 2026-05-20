@@ -182,6 +182,32 @@ function buildCspHeader(opt: CspDirectivesOptions, nonce: string | undefined): s
   return parts.join("; ");
 }
 
+function cspSourceListHasValues(directiveValue: string | string[]): boolean {
+  return Array.isArray(directiveValue)
+    ? directiveValue.some((source) => source.trim().length > 0)
+    : directiveValue.split(/\s+/).some((source) => source.length > 0);
+}
+
+function cspStringHasFrameAncestors(csp: string): boolean {
+  return csp.split(";").some((directivePart) => {
+    const tokens = directivePart.trim().split(/\s+/).filter(Boolean);
+    const directiveName = tokens[0];
+    return directiveName?.toLowerCase() === "frame-ancestors" && tokens.length > 1;
+  });
+}
+
+function cspOptionsHaveFrameAncestors(csp: CspDirectivesOptions): boolean {
+  for (const [directiveName, directiveValue] of Object.entries(csp.directives)) {
+    if (
+      directiveName.toLowerCase() === "frame-ancestors" &&
+      cspSourceListHasValues(directiveValue)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Apply a Helmet-equivalent baseline of secure response headers:
  * `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`,
@@ -223,6 +249,29 @@ export const SECURE_HEADERS_MARKER: unique symbol = Symbol.for(
 export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   const headers: Record<string, string> = {};
   let cspOpt = opts.contentSecurityPolicy ?? "default-src 'self'; frame-ancestors 'none'";
+  // Wave 8 — refuse to construct when the developer disabled BOTH framing
+  // defenses simultaneously (no X-Frame-Options AND no frame-ancestors
+  // directive in CSP). A response with neither defense can be embedded in
+  // an `<iframe>` from any origin, which re-opens the clickjacking surface
+  // the helper is meant to close. The dual-knob "I disabled both" case is
+  // the documented footgun this guard catches.
+  const frameOptionExplicitlyDisabled = opts.frameOptions === false;
+  if (frameOptionExplicitlyDisabled) {
+    let cspProvidesFrameAncestors = false;
+    if (typeof cspOpt === "string") {
+      cspProvidesFrameAncestors = cspStringHasFrameAncestors(cspOpt);
+    } else if (cspOpt !== false && typeof cspOpt === "object") {
+      cspProvidesFrameAncestors = cspOptionsHaveFrameAncestors(cspOpt);
+    }
+    if (!cspProvidesFrameAncestors) {
+      throw new Error(
+        "secureHeaders(): refusing to construct with both frameOptions: false " +
+          "AND no CSP frame-ancestors directive — that disables every clickjacking " +
+          "defense the helper provides. Set frameOptions: 'DENY' / 'SAMEORIGIN', " +
+          "or add a `frame-ancestors` directive to contentSecurityPolicy.",
+      );
+    }
+  }
   // If `reportTo` is provided at the top level but CSP is still a string,
   // promote it into a directives object so we can append `report-to <group>`.
   if (opts.reportTo && typeof cspOpt === "string") {

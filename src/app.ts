@@ -85,6 +85,34 @@ export function _resetCrashHandlersForTests(): void {
 }
 
 /**
+ * Wave 8 — once-per-process latch for the `secureDefaults: false` warning
+ * log. Multiple `new App({ secureDefaults: false })` instances in the same
+ * process share one log entry instead of flooding the access log with
+ * duplicate warnings on every construction.
+ */
+let insecureDefaultsLoggedThisProcess = false;
+/** @internal Test-only helper to reset the latch between tests. */
+export function _resetInsecureDefaultsLogForTests(): void {
+  insecureDefaultsLoggedThisProcess = false;
+}
+
+/**
+ * Wave 8 — list of secure-by-default surfaces disabled when
+ * `secureDefaults: false` is set. Surfaced through the once-per-process
+ * `error` log so the operator sees exactly which guards are off.
+ */
+const DISABLED_BY_INSECURE_DEFAULTS: readonly string[] = Object.freeze([
+  "secureHeaders auto-install",
+  "cross-origin guard for state-changing requests",
+  "crash-on-unhandled-rejection (production)",
+  "first-request X-Forwarded-* / trustProxy guard",
+  "session() + state-changing route requires csrf() boot guard",
+  "weak session secret refuse-to-boot",
+  "cors({ origin: '*' }) refuse-to-boot",
+  "anonymous stateful plugin refuse-to-boot",
+]);
+
+/**
  * Configuration accepted by {@link App}'s constructor. Every field is
  * optional; sensible production defaults are applied.
  *
@@ -160,6 +188,22 @@ export interface AppOptions {
    * @since 0.16.0
    */
   secureDefaults?: boolean;
+
+  /**
+   * Wave 8 master-flag escape hatch acknowledgement. Required when
+   * {@link AppOptions.secureDefaults} is `false` AND the resolved
+   * environment is production. Setting this to `true` confirms that the
+   * caller understands every Wave 1–7 default is being disabled wholesale
+   * and accepts the resulting attack surface — refusing-to-construct in
+   * production by default prevents the "developer flipped `secureDefaults`
+   * off while debugging and shipped to production" class of accidents.
+   * Whenever `secureDefaults: false` is set (in any environment), the
+   * framework logs a once-per-process `error` naming every default that
+   * the flag turned off.
+   *
+   * @since 0.26.0
+   */
+  acknowledgeInsecureDefaults?: boolean;
 
   /**
    * Auto-install {@link secureHeaders} as a global hook so every response
@@ -689,6 +733,7 @@ export class App {
     this.assertDisconnectStatusCode();
     assertBehindProxy(this.options.behindProxy);
     if (this.options.hooks) this.assertSecureHookConfig(this.options.hooks);
+    this.assertInsecureDefaultsAcknowledged();
     this.installSecureDefaults();
     this.maybeInstallCrashHandlers();
     this.maybeMountDocs();
@@ -706,6 +751,47 @@ export class App {
     if (!Number.isInteger(v) || v < 400 || v > 499) {
       throw new Error(
         `disconnectStatusCode must be an integer in [400, 499] or 0; got ${String(v)}.`,
+      );
+    }
+  }
+
+  /**
+   * Wave 8 — master-flag escape-hatch enforcement. When
+   * `secureDefaults: false` is set, the framework:
+   *  - refuses-to-construct in production unless
+   *    `acknowledgeInsecureDefaults: true` is also set; closes the
+   *    "developer flipped the flag off while debugging and shipped to
+   *    production" footgun.
+   *  - emits a once-per-process `error` log naming every default the flag
+   *    disables, so operators see the blast radius even if the option was
+   *    set deep in shared configuration.
+   */
+  private assertInsecureDefaultsAcknowledged(): void {
+    if (this.options.secureDefaults !== false) return;
+    const inProduction = this.isProduction();
+    if (inProduction && this.options.acknowledgeInsecureDefaults !== true) {
+      throw new Error(
+        "app({ secureDefaults: false }) is refused in production. " +
+          "secureDefaults turns off the entire Wave 1–7 secure-by-default " +
+          "surface (auto secureHeaders, cross-origin guard, crash-on-unhandled-rejection, " +
+          "trustProxy guard, csrf/session boot guard, weak-secret refuse-to-boot, " +
+          "cors({ origin: '*' }) refuse-to-boot, anonymous-stateful-plugin refuse-to-boot). " +
+          "If you really need this in production, also pass " +
+          "acknowledgeInsecureDefaults: true to confirm. Prefer per-feature opt-outs " +
+          "(secureHeaders: false, corsCrossOriginGuard: false, crashOnUnhandledRejection: false, " +
+          "trustProxy: false, csrf: \"off\") instead.",
+      );
+    }
+    if (!insecureDefaultsLoggedThisProcess) {
+      insecureDefaultsLoggedThisProcess = true;
+      this.log.error(
+        {
+          event: "secure_defaults.disabled",
+          production: inProduction,
+          acknowledged: this.options.acknowledgeInsecureDefaults === true,
+          disabled: DISABLED_BY_INSECURE_DEFAULTS,
+        },
+        `app({ secureDefaults: false }) disables: ${DISABLED_BY_INSECURE_DEFAULTS.join(", ")}.`,
       );
     }
   }

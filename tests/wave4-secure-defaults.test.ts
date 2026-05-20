@@ -131,7 +131,7 @@ test("crashOnUnhandledRejection does NOT install in non-production by default", 
 test("secureDefaults: false skips crash-handler install in production", () => {
   _resetCrashHandlersForTests();
   const before = process.listenerCount("unhandledRejection");
-  new App({ env: "production", secureDefaults: false });
+  new App({ env: "production", secureDefaults: false, acknowledgeInsecureDefaults: true });
   assert.equal(process.listenerCount("unhandledRejection"), before);
 });
 
@@ -420,6 +420,7 @@ test("production with secureDefaults: false also allows unauthenticated registra
   const app = new App({
     env: "production",
     secureDefaults: false,
+    acknowledgeInsecureDefaults: true,
     crashOnUnhandledRejection: false,
   });
   assert.doesNotThrow(() => app.healthcheck());

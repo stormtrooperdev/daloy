@@ -102,7 +102,12 @@ test('App.use(cors({ origin: "*" })) is allowed in development', () => {
 });
 
 test('App.use(cors({ origin: "*" })) with secureDefaults: false is allowed in production', () => {
-  const app = new App({ logger: false, env: "production", secureDefaults: false });
+  const app = new App({
+    logger: false,
+    env: "production",
+    secureDefaults: false,
+    acknowledgeInsecureDefaults: true,
+  });
   assert.doesNotThrow(() => app.use(cors({ origin: "*" })));
 });
 
@@ -166,7 +171,12 @@ test("App.use(session({ secret })) with strong secret is allowed in production",
 });
 
 test("App.use(session({ secret })) with secureDefaults: false skips the check", () => {
-  const app = new App({ logger: false, env: "production", secureDefaults: false });
+  const app = new App({
+    logger: false,
+    env: "production",
+    secureDefaults: false,
+    acknowledgeInsecureDefaults: true,
+  });
   assert.doesNotThrow(() => app.use(session({ secret: "sixteen-chars-ok" })));
 });
 
@@ -326,7 +336,12 @@ test("session-only app without state-changing routes does not trip the guard", a
 });
 
 test("session + state-changing route + secureDefaults:false skips the boot guard", async () => {
-  const app = new App({ logger: false, env: "production", secureDefaults: false });
+  const app = new App({
+    logger: false,
+    env: "production",
+    secureDefaults: false,
+    acknowledgeInsecureDefaults: true,
+  });
   app.use(session({ secret: STRONG }));
   app.route({
     method: "DELETE",
@@ -345,6 +360,7 @@ function makeTrustProxyApp(opts: {
   env?: "production" | "development";
   trustProxy?: boolean;
   secureDefaults?: boolean;
+  acknowledgeInsecureDefaults?: boolean;
   csrf?: "off";
 } = {}) {
   const app = new App({
@@ -352,6 +368,9 @@ function makeTrustProxyApp(opts: {
     env: opts.env ?? "production",
     ...(opts.trustProxy !== undefined ? { trustProxy: opts.trustProxy } : {}),
     ...(opts.secureDefaults !== undefined ? { secureDefaults: opts.secureDefaults } : {}),
+    ...(opts.acknowledgeInsecureDefaults !== undefined
+      ? { acknowledgeInsecureDefaults: opts.acknowledgeInsecureDefaults }
+      : {}),
     ...(opts.csrf !== undefined ? { csrf: opts.csrf } : {}),
   });
   app.route({
@@ -445,7 +464,7 @@ test("trustProxy unconfigured guard logs a warn exactly once across many request
 });
 
 test("trustProxy unconfigured + secureDefaults: false is allowed", async () => {
-  const app = makeTrustProxyApp({ secureDefaults: false });
+  const app = makeTrustProxyApp({ secureDefaults: false, acknowledgeInsecureDefaults: true });
   const res = await app.request("/ip", { headers: { "x-forwarded-for": "1.2.3.4" } });
   assert.equal(res.status, 200);
 });

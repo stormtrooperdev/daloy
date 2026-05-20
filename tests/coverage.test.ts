@@ -365,7 +365,6 @@ test("secureHeaders supports hsts preload and overlapping disabled options", asy
     secureHeaders({
       hsts: { maxAgeSeconds: 60, includeSubDomains: false, preload: true },
       contentSecurityPolicy: false,
-      frameOptions: false,
       noSniff: false,
     })
   );
@@ -379,7 +378,7 @@ test("secureHeaders supports hsts preload and overlapping disabled options", asy
   const res = await app.request("/sec");
   assert.equal(res.headers.get("strict-transport-security"), "max-age=60; preload");
   assert.equal(res.headers.get("content-security-policy"), null);
-  assert.equal(res.headers.get("x-frame-options"), null);
+  assert.equal(res.headers.get("x-frame-options"), "DENY");
 });
 
 test("secureHeaders does not overwrite explicit response headers", async () => {

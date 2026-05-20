@@ -195,9 +195,21 @@ chalk/debug/node-ipc phishing campaigns.
 
 ### Maintainer accounts
 
-- **Hardware-backed 2FA only on npm and GitHub.** SMS factors are not
-  permitted. Maintainers should rotate credentials immediately after any
+- **Hardware-backed 2FA is mandatory on npm and GitHub** for every account
+  with write access to the `daloyjs/daloy` repository AND every npm account
+  with publish rights to `@daloyjs/core` or `create-daloy`. SMS factors are
+  not permitted. 2FA enforcement is configured at the GitHub organization
+  level (`Settings → Authentication security → Require two-factor
+  authentication`) and at the npm registry level (`npm access 2fa-required`
+  on each published package), so an account without 2FA cannot push to
+  `main`, approve the `npm-publish` GitHub Environment, or run
+  `npm publish`. Maintainers should rotate credentials immediately after any
   ecosystem-wide phishing campaign (e.g. `npmjs.help`-style lookalikes).
+- **Removal of an account is part of the off-boarding checklist.** Whenever
+  a contributor with publish access leaves rotation, the maintainer
+  off-boarding step revokes their GitHub organization membership, their npm
+  publish grant, and any granular tokens scoped to `@daloyjs/*` packages
+  before their last day. (Wave 8 item.)
 - **Granular npm access tokens only**, scoped to a single package, with IP
   allowlists where the maintainer's network supports it.
 - **No publishing from a developer machine.** All published artifacts come
@@ -210,6 +222,10 @@ chalk/debug/node-ipc phishing campaigns.
 2. Create and push a signed `v*` tag for the core package version.
 3. Approve the pending `npm-publish` environment for the tag-triggered core release.
 4. Manually dispatch `release.yml` with `package=create-daloy` when the CLI version also needs publishing.
+5. Confirm every contributor who approved the `npm-publish` Environment for
+   this release has hardware-backed 2FA enabled at both the GitHub
+   organization level and the npm registry level. (Wave 8 mandatory-2FA
+   audit gate.)
 
 ### Indicators of compromise — what to watch for
 

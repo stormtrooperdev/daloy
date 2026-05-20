@@ -55,6 +55,14 @@ const ASYMMETRIC: ReadonlySet<JwtAlgorithm> = new Set([
 
 const ALL_ALGS: ReadonlySet<string> = new Set([...SYMMETRIC, ...ASYMMETRIC]);
 
+/**
+ * Wave 8 — minimum byte length for an HS* HMAC secret. RFC 7518 §3.2
+ * requires HS256 keys to be at least 256 bits (32 bytes). Apply the same
+ * floor to HS384 / HS512 because shorter keys do not buy a meaningfully
+ * stronger HMAC than HS256-with-a-256-bit-key.
+ */
+const MIN_HS_KEY_BYTES = 32;
+
 /** Default lifetime cap when none is declared in development (`30d`). */
 export const DEFAULT_JWT_MAX_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 
@@ -245,6 +253,16 @@ async function importKey(
         `jwt(): raw byte keys are only supported for HS256/HS384/HS512; got ${alg}.`,
       );
     }
+    // Wave 8 — refuse HS-shaped secrets shorter than 32 bytes (256 bits).
+    // RFC 7518 §3.2 requires HS256 keys to be "of the same size as the hash
+    // output (for instance, 256 bits for HS256)" — anything shorter is a
+    // known-weak HMAC key that turns the signature into the bottleneck.
+    if (material.byteLength < MIN_HS_KEY_BYTES) {
+      throw new JwtError(
+        "weak_hs_secret",
+        `jwt(): ${alg} secret must be at least ${MIN_HS_KEY_BYTES} bytes (RFC 7518 §3.2); got ${material.byteLength}.`,
+      );
+    }
     return c.subtle.importKey(
       "raw",
       material as BufferSource,
@@ -299,6 +317,16 @@ export function createJwtSigner(opts: JwtSignerOptions): { sign(payload: Record<
       `jwt(): unknown algorithm "${String(alg)}". Allowed: ${[...ALL_ALGS].sort().join(", ")}.`,
     );
   }
+  if (
+    SYMMETRIC.has(alg) &&
+    opts.key instanceof Uint8Array &&
+    opts.key.byteLength < MIN_HS_KEY_BYTES
+  ) {
+    throw new JwtError(
+      "weak_hs_secret",
+      `jwt(): ${alg} secret must be at least ${MIN_HS_KEY_BYTES} bytes (RFC 7518 §3.2); got ${opts.key.byteLength}.`,
+    );
+  } 
   if (typeof opts.maxLifetimeSeconds !== "number" || !Number.isFinite(opts.maxLifetimeSeconds) || opts.maxLifetimeSeconds <= 0) {
     throw new JwtError(
       "missing_max_lifetime",
@@ -427,6 +455,16 @@ export function createJwtVerifier(opts: JwtVerifierOptions): { verify(token: str
     allow.add(alg);
   }
   const hasSym = [...allow].some((a) => SYMMETRIC.has(a));
+  if (
+    hasSym &&
+    opts.key instanceof Uint8Array &&
+    opts.key.byteLength < MIN_HS_KEY_BYTES
+  ) {
+    throw new JwtError(
+      "weak_hs_secret",
+      `jwt(): HS* secret must be at least ${MIN_HS_KEY_BYTES} bytes (RFC 7518 §3.2); got ${opts.key.byteLength}.`,
+    );
+  }
   if (
     hasSym &&
     opts.refuseSymmetricWithJwk !== false &&
