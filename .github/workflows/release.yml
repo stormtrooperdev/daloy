@@ -137,6 +137,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Generate CycloneDX 1.5 + SPDX 2.3 SBOMs (Aikido SBOM-standards gate)
+        run: pnpm gen:sbom
+
+      - name: Verify SBOMs match published manifests (Aikido SBOM-standards gate)
+        run: pnpm verify:sbom
+
       - name: Verify no leaked credentials in publishable tarball contents (Snyk "leaked credentials in packages" gate)
         run: pnpm verify:no-leaked-credentials
 
@@ -226,6 +232,12 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Generate CycloneDX 1.5 + SPDX 2.3 SBOMs for publishable tarball
+        run: pnpm gen:sbom
+
+      - name: Verify SBOMs match published manifest before tarball is sealed
+        run: pnpm verify:sbom
 
       - name: Verify no leaked credentials in publishable tarball contents (Snyk "leaked credentials in packages" gate)
         run: pnpm verify:no-leaked-credentials
@@ -320,6 +332,12 @@ jobs:
 
       - name: Test create-daloy
         run: pnpm --filter create-daloy test
+
+      - name: Generate CycloneDX 1.5 + SPDX 2.3 SBOMs for publishable tarball
+        run: pnpm gen:sbom
+
+      - name: Verify SBOMs match published manifest before tarball is sealed
+        run: pnpm verify:sbom
 
       - name: Verify no leaked credentials in publishable tarball contents (Snyk "leaked credentials in packages" gate)
         run: pnpm verify:no-leaked-credentials

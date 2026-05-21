@@ -169,6 +169,7 @@
     "typecheck": "tsc --noEmit",
     "gen:openapi": "node --import tsx scripts/dump-openapi.ts",
     "gen:client": "openapi-ts",
+    "gen:sbom": "node --import tsx scripts/generate-sbom.ts --package-json ./package.json --out-cyclonedx ./dist/sbom.cdx.json --out-spdx ./dist/sbom.spdx.json && node --import tsx scripts/generate-sbom.ts --package-json ./packages/create-daloy/package.json --out-cyclonedx ./packages/create-daloy/sbom.cdx.json --out-spdx ./packages/create-daloy/sbom.spdx.json",
     "gen": "pnpm gen:openapi && pnpm gen:client",
     "verify:lockfile": "node --import tsx scripts/verify-lockfile-sources.ts",
     "verify:no-runtime-deps": "node --import tsx scripts/verify-no-runtime-deps.ts",
@@ -185,8 +186,9 @@
     "verify:wave10-audits": "node --import tsx scripts/verify-wave10-audits.ts",
     "verify:wave11-audits": "node --import tsx scripts/verify-wave11-audits.ts",
     "verify:wave12-audits": "node --import tsx scripts/verify-wave12-audits.ts",
+    "verify:sbom": "node --import tsx scripts/verify-sbom.ts",
     "audit": "pnpm audit --prod",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build && pnpm gen:sbom"
   },
   "files": [
     "dist",
