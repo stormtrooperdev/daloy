@@ -19,7 +19,7 @@ import {
   ValidationError,
 } from "./errors.js";
 import { validate } from "./schema.js";
-import { readBodyLimited, safeJsonParse, randomId, assertNoDuplicateSingletonHeaders, assertStrongSecret, timingSafeEqual } from "./security.js";
+import { readBodyLimited, safeJsonParse, randomId, assertNoDuplicateSingletonHeaders, assertStrongSecret, timingSafeEqual, isForbiddenObjectKey } from "./security.js";
 import { createLogger, noopLogger, type Logger } from "./logger.js";
 import type {
   BaseContext,
@@ -2911,6 +2911,11 @@ function headersToObject(h: Headers): Record<string, string> {
 function queryToObject(s: URLSearchParams): Record<string, string | string[]> {
   const o: Record<string, string | string[]> = {};
   for (const key of new Set(s.keys())) {
+    // Spring4Shell-style defense: never bind attacker-controlled keys named
+    // __proto__ / constructor / prototype as own properties on the parsed
+    // query object — they would survive downstream `{...query}` spreads and
+    // shallow merges. See isForbiddenObjectKey in src/security.ts.
+    if (isForbiddenObjectKey(key)) continue;
     const all = s.getAll(key);
     o[key] = all.length > 1 ? all : (all[0] as string);
   }
@@ -2943,9 +2948,15 @@ async function readBody(
   }
   if (ct.includes("application/x-www-form-urlencoded")) {
     const bytes = await readBodyLimited(req, limit);
-    return Object.fromEntries(
-      new URLSearchParams(new TextDecoder().decode(bytes)),
-    );
+    const params = new URLSearchParams(new TextDecoder().decode(bytes));
+    // Same Spring4Shell-class defense as queryToObject: Object.fromEntries
+    // would set __proto__ / constructor / prototype as own properties.
+    const out: Record<string, string> = {};
+    for (const [k, v] of params) {
+      if (isForbiddenObjectKey(k)) continue;
+      out[k] = v;
+    }
+    return out;
   }
   if (ct.includes("multipart/form-data")) {
     // Multipart: rely on platform parser, but enforce content-length first.
@@ -2973,6 +2984,11 @@ async function readBody(
           throw new PayloadTooLargeError(multipart.maxFileBytes);
         }
       }
+      // Spring4Shell-class defense (see isForbiddenObjectKey): drop fields
+      // whose name would land on a prototype-pollution sink. They still count
+      // toward the maxFields / maxFiles limits above so an attacker can't use
+      // them to bypass DoS caps.
+      if (isForbiddenObjectKey(k)) return;
       out[k] = v;
     });
     if (multipart?.maxFields !== undefined && fields > multipart.maxFields) {

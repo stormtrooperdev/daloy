@@ -87,6 +87,7 @@ export { validate, isStandardSchema } from "./schema.js";
 export {
   readBodyLimited,
   safeJsonParse,
+  isForbiddenObjectKey,
   sanitizeHeaderName,
   sanitizeHeaderValue,
   timingSafeEqual,

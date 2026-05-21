@@ -10,6 +10,7 @@ import {
   bearerAuth,
   timingSafeEqual,
   safeJsonParse,
+  isForbiddenObjectKey,
 } from "../src/index.js";
 
 test("body size limit rejects oversized request", async () => {
@@ -218,4 +219,100 @@ test("graceful shutdown blocks new requests", async () => {
   const res = await app.request("/g");
   assert.equal(res.status, 503);
   await p;
+});
+
+test("isForbiddenObjectKey flags pollution-sink keys only", () => {
+  assert.equal(isForbiddenObjectKey("__proto__"), true);
+  assert.equal(isForbiddenObjectKey("constructor"), true);
+  assert.equal(isForbiddenObjectKey("prototype"), true);
+  assert.equal(isForbiddenObjectKey("proto"), false);
+  assert.equal(isForbiddenObjectKey(""), false);
+  assert.equal(isForbiddenObjectKey("user"), false);
+});
+
+// Spring4Shell-class regression: an attacker who can name request fields
+// (query string, x-www-form-urlencoded, multipart) must not be able to bind
+// them onto __proto__ / constructor / prototype of the parsed object.
+// https://snyk.io/blog/spring4shell-rce-vulnerability-glassfish-payara/
+test("query string drops prototype-pollution keys", async () => {
+  let observed: unknown = null;
+  const app = new App();
+  app.route({
+    method: "GET",
+    path: "/q",
+    operationId: "q",
+    responses: { 200: { description: "ok" } },
+    handler: async ({ query }) => {
+      observed = query;
+      return { status: 200 as const, body: undefined };
+    },
+  });
+  const res = await app.request(
+    "/q?safe=1&__proto__=pwn&constructor=pwn&prototype=pwn",
+  );
+  assert.equal(res.status, 200);
+  const q = observed as Record<string, unknown>;
+  assert.equal(q.safe, "1");
+  assert.equal(Object.hasOwn(q, "__proto__"), false);
+  assert.equal(Object.hasOwn(q, "constructor"), false);
+  assert.equal(Object.hasOwn(q, "prototype"), false);
+  // Object.prototype must not be polluted by the parse:
+  assert.equal((Object.prototype as Record<string, unknown>).pwn, undefined);
+});
+
+test("x-www-form-urlencoded body drops prototype-pollution keys", async () => {
+  let observed: unknown = null;
+  const app = new App();
+  app.route({
+    method: "POST",
+    path: "/f",
+    operationId: "f",
+    request: { body: z.record(z.string(), z.string()) as any },
+    responses: { 200: { description: "ok" } },
+    handler: async ({ body }) => {
+      observed = body;
+      return { status: 200 as const, body: undefined };
+    },
+  });
+  const res = await app.request("/f", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: "safe=1&__proto__=pwn&constructor=pwn&prototype=pwn",
+  });
+  assert.equal(res.status, 200);
+  const b = observed as Record<string, unknown>;
+  assert.equal(b.safe, "1");
+  assert.equal(Object.hasOwn(b, "__proto__"), false);
+  assert.equal(Object.hasOwn(b, "constructor"), false);
+  assert.equal(Object.hasOwn(b, "prototype"), false);
+});
+
+test("multipart body drops prototype-pollution keys", async () => {
+  let observed: unknown = null;
+  const app = new App();
+  app.route({
+    method: "POST",
+    path: "/m",
+    operationId: "m",
+    // Accept any record-shaped body so the parser path runs even with the
+    // malicious keys present.
+    request: { body: z.any() as any },
+    responses: { 200: { description: "ok" } },
+    handler: async ({ body }) => {
+      observed = body;
+      return { status: 200 as const, body: undefined };
+    },
+  });
+  const fd = new FormData();
+  fd.append("safe", "1");
+  fd.append("__proto__", "pwn");
+  fd.append("constructor", "pwn");
+  fd.append("prototype", "pwn");
+  const res = await app.request("/m", { method: "POST", body: fd });
+  assert.equal(res.status, 200);
+  const b = observed as Record<string, unknown>;
+  assert.equal(b.safe, "1");
+  assert.equal(Object.hasOwn(b, "__proto__"), false);
+  assert.equal(Object.hasOwn(b, "constructor"), false);
+  assert.equal(Object.hasOwn(b, "prototype"), false);
 });

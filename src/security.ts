@@ -77,6 +77,23 @@ export async function readBodyLimited(
 const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 /**
+ * Return `true` when `key` is one of the prototype-pollution sink names
+ * (`__proto__`, `constructor`, `prototype`). Exposed so non-JSON request
+ * parsers (query strings, `application/x-www-form-urlencoded`,
+ * `multipart/form-data`) can refuse attacker-supplied field names that would
+ * otherwise be bound as own properties on the parsed object — the Node /
+ * web-standards equivalent of the Spring4Shell parameter-binding RCE class
+ * (https://snyk.io/blog/spring4shell-rce-vulnerability-glassfish-payara/).
+ *
+ * @param key - The candidate property name.
+ * @returns `true` if `key` must be stripped before assignment.
+ * @since 0.1.0
+ */
+export function isForbiddenObjectKey(key: string): boolean {
+  return FORBIDDEN_KEYS.has(key);
+}
+
+/**
  * Parse a JSON string while stripping the dangerous keys `__proto__`,
  * `constructor`, and `prototype` from every nested object. Throws
  * {@link BadRequestError} on invalid JSON — the message is intentionally
