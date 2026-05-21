@@ -181,6 +181,35 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "writes a fabricated RubyGems token to",
     keepStrings: true,
   },
+  // ---- Lazarus / Jade Sleet npm campaign (Socket 2023-07-25, GitHub
+  //      security alert) — paired-package token handoff via
+  //      `~/.vscode/jsontoken` and a typosquat C2 host. See
+  //      https://socket.dev/blog/social-engineering-campaign-npm-malware
+  //      and https://github.blog/2023-07-18-security-alert-social-engineering-campaign-targets-technology-industry-employees/ ----
+  {
+    // Catches `/.vscode/`, `\\.vscode\\` (Windows path literals), etc.
+    // Daloy core has no business touching the user's IDE config dir;
+    // the Jade Sleet "first package writes token, second package
+    // reads token" handoff is staged at `$HOME/.vscode/jsontoken`.
+    re: /[\\/]\.vscode[\\/]/,
+    reason:
+      "library code must not reference `~/.vscode/` — Daloy never touches the user's IDE config " +
+      "directory, and `$HOME/.vscode/jsontoken` is the exact path the Lazarus / Jade Sleet paired-package " +
+      "npm campaign uses to hand off a token between its first-stage and second-stage packages " +
+      "(https://socket.dev/blog/social-engineering-campaign-npm-malware)",
+    keepStrings: true,
+  },
+  {
+    // `npmjsregister.com` is the documented C2 host the Lazarus / Jade
+    // Sleet packages POST scraped data to (`/checkupdate.php`,
+    // `/getupdate.php`). Any mention in `src/**` is a hard IOC.
+    re: /\bnpmjsregister\.com\b/i,
+    reason:
+      "library code must not reference `npmjsregister.com` — this is the documented Lazarus / Jade " +
+      "Sleet npm-campaign C2 host (typosquat of `registry.npmjs.org`) used for `/checkupdate.php` and " +
+      "`/getupdate.php` exfiltration endpoints (https://socket.dev/blog/social-engineering-campaign-npm-malware)",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
@@ -310,9 +339,12 @@ async function main(): Promise<void> {
     console.error(
       `verify-no-registry-exfiltration: ${total} forbidden primitive${total === 1 ? "" : "s"} found. ` +
         "Core source must not disable TLS verification, mutate HOME, reference host credential " +
-        "files, or include package-registry publish-API paths. These are the runtime primitives " +
-        "the GemStuffer class of supply-chain attack uses to scrape and exfiltrate data through a " +
-        "public package registry. See https://socket.dev/blog/gemstuffer.",
+        "files, include package-registry publish-API paths, reference `~/.vscode/` (the Lazarus / " +
+        "Jade Sleet paired-package token-handoff dir), or name the `npmjsregister.com` C2 host. " +
+        "These are the runtime primitives the GemStuffer and Lazarus / Jade Sleet classes of " +
+        "supply-chain attack use to scrape and exfiltrate data through a public package registry. " +
+        "See https://socket.dev/blog/gemstuffer and " +
+        "https://socket.dev/blog/social-engineering-campaign-npm-malware.",
     );
     process.exitCode = 1;
   }

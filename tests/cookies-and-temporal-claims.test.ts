@@ -589,10 +589,16 @@ test("verify-no-registry-exfiltration flags every documented GemStuffer-class pr
     "",
     "// unsafe: GemStuffer's fabricated gem credentials path",
     'const gc = "/tmp/gemhome/.gem/credentials";',
+    "",
+    "// unsafe: Lazarus / Jade Sleet paired-package token-handoff staging dir",
+    'const tok = home + "/.vscode/jsontoken";',
+    "",
+    "// unsafe: Lazarus / Jade Sleet documented C2 host",
+    'const c2 = "https://npmjsregister.com/getupdate.php";',
   ].join("\n");
   const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
-  // Each of the 11 forbidden lines must produce exactly one finding.
-  assert.equal(findings.length, 11, JSON.stringify(findings, null, 2));
+  // Each of the 13 forbidden lines must produce exactly one finding.
+  assert.equal(findings.length, 13, JSON.stringify(findings, null, 2));
   assert.match(findings[0]!.reason, /rejectUnauthorized/);
   assert.match(findings[1]!.reason, /NODE_TLS_REJECT_UNAUTHORIZED/);
   assert.match(findings[2]!.reason, /HOME/);
@@ -604,6 +610,8 @@ test("verify-no-registry-exfiltration flags every documented GemStuffer-class pr
   assert.match(findings[8]!.reason, /yarnrc/);
   assert.match(findings[9]!.reason, /\.netrc/);
   assert.match(findings[10]!.reason, /\.gem\/credentials/);
+  assert.match(findings[11]!.reason, /\.vscode/);
+  assert.match(findings[12]!.reason, /npmjsregister\.com/);
 });
 
 test("verify-no-registry-exfiltration ignores forbidden tokens inside comments and code-only strings", async () => {
