@@ -715,6 +715,80 @@ inside a coding IDE is non-trivial.
 
 If you encounter a slopsquatted package referencing `@daloyjs/*` (e.g. `daloyjs`, `daloy-core`, `@daloyjs/cli`, `create-daloyjs`), report it via the npm abuse form *and* file a private advisory at <https://github.com/daloyjs/daloy/security/advisories/new> so we can warn other operators.
 
+### AI gateway blast radius (LiteLLM 2026 pattern)
+
+Snyk's 2026
+["You Patched LiteLLM, But Do You Know Your AI Blast Radius?"](https://snyk.io/blog/litellm-ai-blast-radius/)
+writeup documents an attack shape that is going to become the dominant
+post-2026 incident class as more apps proxy prompts to LLM providers:
+
+1. **Pre-auth SQL injection in the gateway's authentication path
+   ([CVE-2026-42208](https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure))**
+   gives an unauthenticated attacker arbitrary SQL — and from there RCE —
+   on the LiteLLM proxy. Exploitation in the wild was observed
+   ~36 hours after disclosure.
+2. **Supply-chain compromise ([CVE-2026-33634](https://www.averlon.ai/blog/cve-2026-33634-trivy-and-litellm-supply-chain-attacks))**
+   pushed a trojaned LiteLLM release that ran on first import.
+3. **Blast radius**: a compromised gateway concentrates *every*
+   downstream provider's API keys (OpenAI, Anthropic, Google, Azure,
+   Cohere, Mistral, Groq, HuggingFace, Replicate), every system prompt,
+   every user prompt, and every model response. A single RCE on the
+   gateway pivots into the customer's entire AI stack — and, because
+   those provider keys are usually billed monthly, into the customer's
+   credit card too.
+
+DaloyJS is **not** an AI gateway and we do not ship one. But many apps
+built on Daloy *do* sit in front of LLM providers — chat backends,
+RAG endpoints, agent runtimes, code-review bots — and they inherit the
+same blast-radius shape. The mitigations below are the controls we
+already ship, plus one targeted addition (AI-provider-key redaction in
+the default logger) to close the most common log-leak surface for that
+class of app.
+
+| Attack step | DaloyJS / template control |
+| --- | --- |
+| Pre-auth SQL injection in a developer-written auth handler ("look up the user / token in Postgres") | Out of scope as a generic SQL defense (see § Explicitly out of scope — "Insecure handler code"), but Daloy narrows the **input surface** that reaches such handlers: the router rejects `..` and `//` before walking, `useSemicolonDelimiter: false` is the hardline default in [`src/router.ts`](src/router.ts) so `/users/42;'--` stays a single literal path segment, core `safeJsonParse` strips `__proto__` / `constructor` / `prototype`, header sanitization rejects CRLF + NUL, and JSON-schema validation runs **before** the handler. The reachable injection surface is the parameters the handler explicitly destructures from a validated body — and developer guidance throughout the docs is "use parameterized queries / a query builder, never string-concat SQL". |
+| Brute-forced or rapid-fire exploitation against the auth path (the 36-hour LiteLLM window) | Ship `rateLimit()` from [`src/middleware.ts`](src/middleware.ts) on every auth-bearing route (the docs example wires it directly to `/login`, `/token`, and the OAuth callback). `trustProxyHeaders` defaults to `false` so a single attacker IP cannot spoof its source via `X-Forwarded-For`. Pair with [`src/load-shedding.ts`](src/load-shedding.ts) (`loadShedding()`) so a single attacker cannot also DoS the gateway off the air while the exploit chain runs. |
+| Timing oracle on the auth comparison ("does this token exist? does this hash match?") | First-party `timingSafeEqual()` from [`src/hashing.ts`](src/hashing.ts) plus `basicAuth({ verify })` verifier hooks designed for constant-time password / API-key checks. `scripts/verify-secret-comparisons.ts` runs as `pnpm verify:secret-comparisons` and refuses any PR that introduces a non-constant-time `===` / `!==` against a secret-shaped variable in `src/`. |
+| RCE shell-out from a "convenient" handler that takes a user-supplied template/parameter and runs it through `exec` / `eval` / `new Function` | Out of scope as a generic eval defense, but `step-security/harden-runner` on the **publish** workflow blocks egress from CI — a compromised dev dep on the maintainer's machine cannot phone home from the publish runner. For consumer apps we recommend: never call `eval` / `new Function` on prompt content; never pass model output to `child_process.spawn`; and place the app behind `secureHeaders()` so a stored-XSS pivot through an admin dashboard is contained (CSP nonce + Trusted Types + COOP/CORP). |
+| Stored / exfiltrated **provider API keys** appearing in structured logs (a single `logger.info({ headers: req.headers })` is enough) | The default logger from [`src/logger.ts`](src/logger.ts) redacts not just `authorization` / `cookie` / `x-api-key` / `token` but also **every common LLM-provider credential header** as of `@daloyjs/core` 0.34.0: `openai-api-key`, `x-openai-api-key`, `anthropic-api-key`, `x-anthropic-api-key`, `x-api-key-anthropic`, `x-goog-api-key`, `google-api-key`, `x-google-api-key`, `azure-api-key`, `x-azure-api-key`, `api-key-azure`, `cohere-api-key`, `x-cohere-api-key`, `mistral-api-key`, `x-mistral-api-key`, `groq-api-key`, `x-groq-api-key`, `replicate-api-token`, `huggingface-api-key`, `x-huggingface-api-key`, `x-litellm-master-key`, `litellm-master-key`, `litellm-api-key`. Matched case-insensitively at every depth of the log record. Locked by a regression test in [`tests/wave1-secure-defaults.test.ts`](tests/wave1-secure-defaults.test.ts). Combined with the existing JWT-shaped-string redaction (`redactJwtLikeStrings: true` by default), an accidental `logger.info({ req })` cannot leak a provider key into the log stream. |
+| 5xx error pages leaking the SQL fragment / prompt / provider key in the `detail` field of a problem+json response | Production mode strips `detail` from every 5xx problem+json automatically (see § In scope — "5xx info disclosure"). Stack traces never reach the client in `NODE_ENV=production`. |
+| Supply-chain compromise of the AI gateway itself (the LiteLLM CVE-2026-33634 path: a trojaned release executes on first import) | Same controls as every other supply-chain section above: `minimum-release-age=1440` (24 h cooldown) in root [`.npmrc`](.npmrc) and every template `_npmrc`; `ignore-scripts=true` in both; [`scripts/verify-no-lifecycle-scripts.ts`](scripts/verify-no-lifecycle-scripts.ts) refuses any install-time hook on a published manifest; `blockExoticSubdeps: true` in [`pnpm-workspace.yaml`](pnpm-workspace.yaml); [`pnpm verify:lockfile`](scripts/verify-lockfile-sources.ts) rejects any tarball whose origin is not `registry.npmjs.org`; `@daloyjs/core`'s zero-runtime-dep posture means importing the framework cannot transitively pull a trojanized package. |
+| Outbound SSRF from a handler to a provider endpoint chosen by the attacker (`POST /chat { provider_url: "http://169.254.169.254/..." }`) | On the hardening roadmap as `fetchGuard()` (RFC1918 + loopback + link-local + metadata-service IP blocklist). Until it ships, the documented mitigation is "never accept a provider base URL from a request body; pick it server-side from an allowlist". |
+| Cross-Site WebSocket Hijacking on a streaming-chat WebSocket route (`wss://app/chat`) that already has the user's session cookie | `app.ws()` refuses-at-registration in production unless the route sets `allowedOrigins` (`"same-origin"`, a string allowlist, or a predicate) or explicitly opts in via `acknowledgeCrossOriginUpgrade: true`. Closes the [Storybook CVE-2026-27148](https://www.aikido.dev/blog/storybooks-websockets-attack) class of bug for AI chat sockets that often carry both a session cookie *and* the user's provider key. |
+| Maintainer of the consumer app published their AI app's npm package with a `postinstall` that leaks `process.env.OPENAI_API_KEY` from CI | Scaffolded `create-daloy` templates ship `ignore-scripts=true` and an empty `pnpm.onlyBuiltDependencies` allowlist; the template `_gitignore` excludes `.env*` so a provider key in `.env.local` cannot be committed by accident; `step-security/harden-runner` on our own publish workflow is the model we recommend consumers copy. |
+
+**What this does not defend against, and we say so explicitly:**
+
+- An app that builds its own AI gateway *inside* a Daloy handler and writes
+  user-controlled SQL via string concatenation. Daloy cannot stop a route
+  that hands an attacker arbitrary SQL — that is the LiteLLM CVE-2026-42208
+  shape and it is out of scope as "Insecure handler code" (see § Explicitly
+  out of scope). The framework narrows the input surface; the handler must
+  still use parameterized queries.
+- An app that logs the **request body** of a chat completion call. If the
+  user prompt is `"my OpenAI key is sk-..."`, no header-name allowlist can
+  redact it. The `redactJwtLikeStrings` heuristic catches JWT-shaped tokens
+  but not provider keys, which have provider-specific prefixes
+  (`sk-`, `sk-ant-`, `AIza...`). Consumers logging request bodies should
+  scrub the body server-side before the call to `logger.info`.
+- An app that stores provider keys in the database in plaintext. Daloy
+  does not ship a secrets manager; the recommended posture is to put
+  provider keys in the runtime's secret store (Vault, Doppler, AWS Secrets
+  Manager, Cloudflare Workers Secrets, Vercel Encrypted Env), not in
+  application database rows.
+- A handler that builds an outbound `fetch(req.body.provider_url, …)`. Until
+  `fetchGuard()` ships, the runtime's network policy is the only line of
+  defense.
+- A LiteLLM (or any other AI gateway) instance running **alongside** a Daloy
+  app. The Daloy app's controls apply to the Daloy process, not to a
+  sibling Python service on the same network. If you run LiteLLM in
+  production, patch promptly and follow Snyk's blast-radius guidance.
+
+If a future AI-gateway incident report describes an attack step that any
+control in the table above should have blocked, treat the gap as a
+release-blocking bug and open a private advisory.
+
 If you suspect a compromised version of `@daloyjs/core` or `create-daloy`:
 
 - Compare the published tarball's provenance attestation against the source

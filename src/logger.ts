@@ -71,6 +71,35 @@ export const DEFAULT_REDACT_KEYS: readonly string[] = Object.freeze([
   "refresh_token",
   "id_token",
   "client_secret",
+  // AI / LLM provider credential headers and body fields. Added in response
+  // to the LiteLLM 2026 "AI blast radius" incident class (Snyk 2026,
+  // CVE-2026-42208 + CVE-2026-33634) — an AI gateway that brokers prompts
+  // concentrates provider keys, so a single log line at the wrong level
+  // can leak every downstream credential. See SECURITY.md
+  // § "AI gateway blast radius (LiteLLM 2026 pattern)".
+  "openai-api-key",
+  "x-openai-api-key",
+  "anthropic-api-key",
+  "x-anthropic-api-key",
+  "x-api-key-anthropic",
+  "x-goog-api-key",
+  "google-api-key",
+  "x-google-api-key",
+  "azure-api-key",
+  "x-azure-api-key",
+  "api-key-azure",
+  "cohere-api-key",
+  "x-cohere-api-key",
+  "mistral-api-key",
+  "x-mistral-api-key",
+  "groq-api-key",
+  "x-groq-api-key",
+  "replicate-api-token",
+  "huggingface-api-key",
+  "x-huggingface-api-key",
+  "x-litellm-master-key",
+  "litellm-master-key",
+  "litellm-api-key",
 ]);
 
 export interface ConsoleLoggerOptions {

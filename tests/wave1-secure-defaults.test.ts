@@ -85,6 +85,52 @@ test("DEFAULT_REDACT_KEYS includes the documented set", () => {
   }
 });
 
+test("DEFAULT_REDACT_KEYS includes AI provider credential headers (LiteLLM blast-radius pattern)", () => {
+  // Headers commonly carrying LLM provider keys when an app brokers
+  // prompts to OpenAI / Anthropic / Google / Azure / Cohere / Mistral /
+  // Groq / Replicate / HuggingFace, or runs an AI gateway like LiteLLM.
+  // A single log of a request with one of these set must not leak the
+  // credential into log aggregators. See SECURITY.md § "AI gateway
+  // blast radius (LiteLLM 2026 pattern)".
+  for (const k of [
+    "openai-api-key",
+    "x-openai-api-key",
+    "anthropic-api-key",
+    "x-anthropic-api-key",
+    "x-goog-api-key",
+    "azure-api-key",
+    "cohere-api-key",
+    "mistral-api-key",
+    "groq-api-key",
+    "replicate-api-token",
+    "huggingface-api-key",
+    "x-litellm-master-key",
+    "litellm-master-key",
+    "litellm-api-key",
+  ]) {
+    assert.ok(DEFAULT_REDACT_KEYS.includes(k), `${k} should be in DEFAULT_REDACT_KEYS`);
+  }
+});
+
+test("logger redacts AI provider keys case-insensitively", () => {
+  const lines: string[] = [];
+  const log = createLogger({ level: "info", write: (l) => lines.push(l) });
+  log.info(
+    {
+      "X-OpenAI-Api-Key": "sk-leak-openai",
+      "anthropic-api-key": "sk-ant-leak",
+      "X-Goog-Api-Key": "AIzaLeakGoogle",
+      "x-litellm-master-key": "sk-litellm-leak",
+    },
+    "ai-call",
+  );
+  const obj = JSON.parse(lines[0]!);
+  assert.equal(obj["X-OpenAI-Api-Key"], "[REDACTED]");
+  assert.equal(obj["anthropic-api-key"], "[REDACTED]");
+  assert.equal(obj["X-Goog-Api-Key"], "[REDACTED]");
+  assert.equal(obj["x-litellm-master-key"], "[REDACTED]");
+});
+
 test("redaction does not crash on cycles or arrays", () => {
   const lines: string[] = [];
   const log = createLogger({ level: "info", write: (l) => lines.push(l) });
