@@ -75,6 +75,7 @@ every HTTP client (browser, mobile, CLI, attacker) are untrusted.
 | Cross-Site WebSocket Hijacking (CSWSH) | `app.ws()` refuses-at-registration in production unless the route sets `allowedOrigins` (`"same-origin"`, a string allowlist, or a predicate) or explicitly opts in via `acknowledgeCrossOriginUpgrade: true`. The Origin check runs **before** `beforeUpgrade`, so an attacker's drive-by `new WebSocket(...)` is rejected with `403` before any cookie-bearing handler runs. Closes the Storybook [CVE-2026-27148](https://www.aikido.dev/blog/storybooks-websockets-attack) class of bug. |
 | Clickjacking / MIME sniffing / cross-origin leakage | First-party `secureHeaders()` (CSP, HSTS, COOP, CORP, `X-Frame-Options`, `X-Content-Type-Options`, Permissions-Policy; CSP nonce + Trusted Types). |
 | Trusted-proxy header spoofing | `rateLimit({ trustProxyHeaders })` and `requestId({ trustIncoming })` default OFF; key generators must be explicit. |
+| Server-side template injection (SSTI) | DaloyJS ships **no** template engine and **no** string-eval rendering API. The framework is JSON-first; the only HTML emitted by core is the optional API-docs page, whose interpolated values (title, spec URL, Scalar configuration) are HTML-escaped via the helper in [`src/docs.ts`](src/docs.ts) and regression-tested against `<script>` / quote-break payloads in [`tests/docs-logger-adapters.test.ts`](tests/docs-logger-adapters.test.ts). The Thymeleaf / CVE-2026-40478 class ([Snyk write-up](https://snyk.io/blog/thymeleaf-injection/)) requires a template engine that compiles user-controlled expressions; that surface does not exist in core. |
 | Supply chain | pnpm strict isolation + `ignore-scripts` + `minimum-release-age` + verified store; SHA-pinned CI; OIDC publishing with provenance (see Supply-chain section below). |
 
 ### Explicitly out of scope (the framework will NOT defend)
@@ -84,6 +85,11 @@ every HTTP client (browser, mobile, CLI, attacker) are untrusted.
 - **Insecure handler code.** The framework cannot stop a route that constructs
   SQL via string concatenation, leaks secrets in error messages, or trusts
   unvalidated client input passed to the OS shell.
+- **Template engines integrated by the application.** Core ships none. If you
+  add `ejs`, `handlebars`, `pug`, `nunjucks`, or any other engine, you own
+  the SSTI surface (the Thymeleaf / CVE-2026-40478 class). Treat template
+  names as constants, never pass user input into an expression compiler, and
+  HTML-escape every interpolated value.
 - **Credential storage and rotation.** DaloyJS provides `bearerAuth`,
   `basicAuth`, and signed-cookie `session`. Hashing, key rotation, JWT verification,
   and OAuth flow correctness are the application's responsibility (use `jose`,
