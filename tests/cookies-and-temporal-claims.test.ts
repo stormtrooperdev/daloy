@@ -614,6 +614,69 @@ test("verify-no-registry-exfiltration flags every documented GemStuffer-class pr
   assert.match(findings[12]!.reason, /npmjsregister\.com/);
 });
 
+test("verify-no-registry-exfiltration flags every RATatouille / rand-user-agent tradecraft primitive", async () => {
+  // RATatouille IOCs documented in
+  // https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: aliased-require via global member assignment",
+    "global.r = require;",
+    "",
+    "// unsafe: aliased-require via globalThis bracket assignment",
+    'globalThis["r"] = require;',
+    "",
+    "// unsafe: manual NODE_PATH injection (RATatouille side-load primitive)",
+    'module.paths.push(path.join(home, ".node_modules", "node_modules"));',
+    "",
+    "// unsafe: leading-dot hidden install dir literal",
+    'const stash = path.join(home, ".node_modules");',
+    "",
+    "// unsafe: raw-IPv4 http URL (DNS-less C2 IOC)",
+    'const c2 = "http://203.0.113.7:3306";',
+    "",
+    "// unsafe: raw-IPv4 ws URL (socket.io-shape C2)",
+    'const sock = "ws://198.51.100.42:8080/socket";',
+    "",
+    "// unsafe: documented RATatouille C2 IP literal",
+    'const ioc = "85.239.62.36";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  // Each of the 7 forbidden lines must produce exactly one finding.
+  // Note: the raw-IPv4 URL pattern matches the C2 IP literal IFF it is
+  // inside an http(s):///ws(s):// URL; the bare-literal pattern matches
+  // it on its own line as a final belt-and-braces IOC gate.
+  assert.equal(findings.length, 7, JSON.stringify(findings, null, 2));
+  assert.match(findings[0]!.reason, /aliased-require/);
+  assert.match(findings[1]!.reason, /aliased-require/);
+  assert.match(findings[2]!.reason, /module\.paths\.push/);
+  assert.match(findings[3]!.reason, /\.node_modules/);
+  assert.match(findings[4]!.reason, /raw-IPv4/);
+  assert.match(findings[5]!.reason, /raw-IPv4/);
+  assert.match(findings[6]!.reason, /RATatouille/);
+});
+
+test("verify-no-registry-exfiltration allowlists loopback / unspecified / localhost raw hosts", async () => {
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// safe: loopback for local dev",
+    'const dev = "http://127.0.0.1:3000/health";',
+    "// safe: unspecified-bind URL",
+    'const bind = "http://0.0.0.0:8080/";',
+    "// safe: localhost hostname",
+    'const lh = "ws://localhost:9229/inspect";',
+    "// safe: normal node_modules path (no leading dot)",
+    'const np = path.join(cwd, "node_modules", "@scope", "pkg");',
+    "// safe: reading a property on `global` is fine, only `global.X = require` is forbidden",
+    "const r = global.something;",
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+});
+
 test("verify-no-registry-exfiltration ignores forbidden tokens inside comments and code-only strings", async () => {
   const { findForbiddenRegistryExfilCalls } = await import(
     "../scripts/verify-no-registry-exfiltration.js"

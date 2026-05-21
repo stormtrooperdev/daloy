@@ -62,6 +62,39 @@
  *   0 — no forbidden primitives found in `src/**`.
  *   1 — at least one was found; offending lines printed to stderr.
  *
+ * ---
+ *
+ * **RATatouille / rand-user-agent extension (Aikido 2025-05-06, since 0.34.0):**
+ * https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise
+ *
+ * The malicious `rand-user-agent@{1.0.110, 2.0.83, 2.0.84}` publishes hid a
+ * Remote Access Trojan inside `dist/index.js` whose decoded payload used
+ * four pieces of tradecraft that don't trip the upstream `child_process` /
+ * `vm` / `eval` / `new Function` / TLS-bypass gates:
+ *
+ *   1. `global['r'] = require` then `const c = global.r; c('child_process')`
+ *      — aliased-require to bypass static `require('child_process')`
+ *      regex detection.
+ *   2. `module.paths.push(path.join(os.homedir(), '.node_modules',
+ *      'node_modules'))` — manual NODE_PATH injection so the malware
+ *      could `require('axios')` / `require('socket.io-client')` after
+ *      side-installing them into a hidden `~/.node_modules` directory.
+ *   3. A leading-dot `~/.node_modules` hidden install dir — never used
+ *      by legitimate Node tooling (real `node_modules` has no leading
+ *      dot) and a clean IOC.
+ *   4. Hard-coded raw-IPv4 `http://` / `ws://` C2 URLs (the documented
+ *      RATatouille C2 was `http://85.239.62.36:3306` for socket.io and
+ *      `http://85.239.62.36:27017/u/f` for file exfil).
+ *
+ * Daloy's runtime source MUST NOT do any of these. Combined with the
+ * existing `verify-no-remote-exec` ban on `child_process` / `vm` /
+ * `eval` / `new Function` / remote dynamic `import()`, a malicious
+ * republish of `@daloyjs/core` has no in-process channel left to land
+ * a RATatouille-shape RAT — the aliased-require trick is moot when
+ * there's no `child_process` to call through it, and side-loading a
+ * fetched `axios` is moot when there's no `.node_modules` path
+ * injection to make it resolvable.
+ *
  * @since 0.50.0
  */
 
@@ -210,6 +243,72 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "`/getupdate.php` exfiltration endpoints (https://socket.dev/blog/social-engineering-campaign-npm-malware)",
     keepStrings: true,
   },
+  // ---- RATatouille / rand-user-agent supply-chain compromise
+  //      (Aikido 2025-05-06, https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise) ----
+  {
+    // Aliased-require: `global.r = require`, `global['r'] = require`,
+    // `globalThis.r = require`. RATatouille used `global['r'] = require`
+    // then `const c = global.r; c('child_process')` to bypass any
+    // gate that grep'd for the literal `require('child_process')`.
+    // Library code has no legitimate reason to hand `require` to a
+    // global; the module-level binding is always in scope.
+    // Note: `keepStrings: false` strips string literals to `""`, so the
+    // bracket-key alt accepts `[""]` (zero chars between the quotes)
+    // to match `global["r"] = require` after stripping.
+    re: /\b(?:global|globalThis)\s*(?:\.\s*[A-Za-z_$][\w$]*|\[\s*["'][^"']*["']\s*\])\s*=\s*require\b/,
+    reason:
+      "aliased-require (`global.X = require`) is the RATatouille obfuscation trick used to bypass " +
+      "static `require('child_process')` detection; library code must call `require` directly so " +
+      "gates like `verify-no-remote-exec` can see the module name",
+    keepStrings: false,
+  },
+  {
+    // Manual NODE_PATH injection. RATatouille pushed
+    // `path.join(homedir, '.node_modules', 'node_modules')` onto
+    // `module.paths` so a side-installed malicious `axios` /
+    // `socket.io-client` became resolvable. Daloy core never mutates
+    // module-resolution paths at runtime.
+    re: /\bmodule\s*\.\s*paths\s*\.\s*(?:push|unshift|splice|fill)\b/,
+    reason:
+      "`module.paths.push(...)` injects extra NODE_PATH entries at runtime; this is the RATatouille " +
+      "primitive for side-loading a fetched `axios` / `socket.io-client` from a hidden home-directory " +
+      "install dir, and Daloy core never does this",
+    keepStrings: false,
+  },
+  {
+    // Leading-dot `.node_modules` hidden install dir under $HOME.
+    // Real `node_modules` has no leading dot — this is a clean RAT
+    // IOC for the "hide deps in $HOME/.node_modules" pattern.
+    re: /(?:^|["'`/\\\s(=,])\.node_modules\b/,
+    reason:
+      "`.node_modules` (with a leading dot) is the RATatouille hidden install dir under `$HOME` used " +
+      "to stash a fetched `axios` / `socket.io-client` for the RAT; real Node `node_modules` has no " +
+      "leading dot — library code must never reference this path",
+    keepStrings: true,
+  },
+  {
+    // Hard-coded raw-IPv4 host in an `http(s)://` or `ws(s)://` URL.
+    // RATatouille's C2 was `http://85.239.62.36:3306` (socket.io) and
+    // `http://85.239.62.36:27017/u/f` (file upload). Loopback (`127.x`),
+    // unspecified-bind (`0.0.0.0`), and `localhost` are allow-listed.
+    re: /\b(?:https?|wss?):\/\/(?!127\.|0\.0\.0\.0\b|localhost\b)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/,
+    reason:
+      "raw-IPv4 `http(s)://` / `ws(s)://` URL in source is a DNS-less command-and-control IOC " +
+      "(RATatouille used `http://85.239.62.36:3306`); use a real hostname (with TLS) or restrict " +
+      "to `127.0.0.1` / `0.0.0.0` / `localhost`",
+    keepStrings: true,
+  },
+  {
+    // The documented RATatouille C2 IP literal, even when not in a URL
+    // (e.g. stashed in a config variable for later string-concat into
+    // a URL). Mirrors the npmjsregister.com IOC pattern above.
+    re: /\b85\.239\.62\.36\b/,
+    reason:
+      "`85.239.62.36` is the documented RATatouille / rand-user-agent C2 host " +
+      "(https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
@@ -340,11 +439,14 @@ async function main(): Promise<void> {
       `verify-no-registry-exfiltration: ${total} forbidden primitive${total === 1 ? "" : "s"} found. ` +
         "Core source must not disable TLS verification, mutate HOME, reference host credential " +
         "files, include package-registry publish-API paths, reference `~/.vscode/` (the Lazarus / " +
-        "Jade Sleet paired-package token-handoff dir), or name the `npmjsregister.com` C2 host. " +
-        "These are the runtime primitives the GemStuffer and Lazarus / Jade Sleet classes of " +
-        "supply-chain attack use to scrape and exfiltrate data through a public package registry. " +
-        "See https://socket.dev/blog/gemstuffer and " +
-        "https://socket.dev/blog/social-engineering-campaign-npm-malware.",
+        "Jade Sleet paired-package token-handoff dir), name the `npmjsregister.com` C2 host, alias " +
+        "`require` through a `global.*` binding, mutate `module.paths`, reference a `.node_modules` " +
+        "hidden install dir, or embed raw-IPv4 `http(s)://` / `ws(s)://` URLs / the documented " +
+        "RATatouille C2 IP `85.239.62.36`. These are the runtime primitives the GemStuffer, Lazarus / " +
+        "Jade Sleet, and RATatouille / rand-user-agent classes of supply-chain attack use to scrape " +
+        "and exfiltrate data. See https://socket.dev/blog/gemstuffer, " +
+        "https://socket.dev/blog/social-engineering-campaign-npm-malware, and " +
+        "https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise.",
     );
     process.exitCode = 1;
   }
