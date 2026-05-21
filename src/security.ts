@@ -235,6 +235,57 @@ export function assertNoDuplicateSingletonHeaders(headers: Headers): void {
 }
 
 /**
+ * Reserved inbound header namespaces that an external client must never
+ * be allowed to set. These prefixes are owned by the framework so that no
+ * future "internal" signaling header (recursion markers, sub-request
+ * tags, dispatch shortcuts, etc.) can be spoofed by an attacker to skip
+ * middleware or change routing decisions.
+ *
+ * This is the structural defense against the Next.js CVE-2025-29927
+ * class of bug: an internal `x-middleware-subrequest` header that the
+ * framework treated as trusted, but which any external client could
+ * send to bypass middleware-based authn/authz. Daloy currently has no
+ * internal-trust headers at all — every middleware runs unconditionally
+ * — but we reserve the namespace so that:
+ *
+ *   1. A future internal-routing optimization cannot accidentally become
+ *      a "universal key" that grants unauthenticated access.
+ *   2. Apps sitting behind / in front of other middleware-bypass-prone
+ *      frameworks cannot have a spoofed bypass header silently forwarded
+ *      through Daloy.
+ *
+ * Matching is case-insensitive (HTTP headers are case-insensitive).
+ *
+ * @since 0.36.0
+ */
+export const RESERVED_INBOUND_HEADER_PREFIXES: readonly string[] = Object.freeze([
+  "x-daloy-internal-",
+  "x-daloyjs-internal-",
+]);
+
+/**
+ * Reject requests that carry any header in
+ * {@link RESERVED_INBOUND_HEADER_PREFIXES}. See that constant for the
+ * rationale (Next.js CVE-2025-29927 class).
+ *
+ * Throws {@link BadRequestError} so the framework returns a structured
+ * `400 problem+json` instead of routing a request that may be probing
+ * for an internal-dispatch bypass.
+ *
+ * @since 0.36.0
+ */
+export function assertNoReservedInternalHeaders(headers: Headers): void {
+  headers.forEach((_value, name) => {
+    const lower = name.toLowerCase();
+    for (const prefix of RESERVED_INBOUND_HEADER_PREFIXES) {
+      if (lower.startsWith(prefix)) {
+        throw new BadRequestError(`Reserved internal header rejected: ${lower}`);
+      }
+    }
+  });
+}
+
+/**
  * Minimum acceptable secret length in bytes for HMAC / signing material in
  * production (boot guard). Matches the OWASP "Secret Management"
  * cheat sheet floor of 256 bits for symmetric keys.

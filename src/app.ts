@@ -19,7 +19,7 @@ import {
   ValidationError,
 } from "./errors.js";
 import { validate } from "./schema.js";
-import { readBodyLimited, safeJsonParse, randomId, assertNoDuplicateSingletonHeaders, assertStrongSecret, timingSafeEqual, isForbiddenObjectKey } from "./security.js";
+import { readBodyLimited, safeJsonParse, randomId, assertNoDuplicateSingletonHeaders, assertNoReservedInternalHeaders, assertStrongSecret, timingSafeEqual, isForbiddenObjectKey } from "./security.js";
 import { createLogger, noopLogger, type Logger } from "./logger.js";
 import type {
   BaseContext,
@@ -2197,6 +2197,7 @@ export class App {
 
     try {
       assertNoDuplicateSingletonHeaders(request.headers);
+      assertNoReservedInternalHeaders(request.headers);
       this.assertTrustProxyConfigured(request);
       this.assertBootGuards();
       await globalHooks.onRequest?.(request);

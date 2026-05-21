@@ -93,6 +93,8 @@ export {
   timingSafeEqual,
   randomId,
   assertNoDuplicateSingletonHeaders,
+  assertNoReservedInternalHeaders,
+  RESERVED_INBOUND_HEADER_PREFIXES,
   SMUGGLING_SINGLETON_HEADERS,
   verifyWebhookSignature,
   signWebhookPayload,
