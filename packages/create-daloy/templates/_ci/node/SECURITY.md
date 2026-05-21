@@ -42,6 +42,11 @@ SHA-pinned open-source tooling:
   image gets bumped automatically when CVEs land.
 - The `.github/workflows/container-scan.yml` workflow runs on every PR
   and weekly on `main`:
+  - **Pin check** emits a PR annotation when any `FROM` line is not
+    pinned to a `@sha256:<digest>` (Aikido x Root.io 2026,
+    [Harden your containers without the headaches](https://www.aikido.dev/blog/aikido-x-root-io-harden-your-containers-without-the-headaches)).
+    Non-blocking so a fresh scaffold goes green; pair with the `docker`
+    Dependabot ecosystem to keep the pinned digest current.
   - **hadolint** lints the `Dockerfile` (CIS Docker Benchmark coverage).
   - **Trivy** scans the source tree for secrets, config issues, and
     vulnerable lockfile entries.

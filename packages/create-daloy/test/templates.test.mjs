@@ -398,6 +398,10 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
     assert.match(containerScan, /step-security\/harden-runner@[0-9a-f]{40}\s+# v2/);
     assert.match(containerScan, /scan-type: fs/);
     assert.match(containerScan, /image-ref: local\/app:scan/);
+    // Pin check: surface unpinned `FROM` lines per Aikido x Root.io
+    // 2026 "Harden your containers without the headaches".
+    assert.match(containerScan, /Pin check \(FROM @sha256 digest\)/);
+    assert.match(containerScan, /is not pinned to a @sha256/);
     assert.doesNotMatch(containerScan, /__[A-Z_]+__/);
 
     const dependabotConfig = await readFile(

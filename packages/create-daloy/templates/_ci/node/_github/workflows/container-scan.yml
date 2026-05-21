@@ -81,6 +81,39 @@ jobs:
             echo "::notice::No Dockerfile found at the repo root; skipping container scan."
           fi
 
+      - name: Pin check (FROM @sha256 digest)
+        # Aikido x Root.io ("Harden your containers without the headaches",
+        # 2026) makes the point that a floating tag like `node:24-alpine`
+        # silently re-resolves to a new digest on every build, so a
+        # base-image CVE that lands tomorrow is invisible to today's
+        # scan results. Pinning `FROM <image>@sha256:<digest>` makes the
+        # base reproducible; the `docker` Dependabot ecosystem in
+        # `.github/dependabot.yml` then opens a PR when a fresher digest
+        # is published so the pin stays current instead of stale. This
+        # step surfaces unpinned `FROM` lines as PR annotations without
+        # failing the build, so a brand-new scaffold still goes green.
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          unpinned=0
+          while IFS= read -r line; do
+            ref="${line#FROM }"
+            ref="${ref#from }"
+            ref="${ref%% AS *}"
+            ref="${ref%% as *}"
+            ref="${ref## }"
+            ref="${ref%% }"
+            case "$ref" in
+              scratch|"\${"*|*"@sha256:"*) ;;
+              *)
+                echo "::warning file=Dockerfile::FROM '$ref' is not pinned to a @sha256:<digest> — see Aikido x Root.io 'Harden your containers' (Daloy SECURITY.md → Container base-image hardening)."
+                unpinned=$((unpinned + 1))
+                ;;
+            esac
+          done < <(grep -E '^(FROM|from) ' Dockerfile || true)
+          if [ "$unpinned" -gt 0 ]; then
+            echo "::notice::$unpinned unpinned FROM line(s). Override at build time with --build-arg NODE_IMAGE=node:24-alpine@sha256:<digest> or hard-code the digest in the Dockerfile and let Dependabot keep it fresh."
+          fi
+
       - name: Lint Dockerfile (hadolint)
         if: steps.detect.outputs.present == 'true'
         uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0

@@ -417,6 +417,52 @@ mis-scope the claim:
   reviewability is the property the CVE-based-scanner model lacks; it is
   why this section exists.
 
+### Aikido x Root.io container & base-image hardening mapping
+
+The Aikido x Root.io 2026 write-up
+["Harden your containers without the headaches"](https://www.aikido.dev/blog/aikido-x-root-io-harden-your-containers-without-the-headaches)
+makes the case that the container is the other half of the supply chain:
+even with a perfect `npm install` posture, the base image you `FROM` carries
+its own OS / language CVEs, ships utilities (`curl`, `wget`, `sh`, package
+managers, compilers) that a downloaded-runtime payload can land on, and
+silently re-resolves to a new digest on every build when the tag is a
+floating `:latest` / `:24-alpine`. Root.io's pitch is two-sided: zero-CVE
+drop-in base images **and** CVE-first remediation at pinned versions. The
+table below is the framework's mapping — DaloyJS does not vend base images,
+but `create-daloy` ships a container-first template and a `container-scan`
+CI workflow that close most of the same gap with free, open-source controls.
+
+| Aikido x Root.io concern | DaloyJS / `create-daloy` control |
+| --- | --- |
+| **`:latest` is tomorrow's malware, pinned-by-tag is yesterday's CVE.** A floating tag re-resolves on every build, so today's scan does not describe tomorrow's image. A hard-pinned tag drifts behind real CVE disclosures because no one rebuilds. | [`packages/create-daloy/templates/node-basic/_Dockerfile`](packages/create-daloy/templates/node-basic/_Dockerfile) ships a `NODE_IMAGE` build-arg so the runtime base is consumed as `node:24-alpine@sha256:<digest>` (the docstring shows the exact `docker build --build-arg NODE_IMAGE=…@sha256:<digest>` invocation). The scaffolded [`container-scan.yml`](packages/create-daloy/templates/_ci/node/_github/workflows/container-scan.yml) now runs a **Pin check (FROM @sha256 digest)** step that emits a `::warning` PR annotation for every unpinned `FROM` line (skipping `scratch` and ARG-templated images so a brand-new scaffold still goes green). To keep the digest fresh instead of stale, the scaffolded [`dependabot.yml`](packages/create-daloy/templates/_ci/node/_github/dependabot.yml) registers the `docker` ecosystem with a weekly cadence — Dependabot opens a PR when a newer digest is published, so the pin is *both* reproducible *and* current. |
+| **Zero-CVE base images / dropping the attack surface that a downloaded payload can land on.** Root.io's image catalog promises a minimal runtime with no compiler / package manager / shell. | The shipped `_Dockerfile` uses `node:*-alpine` with a two-stage build: builder installs deps with `pnpm install --frozen-lockfile --ignore-scripts`, runner is a fresh alpine layer that adds **only** `tini` (`apk add --no-cache tini`) — no `curl`, no `bash`, no compiler, no package manager beyond what Alpine ships by default. The healthcheck uses BusyBox `wget` already present in `node:*-alpine` rather than pulling `curl` in. The runner runs as a non-root UID 1001 user under `tini` as PID 1, with `STOPSIGNAL SIGTERM` so the framework's graceful-shutdown drain fires and `HEALTHCHECK` wired to `app.readinesscheck()` / `/readyz`. The accompanying [`SECURITY.md`](packages/create-daloy/templates/_ci/node/SECURITY.md) instructs operators to run the container with `--read-only` / `readOnlyRootFilesystem: true`, which is what removes the writable filesystem a downloaded-runtime carrier (Lightning 2026-04-30 / Shai-Hulud reload) would need to land. |
+| **CVE-first remediation — fix what you're running.** Root.io's selling point is a continuous patch stream for the base image, not "rebuild and pray." | Three layers, none of them paid: (a) [`container-scan.yml`](packages/create-daloy/templates/_ci/node/_github/workflows/container-scan.yml) runs **hadolint** (CIS Docker Benchmark coverage on the Dockerfile), **Trivy filesystem** (config + secrets + vulnerable lockfile entries, `severity: HIGH,CRITICAL`, SARIF to Code Scanning), and **Trivy image** (OS + language CVEs, `severity: HIGH,CRITICAL`, `vuln-type: os,library`, **blocking on CRITICAL by default**) on every PR, every push to `main`, and on a weekly cron so newly-disclosed base-image CVEs are caught even when the Dockerfile itself hasn't changed. (b) The `docker` Dependabot ecosystem opens a digest-bump PR when the upstream `node:24-alpine` image is republished with a new layer set. (c) The repo's own [`vuln-scan.yml`](.github/workflows/vuln-scan.yml) runs `pnpm audit --prod` daily against the committed lockfile — the language-side counterpart to the base-image side covered by Trivy. Together these are the open-source equivalent of the "CVE in → patch out" loop the Root.io article describes, minus the paid agent. |
+| **Transitive dependency patching at pinned versions** ("5 layers deep," the dep the parent project marked "no fix available"). | `@daloyjs/core` declares **zero runtime dependencies** ([`pnpm verify:no-runtime-deps`](scripts/verify-no-runtime-deps.ts)), so there is no transitive runtime tree shipped through the framework that could be stuck on an unfixed CVE in the first place. Scaffolded templates pin every dep in a committed `pnpm-lock.yaml` ([`pnpm verify:lockfile`](scripts/verify-lockfile-sources.ts) refuses non-registry sources), `minimum-release-age=1440` in every template `_npmrc` defers freshly-published versions for 24 h, and `ignore-scripts=true` blocks install-time payloads from any pinned dep — so a consumer's transitive-CVE problem stays a CVE problem (visible to `pnpm audit` / Trivy / Socket / Aikido) instead of degrading into a stealth code-execution problem. |
+| **Lock-in / forced migration risk** of vendor-hosted hardened-image catalogs. | The control surface is the consumer's `Dockerfile`, their `dependabot.yml`, and the SARIF results in the consumer's own Code Scanning tab — there is no Daloy-hosted base image, no Daloy-hosted registry mirror, no Daloy-hosted SBOM service, and no Daloy account or API key required to run any of the workflows above. The template is a starting point: switch the `NODE_IMAGE` ARG to `cgr.dev/chainguard/node`, a Wolfi-based distroless image, or a Root.io catalog image without touching the rest of the workflow. The `container-scan.yml` Trivy step still runs against whatever you swap in. |
+
+What this **does not** defend against, said explicitly so operators do not
+mis-scope the claim:
+
+- **A base-image CVE with no fix upstream.** Trivy's `ignore-unfixed: true`
+  intentionally suppresses these to keep PR signal high; operators who
+  need fix-pending visibility should toggle that flag in their fork of
+  the scaffolded workflow. The framework's contribution is making the
+  surface small enough (alpine + `tini` only) that the unfixed surface
+  is itself small.
+- **A runtime image swap performed outside the scaffolded `_Dockerfile`.**
+  The pin-check step inspects `./Dockerfile`; if your deploy uses a
+  different filename, a remote build context, or a base image picked
+  at deploy time by the platform (Cloudflare Workers, Vercel Edge,
+  Deno Deploy), Trivy and hadolint do not run there. The respective
+  platform templates (`cloudflare-worker`, `vercel-edge`,
+  `deno-basic`) deliberately ship without a `Dockerfile` for this
+  reason; they ride the platform's own runtime hardening instead.
+- **A consumer who edits the `_Dockerfile` to add `curl` / `bash` / a
+  compiler back into the runner stage.** That is an opt-in away from
+  the shipped posture and outside what the framework can enforce; the
+  hadolint SARIF will still flag obvious anti-patterns (DL3008, DL3018)
+  and Trivy will still see the added layers.
+
 ### npm publishing
 
 - **Releases are isolated.** The publish workflow
