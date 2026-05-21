@@ -182,6 +182,18 @@ function b64urlDecode(input: string): Uint8Array {
 const ENC = new TextEncoder();
 const DEC = new TextDecoder();
 
+// JWT header/payload are attacker-controlled. Native JSON.parse already
+// assigns `__proto__` as an own property rather than mutating the prototype
+// chain, but the parsed objects often flow into user code that may do
+// `Object.assign({}, claims)` or similar — which would re-propagate
+// `constructor` / `prototype` keys. Strip those keys defensively at parse
+// time. See https://www.aikido.dev/blog/prevent-prototype-pollution.
+const JWT_FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+function jwtJsonReviver(key: string, value: unknown): unknown {
+  if (JWT_FORBIDDEN_KEYS.has(key)) return undefined;
+  return value;
+}
+
 function isJsonObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -539,13 +551,13 @@ async function verifyInternal(token: string, r: ResolvedVerifier): Promise<JwtVe
   let header: Record<string, unknown>;
   let payload: Record<string, unknown>;
   try {
-    header = JSON.parse(DEC.decode(b64urlDecode(headerB64))) as Record<string, unknown>;
+    header = JSON.parse(DEC.decode(b64urlDecode(headerB64)), jwtJsonReviver) as Record<string, unknown>;
   } catch (err) {
     if (err instanceof JwtError) throw err;
     throw new JwtError("invalid_token", "jwt(): header is not valid JSON.");
   }
   try {
-    payload = JSON.parse(DEC.decode(b64urlDecode(payloadB64))) as Record<string, unknown>;
+    payload = JSON.parse(DEC.decode(b64urlDecode(payloadB64)), jwtJsonReviver) as Record<string, unknown>;
   } catch (err) {
     if (err instanceof JwtError) throw err;
     throw new JwtError("invalid_token", "jwt(): payload is not valid JSON.");

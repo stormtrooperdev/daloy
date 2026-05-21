@@ -62,7 +62,7 @@ every HTTP client (browser, mobile, CLI, attacker) are untrusted.
 | Class | Built-in defense |
 | --- | --- |
 | Body-size DoS | Core-enforced streamed body read with hard cap (default 1 MiB); `Content-Length` rejected pre-read when oversize. |
-| Prototype pollution via JSON | Core `safeJsonParse` strips `__proto__` / `constructor` / `prototype` via reviver. |
+| Prototype pollution via JSON | Core `safeJsonParse` strips `__proto__` / `constructor` / `prototype` via reviver on every parsed request body. JWT verification ([`src/jwt.ts`](src/jwt.ts)) applies the same reviver to the attacker-controlled JWT header and payload so polluted keys cannot ride into user code via `Object.assign`/spread on the returned claims. Closes the class described in [Aikido's prototype-pollution write-up](https://www.aikido.dev/blog/prevent-prototype-pollution). |
 | Header/response splitting | Core `sanitizeHeaderName` / `sanitizeHeaderValue` reject CRLF + NUL. |
 | Path traversal | Router rejects `..` and `//` before walking. |
 | Auth/router path-matching mismatch | Router is case-sensitive, performs no URL rewrites, and rejects `..` / `//` before walking. The `except()` matcher consumes the same `url.pathname` the router sees (no double-decode, no case folding), so case-mutated or rewrite-style paths cannot skip auth while still reaching a protected handler. Regression-tested against the Qinglong CVE-2026-3965 / CVE-2026-4047 class ([Snyk write-up](https://snyk.io/blog/qinglong-task-scheduler-rce-vulnerabilities/)) in [`tests/path-auth-bypass-regression.test.ts`](tests/path-auth-bypass-regression.test.ts). |

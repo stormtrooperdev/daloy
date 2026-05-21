@@ -489,6 +489,45 @@ test("jwt verify: non-number exp/nbf/iat -> errors", async () => {
   await assert.rejects(() => verifier.verify(badIat), /invalid_iat/);
 });
 
+test("jwt verify: strips prototype-pollution keys from header/payload", async () => {
+  // Regression for https://www.aikido.dev/blog/prevent-prototype-pollution:
+  // Tokens are attacker-controlled, so __proto__/constructor/prototype keys
+  // in the JSON-decoded header or payload must not appear on the parsed
+  // objects (otherwise downstream Object.assign / spread by user code could
+  // re-propagate them).
+  const key = await genHs256Key();
+  const cryptoKey = await subtle.importKey(
+    "raw",
+    key as BufferSource,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const headerObj = { alg: "HS256", typ: "JWT", __proto__: { polluted: true } } as Record<string, unknown>;
+  const payloadObj = {
+    sub: "u",
+    __proto__: { polluted: true },
+    constructor: { prototype: { polluted: true } },
+    prototype: { polluted: true },
+  } as Record<string, unknown>;
+  const h = Buffer.from(JSON.stringify(headerObj)).toString("base64url");
+  const p = Buffer.from(JSON.stringify(payloadObj)).toString("base64url");
+  const sig = new Uint8Array(
+    await subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(`${h}.${p}`) as BufferSource),
+  );
+  const tok = `${h}.${p}.${Buffer.from(sig).toString("base64url")}`;
+  const verifier = createJwtVerifier({ algorithms: ["HS256"], key });
+  const { header, payload } = await verifier.verify(tok);
+  assert.equal(header.alg, "HS256");
+  assert.equal(payload.sub, "u");
+  assert.equal(Object.hasOwn(header, "__proto__"), false);
+  assert.equal(Object.hasOwn(payload, "__proto__"), false);
+  assert.equal(Object.hasOwn(payload, "constructor"), false);
+  assert.equal(Object.hasOwn(payload, "prototype"), false);
+  // Object.prototype must remain untouched by the parse.
+  assert.equal((Object.prototype as unknown as { polluted?: boolean }).polluted, undefined);
+});
+
 test("jwt verify: nbf in future rejects; iat in future rejects", async () => {
   const key = await genHs256Key();
   const signer = createJwtSigner({
