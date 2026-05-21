@@ -359,6 +359,45 @@ of findings. The audit script reads the
 refuses with a non-zero exit when the date is older than 180 days, so a
 missed quarter fails CI loud instead of silently aging out.
 
+### Stolen-credential malicious republish (foundational Snyk pattern)
+
+Snyk's foundational write-up
+[How to prevent malicious packages](https://snyk.io/blog/publishing-malicious-packages/)
+documents the original five-step npm-publish attack — every later incident
+in this section (chalk/debug, node-ipc, axios, shopsprint, Lightning,
+Shai-Hulud) is a variant of it. We list the canonical steps here with the
+specific Daloy / template control that catches each one, so reviewers do
+not have to cross-reference the per-incident tables to confirm the
+foundational class is covered.
+
+| Snyk attack step (2016 write-up) | DaloyJS / template control |
+| --- | --- |
+| **Step 1 — Run code on a maintainer's machine** (`curl \| bash`, a poisoned `npm install` on a side project, a stale OS shim) | A compromised maintainer laptop **cannot publish on its own**: there is no long-lived `NPM_TOKEN` in repo secrets or on any developer machine. All publishes go through `release.yml` in the protected `npm-publish` GitHub Environment, which requires explicit approval from a second listed contact in [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md). Hardware-backed 2FA is mandatory on every maintainer's GitHub and npm account (§ Maintainer accounts), so even a stolen password does not unlock publish rights. |
+| **Step 2 — `npm whoami --silent`** (discover the publish identity tied to the local `.npmrc`) | There is **no `.npmrc` with publish credentials** to discover. The framework explicitly forbids publishing from developer machines (§ Maintainer accounts); the only place `npm whoami` resolves to a publisher is inside the OIDC-minted, short-lived token issued to `release.yml` for the duration of a single publish job — and that token never touches a workstation. |
+| **Step 3 — Download one of the user's packages to a temp folder** (clone the legitimate tarball as a base for the trojan) | Off-path for any in-repo control, but tag/version match is verified before `pnpm publish` runs (§ npm publishing). An attacker who reconstructs a tarball still has to push it through `release.yml`, which only accepts a signed `v*` tag pushed by a listed maintainer and pre-publish-verified by the `verify` job. |
+| **Step 4 — Edit `package.json` to add a malicious `postinstall` hook and bump the version** | Two layers refuse this. (a) [`pnpm verify:no-lifecycle-scripts`](scripts/verify-no-lifecycle-scripts.ts) runs in both [`ci.yml`](.github/workflows/ci.yml) and the pre-publish `verify` job in [`release.yml`](.github/workflows/release.yml); it fails the build if *either* published manifest (`@daloyjs/core`, `create-daloy`) gains a `preinstall` / `install` / `postinstall` / `prepare` / `preprepare` / `postprepare` / `prepublish` hook. (b) `CODEOWNERS` ([`.github/CODEOWNERS`](.github/CODEOWNERS)) requires a maintainer to approve any change to `package.json`, the lockfile, or `.npmrc`. A direct push that adds a lifecycle hook would fail both the `verify` gate and review. |
+| **Step 5 — `npm publish`** (the trojaned version goes live and propagates via semver ranges) | Publish happens **only** from `release.yml`, only after a signed tag, only with `--provenance`, and only after the protected `npm-publish` GitHub Environment grants approval. The actor on the publish run must be listed in the **Active** block of [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md) or the release gate refuses. Every tarball is bound to its source commit via Sigstore + OIDC trusted publishing (§ npm publishing). |
+| **Consumer-side auto-uptake** (downstream `pnpm install` pulls the trojan inside minutes via a caret range) | Two layers. (a) `minimum-release-age=1440` (24 h cooldown) in root [`.npmrc`](.npmrc) and every scaffolded template [`_npmrc`](packages/create-daloy/templates/node-basic/_npmrc) blocks install of a freshly published version inside the typical detect-and-unpublish window. (b) `ignore-scripts=true` in the same files suppresses every lifecycle hook even if a malicious version slips through — neutralising the Step-4 `postinstall` on the consumer side too. (c) Lockfile is committed and CI uses `pnpm install --frozen-lockfile` (`pnpm verify:lockfile` rejects any tarball URL outside `registry.npmjs.org`), so a fresh malicious version cannot enter a downstream tree silently on a re-install. |
+
+What this **does not** defend against, and we say so explicitly:
+
+- A maintainer who chooses to disable hardware 2FA, leak their session
+  cookie, or run `npm publish` from a personal machine. The release
+  workflow is the only sanctioned publish path; we cannot prevent a
+  rogue maintainer from publishing a *different* (non-`@daloyjs/*`)
+  package they happen to own from their laptop.
+- A *consumer* application that opts out of the template defaults —
+  removes `ignore-scripts=true` from its own `.npmrc`, sets
+  `--minimum-release-age=0`, or installs a non-`@daloyjs/*` package
+  outside the scope. Daloy ships safe defaults in every scaffolded
+  template; we cannot police downstream projects that opt out.
+- Compromise of the npm registry itself. Provenance attestations make
+  it detectable after the fact; preventing it is npm's responsibility.
+
+If a future incident report describes an attack step that any control in
+the table above should have blocked, treat the gap as a release-blocking
+bug and open a private advisory.
+
 ### Typosquat + init-time C2 (shopsprint pattern)
 
 Socket's 2026-05-19 disclosure of
