@@ -309,6 +309,29 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "any reference in `src/**` is a hard IOC",
     keepStrings: true,
   },
+  // ---- xrpl.js / Ripple SDK supply-chain compromise (Aikido 2025-04-22,
+  //      https://www.aikido.dev/blog/xrp-supplychain-attack-official-npm-package-infected-with-crypto-stealing-backdoor) ----
+  //
+  // The hijacked npm token published five backdoored versions of the
+  // official `xrpl` Ripple SDK (`xrpl@4.2.1`, `4.2.2`, `4.2.3`, `4.2.4`,
+  // and `xrpl@2.14.2`, ~140k weekly downloads, ~2.9M monthly) that
+  // shipped a `checkValidityOfSeed` function inside the runtime bundle
+  // — it POSTed the user's XRP wallet seed / private key to
+  // `https://0x9c.xyz`. None of the malicious code was ever mirrored
+  // to the public GitHub repo (no tag, no PR, no CI run); it existed
+  // only in the npm tarball. The exfiltration channel was a plain
+  // global `fetch` to a registered domain, so the RATatouille raw-IPv4
+  // gate above does NOT catch it on its own.
+  {
+    re: /\b0x9c\.xyz\b/i,
+    reason:
+      "`0x9c.xyz` is the documented exfiltration host for the xrpl.js / Ripple SDK supply-chain " +
+      "compromise (April 2025) — the malicious `checkValidityOfSeed` function in `xrpl@2.14.2` and " +
+      "`xrpl@4.2.1`–`4.2.4` POSTed wallet seeds to this domain " +
+      "(https://www.aikido.dev/blog/xrp-supplychain-attack-official-npm-package-infected-with-crypto-stealing-backdoor); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
@@ -441,12 +464,14 @@ async function main(): Promise<void> {
         "files, include package-registry publish-API paths, reference `~/.vscode/` (the Lazarus / " +
         "Jade Sleet paired-package token-handoff dir), name the `npmjsregister.com` C2 host, alias " +
         "`require` through a `global.*` binding, mutate `module.paths`, reference a `.node_modules` " +
-        "hidden install dir, or embed raw-IPv4 `http(s)://` / `ws(s)://` URLs / the documented " +
-        "RATatouille C2 IP `85.239.62.36`. These are the runtime primitives the GemStuffer, Lazarus / " +
-        "Jade Sleet, and RATatouille / rand-user-agent classes of supply-chain attack use to scrape " +
-        "and exfiltrate data. See https://socket.dev/blog/gemstuffer, " +
-        "https://socket.dev/blog/social-engineering-campaign-npm-malware, and " +
-        "https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise.",
+        "hidden install dir, embed raw-IPv4 `http(s)://` / `ws(s)://` URLs / the documented " +
+        "RATatouille C2 IP `85.239.62.36`, or name the `0x9c.xyz` exfiltration host (xrpl.js / Ripple " +
+        "SDK April 2025 compromise). These are the runtime primitives the GemStuffer, Lazarus / Jade " +
+        "Sleet, RATatouille / rand-user-agent, and xrpl.js / Ripple-SDK classes of supply-chain " +
+        "attack use to scrape and exfiltrate data. See https://socket.dev/blog/gemstuffer, " +
+        "https://socket.dev/blog/social-engineering-campaign-npm-malware, " +
+        "https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise, " +
+        "and https://www.aikido.dev/blog/xrp-supplychain-attack-official-npm-package-infected-with-crypto-stealing-backdoor.",
     );
     process.exitCode = 1;
   }

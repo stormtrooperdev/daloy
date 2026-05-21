@@ -694,6 +694,33 @@ test("verify-no-registry-exfiltration ignores forbidden tokens inside comments a
   assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
 });
 
+test("verify-no-registry-exfiltration flags the xrpl.js / Ripple SDK exfiltration IOC", async () => {
+  // xrpl.js / Ripple SDK supply-chain compromise (April 2025):
+  // https://www.aikido.dev/blog/xrp-supplychain-attack-official-npm-package-infected-with-crypto-stealing-backdoor
+  // The hijacked-token publish of `xrpl@{2.14.2, 4.2.1, 4.2.2, 4.2.3, 4.2.4}`
+  // shipped a `checkValidityOfSeed` function that POSTed wallet seeds
+  // to `https://0x9c.xyz` via a plain global `fetch` to a registered
+  // domain — the raw-IPv4 gate does not catch this on its own, so the
+  // exfil host is gated as a bare-literal IOC.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: xrpl.js seed-exfiltration host as a URL literal",
+    'const c2 = "https://0x9c.xyz/xc";',
+    "",
+    "// unsafe: same host, bare literal stashed for later string-concat",
+    'const host = "0x9c.xyz";',
+    "",
+    "// unsafe: case-insensitive variant",
+    'const upper = "0X9C.XYZ";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 3, JSON.stringify(findings, null, 2));
+  assert.ok(findings.every((f) => /0x9c\.xyz/i.test(f.reason)));
+  assert.ok(findings.every((f) => /xrpl/i.test(f.reason)));
+});
+
 test("verify-no-registry-exfiltration accepts the live src/ tree", async () => {
   const { findForbiddenRegistryExfilCalls } = await import(
     "../scripts/verify-no-registry-exfiltration.js"
