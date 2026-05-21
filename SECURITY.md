@@ -487,6 +487,105 @@ If a future incident report describes an attack step that any control in
 either table above should have blocked, treat the gap as a release-blocking
 bug and open a private advisory.
 
+### Cross-ecosystem JS stealer delivered via PyPI + downloaded Bun runtime (Lightning 2026-04-30 / Shai-Hulud reload)
+
+Snyk's 2026-04-30
+[Lightning PyPI Compromise: A Bun-Based Credential Stealer in Python](https://snyk.io/blog/lightning-pypi-compromise-bun-based-credential-stealer/)
+writeup (with companion analyses from
+[StepSecurity](https://www.stepsecurity.io/blog/lightning-obfuscated-javascript-credential-stealer-bundled-in-pypi-wheel),
+[The Hacker News](https://thehackernews.com/2026/04/pytorch-lightning-compromised-in-pypi.html),
+and [JFrog's Shai-Hulud follow-up](https://research.jfrog.com/post/shai-hulud-here-we-go-again-may19/))
+documents a new wrinkle on the supply-chain class that we should call out
+explicitly even though `@daloyjs/core` ships on npm, not PyPI:
+
+1. Two malicious releases of the popular [`lightning` PyPI package](https://pypi.org/project/lightning/)
+   (2.6.2 and 2.6.3, the project formerly known as **pytorch-lightning**)
+   ship a hidden `_runtime/` directory.
+2. The package has **no `postinstall` hook**. The payload fires on the
+   first `import lightning` instead — so `pip install`-time lifecycle
+   suppression does not help; the moment the consumer's training script,
+   notebook, or CI job actually imports the dep, the trojan runs.
+3. The payload **downloads the Bun runtime** at execution time and uses
+   Bun (not the system Python, not the system Node) to run an obfuscated
+   ~11 MB JavaScript credential stealer (`router_runtime.js`). Using a
+   freshly-downloaded alternative runtime is the new trick — it
+   side-steps Python-side and Node-side static scanners that watch
+   `import` graphs in those ecosystems, and the binary itself is not
+   under the project's lockfile.
+4. Snyk and JFrog tie this to the same threat actor as the
+   **Shai-Hulud npm worm** (and its `@antv` May-19 reload): the campaign
+   alternates between npm and PyPI to keep pivoting into compromised
+   developer environments, and a successful credential exfiltration in
+   either ecosystem feeds the next package compromise via stolen npm /
+   PyPI / GitHub tokens.
+
+DaloyJS is **a Node/TypeScript framework, not a Python package**, so we
+cannot defend a consumer who `pip install lightning==2.6.2` into the same
+container that also runs their Daloy app. But the *shape* of the attack —
+"import-time payload + downloaded sidecar runtime + cross-ecosystem
+credential pivot" — is one we have to map explicitly, because the same
+shape can land on the npm side tomorrow (a malicious `@daloyjs/core`
+look-alike that downloads Bun in its top-level module body, runs the
+stealer outside Node, then opens a PR with the maintainer's exfiltrated
+token).
+
+| Attack step | DaloyJS / template control |
+| --- | --- |
+| Malicious release is published to the official registry and the developer / agent installs it within the first 24 hours | `minimum-release-age=1440` in this repo's [`.npmrc`](.npmrc) **and** in every scaffolded template's `_npmrc` ([`packages/create-daloy/templates/node-basic/_npmrc`](packages/create-daloy/templates/node-basic/_npmrc), `bun-basic`, `cloudflare-worker`, `vercel-edge`, etc.) refuses to resolve any npm version published less than 24 h ago. Lightning 2.6.2/2.6.3 were quarantined by PyPI well inside that window; the analogous npm cooldown would have stopped an `@daloyjs/core` look-alike from ever entering the install graph. *Caveat: pnpm's cooldown is npm-only — a Daloy consumer who also calls `pip install` inside the same project does not inherit it on the Python side.* |
+| Payload fires at **import time** instead of at `postinstall` (the Lightning trick that defeats `--ignore-scripts`) | Two layers. **Tarball side**: `@daloyjs/core` has zero runtime dependencies ([`scripts/verify-no-runtime-deps.ts`](scripts/verify-no-runtime-deps.ts) gates every release) and [`src/index.ts`](src/index.ts) is **pure re-exports — no top-level side-effecting code** (no `fetch`, no `spawn`, no `Buffer.from(..., "base64")` blobs, no `eval`). A consumer's `import "@daloyjs/core"` executes no network or filesystem code. **Maintainer side**: the published tarball's `files` field is whitelisted to `dist/` + `README.md`; the unpacked layout would surface any unexpected `_runtime/` or vendored binary at publish review. The provenance attestation (Sigstore + OIDC, `release.yml`) binds the bytes to the source commit, so a Lightning-style swap on the registry cannot pass `npm install --provenance`-aware verification. |
+| Payload **downloads an alternative runtime** (Bun) at execution time to dodge Python / Node static scanners | `step-security/harden-runner` on the publish workflow blocks egress from CI to anything other than the npm registry, GitHub, and Sigstore — a compromised dev dep on the maintainer's CI cannot pull a Bun binary at publish time. For *consumer* apps the framework cannot prevent a runtime download (Node's `fetch` + `child_process.spawn` are available to any handler that wants them), but the recommended posture in [`AGENTS.md`](AGENTS.md) and the docs is: run production behind a network policy that denies egress except to the listed provider endpoints, and prefer container images with no compiler / package-manager / shell so a runtime-downloaded binary has nothing to land on. `secureHeaders()` ships CSP nonce + Trusted Types so an in-process pivot through an admin dashboard is contained even if a downloaded runtime gets a foothold. |
+| Compromised package source is a `git+ssh://` / `github:owner/repo#<sha>` / non-registry tarball URL pulled through a transitive dep to evade registry-side scanning | `blockExoticSubdeps: true` in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) and every template's `pnpm-workspace.yaml` refuses to install exotic sub-deps. `pnpm verify:lockfile` ([`scripts/verify-lockfile-sources.ts`](scripts/verify-lockfile-sources.ts)) runs in [`ci.yml`](.github/workflows/ci.yml) and the pre-publish `verify` job in [`release.yml`](.github/workflows/release.yml); it rejects `git+`, `github:`, `ssh:`, `http:` URLs and any tarball whose origin is not `registry.npmjs.org`. |
+| Payload exfiltrates `~/.npmrc`, `~/.pypirc`, `~/.gitconfig`, `~/.aws/credentials`, `~/.ssh/`, GitHub tokens, and CI environment variables to a C2 endpoint | Daloy is a request/response framework — it does not read those files at runtime and does not store credentials. The relevant defense is **upstream**, in the maintainer's and consumer's CI: `step-security/harden-runner` is enabled on the publish workflow ([`release.yml`](.github/workflows/release.yml)) and recommended for consumer CI in the templates' `--with-ci` slice (tracked in [`otherdocs/template-supply-chain-hardening-plan.md`](otherdocs/template-supply-chain-hardening-plan.md)). The framework's own `release.yml` does not export long-lived tokens to disk (`persist-credentials: false` on `actions/checkout`, OIDC + provenance instead of `NPM_TOKEN`, granular npm tokens scoped per package), so even a successful payload on a *contributor's* machine cannot lift a publish-capable secret. |
+| Cross-ecosystem credential pivot: a stolen PyPI / npm / GitHub token from one developer's machine is used to push the *next* trojaned release into a different ecosystem | Hardware-backed 2FA is mandatory on **every** account with publish rights to `@daloyjs/core` or `create-daloy`, configured at both the GitHub organization and npm registry levels (`npm access 2fa-required`). Publishes only run from `release.yml` under the protected `npm-publish` GitHub Environment with explicit maintainer approval; the pre-publish `verify` job refuses to publish unless the actor on the run is listed in the **Active** block of [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md). A stolen developer-workstation token without 2FA cannot pivot into a Daloy publish. |
+| Worm behavior: the payload uses the victim's credentials to scan their other repos and silently push trojaned versions of any package they maintain | `CODEOWNERS` ([`.github/CODEOWNERS`](.github/CODEOWNERS)) requires a maintainer review for any change under `.github/`, `package.json`, `pnpm-lock.yaml`, or `.npmrc`. Signed commits + signed `v*` tags + provenance attestation mean a worm cannot quietly land an unsigned commit-then-tag on `main` and trigger `release.yml`; the release gate also rejects publishes whose tag/version don't match. |
+
+**What this does not defend against, and we say so explicitly:**
+
+- A Daloy consumer who also runs `pip install lightning` (or any other
+  trojaned PyPI package) **inside the same container or CI runner** as
+  their Daloy app. PyPI is a different supply chain than npm; the
+  `minimum-release-age` / `ignore-scripts` / `blockExoticSubdeps`
+  defenses do not cross the boundary. If your app's container also
+  installs Python dependencies, mirror the same controls on the Python
+  side (`uv pip install --exclude-newer=<24h-ago>`, separate
+  build-and-runtime images, no shell / compiler in the runtime image).
+- A future malicious `@daloyjs/core` look-alike that fires at **import
+  time** *and* survives the 24 h cooldown because nobody reported it.
+  Defence in depth is the audit pipeline (Scorecard, CodeQL, `pnpm audit
+  --prod`), the zero-runtime-deps posture (a look-alike that mimics
+  the dependency tree of a zero-dep package is harder to make
+  plausible), and consumer-side review of any new `@daloyjs/*` name
+  that is not `core` or `create-daloy`.
+- A consumer's runtime that allows handlers to call `fetch` against an
+  arbitrary URL and pipe the body into `child_process.spawn`. Daloy
+  cannot stop developer code from downloading and executing a Bun
+  binary at runtime. The runtime's network policy and the container's
+  filesystem (read-only `/`, no `/tmp` executable, distroless base) are
+  the only line of defense for that step. The framework's contribution
+  is making sure **the framework itself** does not do this and does not
+  enable it (no eval, no template engine, no codegen-at-request-time).
+- A compromise that lands as a *new* `@daloyjs/*` package name (a
+  slopsquat or look-alike). See the **Slopsquatting / AI package
+  hallucination** section below — the controls overlap but the residual
+  risk is the consumer paying attention to which `@daloyjs/*` names are
+  legitimate.
+
+If you suspect a Lightning-style import-time payload in an npm package
+you depend on alongside `@daloyjs/core`:
+
+- Pull the unpacked tarball (`pnpm pack <name>@<version>` then extract)
+  and grep for `Buffer.from(..., "base64")`, `vm.runIn*Context`,
+  `child_process`, `eval(`, and large embedded blobs in any
+  top-level-imported file.
+- Compare the published tarball's provenance attestation against the
+  source commit on the upstream repo. A missing or mismatched
+  attestation is the strongest signal.
+- Look for a `_runtime/` (or similarly disguised) directory in the
+  unpacked layout — Lightning hid the Bun bundle in
+  `_runtime/router_runtime.js`.
+- Report to the upstream registry and to <https://github.com/daloyjs/daloy/security/advisories/new>
+  if any `@daloyjs/*` look-alike is involved.
+
 ### IDE-extension compromise on a maintainer workstation (GitHub 2026-05-20 pattern)
 
 Aikido and BleepingComputer's 2026-05-20 disclosure of the
