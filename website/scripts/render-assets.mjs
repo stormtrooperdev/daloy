@@ -114,6 +114,69 @@ async function renderJob(/** @type {Job} */ job) {
   return outPath;
 }
 
+/**
+ * Build a multi-resolution ICO from the in-memory PNG buffers for the given
+ * sizes. We embed PNG-encoded images (the Vista+ "PNG inside ICO" format)
+ * which every modern browser, Windows Explorer (≥ Vista), and macOS support.
+ * See https://en.wikipedia.org/wiki/ICO_(file_format)#Outline.
+ *
+ * @param {Array<{ size: number; png: Buffer }>} entries
+ * @returns {Buffer}
+ */
+function buildIco(entries) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // type 1 = icon
+  header.writeUInt16LE(entries.length, 4);
+
+  const directory = Buffer.alloc(16 * entries.length);
+  const pngs = [];
+  let offset = header.length + directory.length;
+  for (let i = 0; i < entries.length; i += 1) {
+    const { size, png } = entries[i];
+    const base = i * 16;
+    // ICO encodes 256 as 0.
+    directory.writeUInt8(size >= 256 ? 0 : size, base + 0);
+    directory.writeUInt8(size >= 256 ? 0 : size, base + 1);
+    directory.writeUInt8(0, base + 2); // color count (0 for >= 8bpp)
+    directory.writeUInt8(0, base + 3); // reserved
+    directory.writeUInt16LE(1, base + 4); // color planes
+    directory.writeUInt16LE(32, base + 6); // bits per pixel
+    directory.writeUInt32LE(png.length, base + 8); // bytes in PNG
+    directory.writeUInt32LE(offset, base + 12); // offset to PNG
+    pngs.push(png);
+    offset += png.length;
+  }
+  return Buffer.concat([header, directory, ...pngs]);
+}
+
+/**
+ * Render the favicon.ico file by rasterizing the source icon at 16, 32, and
+ * 48 px and packaging the PNGs inside an ICO container. Writes the result to
+ * both `public/favicon.ico` (root-path browser fallback) and
+ * `public/assets/favicon.ico` (canonical location referenced from metadata).
+ */
+async function renderFavicon() {
+  const srcPath = path.join(SOURCE_DIR, "icon-dark.svg");
+  const svg = await readFile(srcPath);
+  const sizes = [16, 32, 48];
+  const entries = [];
+  for (const size of sizes) {
+    const png = await sharp(svg, { density: Math.max(96, size * 8) })
+      .resize({ width: size, height: size, fit: "fill", kernel: "lanczos3" })
+      .png({ compressionLevel: 9, effort: 10 })
+      .toBuffer();
+    entries.push({ size, png });
+  }
+  const ico = buildIco(entries);
+  const assetsIco = path.join(ASSETS_DIR, "favicon.ico");
+  const publicRoot = path.resolve(ASSETS_DIR, "..");
+  const rootIco = path.join(publicRoot, "favicon.ico");
+  await writeFile(assetsIco, ico);
+  await writeFile(rootIco, ico);
+  return { bytes: ico.length, sizes };
+}
+
 async function main() {
   await mkdir(ASSETS_DIR, { recursive: true });
   const failures = [];
@@ -127,15 +190,24 @@ async function main() {
       console.error(`  failed    ${job.out}:`, err instanceof Error ? err.message : err);
     }
   }
-  // Build a combined multi-resolution favicon.ico (16, 32, 48 PNG inputs).
-  // sharp doesn't write ICO directly, so we keep the per-size PNGs and the
-  // app/favicon.ico file untouched — browsers happily use either.
+  // Assemble the multi-size favicon.ico (16/32/48). Browsers and the
+  // Windows shell auto-fetch /favicon.ico independently of the <link rel>
+  // tags, so we always emit a fresh DaloyJS-branded ICO here.
+  try {
+    const ico = await renderFavicon();
+    console.log(
+      `  rendered  favicon.ico  (${ico.sizes.join("/")}px multi-res, ${ico.bytes} B)  -> public/ and public/assets/`,
+    );
+  } catch (err) {
+    failures.push({ job: { out: "favicon.ico" }, err });
+    console.error("  failed    favicon.ico:", err instanceof Error ? err.message : err);
+  }
   if (failures.length > 0) {
     console.error(`\n${failures.length} asset(s) failed to render.`);
     process.exitCode = 1;
     return;
   }
-  console.log(`\nDone. ${JOBS.length} asset(s) written to ${path.relative(process.cwd(), ASSETS_DIR)}/.`);
+  console.log(`\nDone. ${JOBS.length} PNG asset(s) + favicon.ico written to ${path.relative(process.cwd(), ASSETS_DIR)}/.`);
   // Quick byte-size summary for the README.
   const sizes = await Promise.all(
     JOBS.map(async (j) => {
