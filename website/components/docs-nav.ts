@@ -109,6 +109,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Compression (0.25.0)", href: "/docs/security/compression" as Route },
       { title: "secureDefaults enforcement (0.26.0)", href: "/docs/security/wave-8-slice" as Route },
       { title: "CSRF protection", href: "/docs/security/csrf" },
+      { title: "Secure admin panels", href: "/docs/security/admin-panels" as Route },
       { title: "Sessions", href: "/docs/security/session" },
       {
         title: "Redis rate-limit store",

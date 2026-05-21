@@ -326,6 +326,17 @@ app.use(basicAuth({
 }));`}
       />
 
+      <h2>Admin panels</h2>
+      <p>
+        Building an admin or customer-success surface on top of DaloyJS? See{" "}
+        <a href="/docs/security/admin-panels">Secure admin panels</a> for the
+        recommended pattern: <code>internal: true</code> routes,{" "}
+        <code>ipRestriction()</code>, strict CSP with per-request nonces,
+        per-admin authentication, login-throttle <code>rateLimit()</code>
+        groups, and structured audit logging &mdash; mapped one-to-one to
+        Aikido&apos;s public &quot;secure admin panel&quot; checklist.
+      </p>
+
       <h2>Supply-chain</h2>
       <p>
         DaloyJS is distributed via{" "}
