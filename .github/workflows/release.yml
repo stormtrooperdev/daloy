@@ -92,6 +92,9 @@ jobs:
       - name: Verify no install-time lifecycle scripts (Aikido Package Health "Supply-Chain Scripts" gate)
         run: pnpm verify:no-lifecycle-scripts
 
+      - name: Verify no bin script shadowing (Socket bin-script-confusion gate)
+        run: pnpm verify:no-bin-shadowing
+
       - name: Verify secret-comparison single source of truth (Wave 8 governance gate)
         run: pnpm verify:secret-comparisons
 
