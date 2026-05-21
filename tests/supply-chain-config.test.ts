@@ -119,6 +119,27 @@ test("lockfile scanner rejects registry lookalike tarball hosts", () => {
   ]);
 });
 
+test("lockfile scanner rejects every npm git shorthand specifier (github/gitlab/bitbucket/gist)", () => {
+  // Socket's "Git dependency" critical alert (https://socket.dev/blog/5-new-critical-issue-alerts)
+  // covers every mutable git host, not just GitHub. Every npm-documented shorthand
+  // (https://docs.npmjs.com/cli/v8/configuring-npm/package-json#git-urls-as-dependencies)
+  // must be rejected by `pnpm verify:lockfile`.
+  const lockfile = [
+    "specifier: github:owner/project",
+    "specifier: gitlab:owner/project",
+    "specifier: bitbucket:owner/project",
+    "specifier: gist:abc123",
+    "resolution: git@gitlab.com:owner/project.git",
+    "resolution: git@bitbucket.org:owner/project.git",
+  ].join("\n");
+
+  const findings = findForbiddenLockfileSources(lockfile);
+  assert.equal(findings.length, 6);
+  for (const finding of findings) {
+    assert.equal(finding.reason, "git dependency source");
+  }
+});
+
 test("ci workflow avoids privileged fork-pr and cache-poisoning patterns", async () => {
   const workflow = await readWorkspaceFile(".github/workflows/ci.yml");
 

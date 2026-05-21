@@ -6,7 +6,8 @@ export interface ForbiddenLockfileSource {
   text: string;
 }
 
-const GIT_SOURCE_PATTERN = /(?:specifier:\s*)?(?:github:|git\+|git:\/\/|ssh:\/\/git@|git@github\.com:)/i;
+const GIT_SOURCE_PATTERN =
+  /(?:specifier:\s*)?(?:github:|gitlab:|bitbucket:|gist:|git\+|git:\/\/|ssh:\/\/git@|git@github\.com:|git@gitlab\.com:|git@bitbucket\.org:)/i;
 const TARBALL_PATTERN = /tarball:\s*(?<url>https?:\/\/[^}\s]+)/i;
 const REGISTRY_TARBALL_PREFIX = "https://registry.npmjs.org/";
 
