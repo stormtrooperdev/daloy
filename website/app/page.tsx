@@ -24,7 +24,8 @@ import { FlowHeroScene } from "../components/flow-hero-scene";
 import { buildMetadata, CORE_PACKAGE_VERSION, SITE_URL } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "The runtime-portable framework for a Zero-Trust supply chain",
+  title:
+    "DaloyJS - The runtime-portable framework for a Zero-Trust supply chain",
   description:
     "DaloyJS is a secure-by-default TypeScript/JavaScript web framework for LLM-era supply-chain risk. create-daloy scaffolds projects with blocked install scripts, a 24h pnpm release-age cooldown, lockfile source verification, pinned CI, Dependabot, CODEOWNERS, and SECURITY.md; DaloyJS itself ships through a hardened provenance-backed release pipeline. Runtime-portable across Node.js, Bun, Deno, Cloudflare Workers, and Vercel Edge. Typed end-to-end with Standard Schema validation, OpenAPI 3.1, and Hey API typed clients.",
   path: "/",
