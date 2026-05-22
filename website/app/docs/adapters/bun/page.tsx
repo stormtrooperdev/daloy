@@ -41,6 +41,18 @@ export default function Page() {
         </li>
       </ul>
 
+      <h2>Scaffold</h2>
+      <p>
+        The <code>bun-basic</code> template ships a Bun-native server with{" "}
+        <code>bun test</code> and Hey&nbsp;API codegen.
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`pnpm create daloy@latest my-api --template bun-basic
+cd my-api
+pnpm dev    # daloy dev --runtime bun (hot-reload)`}
+      />
+
       <h2>Install</h2>
       <CodeBlock language="bash" code={`bun add @daloyjs/core`} />
 

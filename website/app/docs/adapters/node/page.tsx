@@ -43,6 +43,19 @@ export default function Page() {
         <li>You want the broadest npm package compatibility.</li>
       </ul>
 
+      <h2>Scaffold</h2>
+      <p>
+        The fastest way to start is the <code>node-basic</code> template. It
+        ships with TypeScript, pnpm workspaces, a <code>/healthz</code> route,
+        graceful shutdown, and Hey&nbsp;API codegen wired up.
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`pnpm create daloy@latest my-api --template node-basic
+cd my-api
+pnpm dev    # hot-reload via daloy dev`}
+      />
+
       <h2>Install</h2>
       <p>
         Requires <strong>Node.js 24 LTS or newer</strong>. The adapter ships

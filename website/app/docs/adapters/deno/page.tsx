@@ -46,6 +46,19 @@ export default function Page() {
         </li>
       </ul>
 
+      <h2>Scaffold</h2>
+      <p>
+        The <code>deno-basic</code> template ships a Deno-native server with a{" "}
+        <code>deno.json</code> import map, watch-mode dev, and{" "}
+        <code>deno test</code>.
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`pnpm create daloy@latest my-api --template deno-basic
+cd my-api
+deno task dev    # deno run --allow-net --allow-env --allow-read --watch`}
+      />
+
       <h2>Install</h2>
       <p>
         <code>@daloyjs/core</code> is published to npm. Deno can consume it
