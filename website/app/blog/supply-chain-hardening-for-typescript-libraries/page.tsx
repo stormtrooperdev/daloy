@@ -12,7 +12,7 @@ const POST = {
     "Supply-Chain Hardening for TypeScript Libraries: Everything We Did and Why",
   description:
     "A maintainer's field guide to the supply-chain posture we shipped for DaloyJS — .npmrc that says no by default, pnpm 11 workspace keys (blockExoticSubdeps / strictDepBuilds / verifyDepsBeforeRun), SHA-pinned actions, permissions: {}, no Actions cache on installs, zizmor + Scorecard + CodeQL, npm trusted publishing with provenance, and the create-daloy --with-ci bundle that drops the same posture into your project.",
-  date: "2026-05-26",
+  date: "2026-05-19",
   readingTime: "16 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

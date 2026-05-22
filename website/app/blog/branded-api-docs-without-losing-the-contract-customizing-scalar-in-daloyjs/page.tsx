@@ -12,7 +12,7 @@ const POST = {
     "Branded API Docs Without Losing the Contract: Customizing Scalar in DaloyJS",
   description:
     "DaloyJS 0.14 adds docs.scalar — a JSON-only knob that lets you theme the Scalar API reference, hide the Try-it button, drop in a brand stylesheet, and pick a layout, without forking the docs route. And because Daloy locks the spec URL to your live OpenAPI path at serialize time, the prettiest docs page in the company can't drift away from the contract.",
-  date: "2026-06-07",
+  date: "2026-06-21",
   readingTime: "10 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

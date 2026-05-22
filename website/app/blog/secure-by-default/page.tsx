@@ -12,7 +12,7 @@ const POST = {
     "Secure by Default: The Defaults DaloyJS Ships So You Don't Have To Remember Them",
   description:
     "A tour of the always-on defenses in the DaloyJS request path — bounded body reads, prototype-pollution-safe JSON, CRLF sanitization, path-traversal rejection, request timeouts, problem+json with prod redaction — plus the opt-in upgrades worth turning on today.",
-  date: "2026-05-20",
+  date: "2026-05-18",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

@@ -12,7 +12,7 @@ const POST = {
     "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge — Verified",
   description:
     "One Bookstore app, five entry files, five deployments. The Node serve(), the Bun handle.url, the Deno onListen, the Workers ctx.waitUntil, and Vercel's toWebHandler / toRouteHandlers / toFetchHandler — with receipts.",
-  date: "2026-05-22",
+  date: "2026-05-18",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

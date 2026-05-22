@@ -11,7 +11,7 @@ const POST = {
   title: "Building a Bookstore API with DaloyJS From Scratch",
   description:
     "A route-by-route walkthrough: create the project with create-daloy, model a Book with Zod, add list / create / fetch-by-id endpoints, watch validation errors arrive as RFC 9457 problem+json automatically, emit OpenAPI, generate a typed client, and write the whole test suite with app.request() — no HTTP server required.",
-  date: "2026-05-29",
+  date: "2026-05-20",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

@@ -11,7 +11,7 @@ const POST = {
   title: "CSP Nonces and Trusted Types Without Tears",
   description:
     "A practical tour of secureHeaders({ contentSecurityPolicy: { nonce: true, trustedTypes: { policies: [...] } } }) — how ctx.state.cspNonce flows into a server-rendered template, why the nonce now lands on all four script/style directives, and how to roll out Trusted Types in report-only mode first without setting your weekend on fire.",
-  date: "2026-05-24",
+  date: "2026-05-19",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

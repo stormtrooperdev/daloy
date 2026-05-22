@@ -11,7 +11,7 @@ const POST = {
   title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
   description:
     "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests — and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
-  date: "2026-05-19",
+  date: "2026-05-18",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

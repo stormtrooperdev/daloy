@@ -12,7 +12,7 @@ const POST = {
     "Contract-First Without the Codegen Dance: OpenAPI, Typed Client, and Contract Tests From One Definition",
   description:
     "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app) — plus pnpm gen for a Hey API typed fetch SDK your frontend can import. With pictures.",
-  date: "2026-05-21",
+  date: "2026-05-18",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
