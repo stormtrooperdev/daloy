@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Deno adapter",
   description:
-    "Run a DaloyJS app on Deno using the stable Deno.serve API with AbortSignal-based graceful shutdown and built-in TLS.",
+    "Run a DaloyJS REST API on Deno using the stable Deno.serve API with AbortSignal-based graceful shutdown and built-in TLS.",
   path: "/docs/adapters/deno",
   keywords: [
     "DaloyJS Deno adapter",
@@ -24,28 +24,43 @@ export default function Page() {
     <>
       <h1>Deno</h1>
       <p>
-        The Deno adapter wraps <code>Deno.serve</code> — the stable, modern entry point that
-        replaced the old <code>Deno.serveHttp</code>. Graceful shutdown uses an{" "}
-        <code>AbortController</code>, which is the pattern Deno itself recommends.
+        The Deno adapter wraps <code>Deno.serve</code> — the stable, modern
+        entry point that replaced the old <code>Deno.serveHttp</code>. Graceful
+        shutdown uses an <code>AbortController</code>, which is the pattern Deno
+        itself recommends.
       </p>
 
       <h2>When to choose Deno</h2>
       <ul>
-        <li>You want a web-standard runtime with TypeScript built in and no transpile step.</li>
-        <li>You deploy to Deno Deploy, or to a container running the official Deno image.</li>
-        <li>You like Deno&apos;s permissions model and don&apos;t need the full npm ecosystem.</li>
+        <li>
+          You want a web-standard runtime with TypeScript built in and no
+          transpile step.
+        </li>
+        <li>
+          You deploy to Deno Deploy, or to a container running the official Deno
+          image.
+        </li>
+        <li>
+          You like Deno&apos;s permissions model and don&apos;t need the full
+          npm ecosystem.
+        </li>
       </ul>
 
       <h2>Install</h2>
       <p>
-        Import directly from <code>jsr:</code> (recommended) or via <code>npm:</code>.
+        <code>@daloyjs/core</code> is published to npm. Deno can consume it
+        directly via the <code>npm:</code> specifier &mdash; this is the same
+        pattern used by the official <code>deno-basic</code> scaffolder
+        template.
       </p>
       <CodeBlock
-        language="ts"
+        language="jsonc"
         code={`// deno.json
 {
   "imports": {
-    "@daloyjs/core/": "jsr:/@daloyjs/core/"
+    "@daloyjs/core":  "npm:@daloyjs/core@^0.34.1",
+    "@daloyjs/core/": "npm:@daloyjs/core@^0.34.1/",
+    "zod":            "npm:zod@^4.4.3"
   }
 }`}
       />
@@ -82,8 +97,9 @@ Deno.addSignalListener("SIGINT", () => ac.abort());`}
 
       <h2>Deploy to Deno Deploy</h2>
       <p>
-        Deno Deploy reads the entry script directly. Point your project at <code>src/server.ts</code>;
-        the same file you run locally is what runs in production.
+        Deno Deploy reads the entry script directly. Point your project at{" "}
+        <code>src/server.ts</code>; the same file you run locally is what runs
+        in production.
       </p>
       <CodeBlock
         language="bash"
@@ -107,16 +123,17 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Don&apos;t use <code>Deno.serveHttp</code> — it&apos;s deprecated. The DaloyJS adapter
-          uses <code>Deno.serve</code> exclusively.
+          Don&apos;t use <code>Deno.serveHttp</code> — it&apos;s deprecated. The
+          DaloyJS adapter uses <code>Deno.serve</code> exclusively.
         </li>
         <li>
-          On Deno Deploy you don&apos;t get <code>SIGTERM</code>; the platform manages shutdown.
-          The <code>AbortController</code> wiring above is for self-hosted Deno only.
+          On Deno Deploy you don&apos;t get <code>SIGTERM</code>; the platform
+          manages shutdown. The <code>AbortController</code> wiring above is for
+          self-hosted Deno only.
         </li>
         <li>
-          Use <code>--allow-net</code> (and others) explicitly — Deno&apos;s default-deny
-          permissions are the point.
+          Use <code>--allow-net</code> (and others) explicitly — Deno&apos;s
+          default-deny permissions are the point.
         </li>
       </ul>
 
@@ -126,7 +143,8 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
           <Link href="/docs/adapters">Adapters overview</Link>
         </li>
         <li>
-          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link> — also Deno-based.
+          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link> —
+          also Deno-based.
         </li>
       </ul>
     </>

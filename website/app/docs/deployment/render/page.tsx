@@ -23,15 +23,21 @@ export default function Page() {
     <>
       <h1>Render</h1>
       <p>
-        Render runs your Node app as a long-lived web service with platform-managed TLS,
-        autoscaling, and PR previews. Use the <Link href="/docs/adapters/node">Node adapter</Link>{" "}
-        and let Render inject <code>PORT</code>.
+        Render runs your Node REST API as a long-lived web service with
+        platform-managed TLS, autoscaling, and PR previews. Use the{" "}
+        <Link href="/docs/adapters/node">Node adapter</Link> and let Render
+        inject <code>PORT</code>.
       </p>
 
       <h2>When to choose Render</h2>
       <ul>
-        <li>You want a Heroku-like UX with modern autoscaling and per-second billing.</li>
-        <li>You want PR previews wired to your repo without extra CI config.</li>
+        <li>
+          You want a Heroku-like UX with modern autoscaling and per-second
+          billing.
+        </li>
+        <li>
+          You want PR previews wired to your repo without extra CI config.
+        </li>
         <li>You want managed Postgres or Redis from the same dashboard.</li>
       </ul>
 
@@ -50,7 +56,8 @@ serve(app, {
 
       <h2>render.yaml</h2>
       <p>
-        Use <code>runtime: node</code>. The older <code>env: node</code> field is deprecated.
+        Use <code>runtime: node</code>. The older <code>env: node</code> field
+        is deprecated.
       </p>
       <CodeBlock
         language="yaml"
@@ -78,20 +85,22 @@ serve(app, {
 
       <h2>Deploy</h2>
       <p>
-        Push to your repo. Render picks up <code>render.yaml</code> automatically. For the first
-        deploy, create a Blueprint service from the dashboard.
+        Push to your repo. Render picks up <code>render.yaml</code>{" "}
+        automatically. For the first deploy, create a Blueprint service from the
+        dashboard.
       </p>
 
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Bind to <code>0.0.0.0</code>, not <code>localhost</code>, or Render can&apos;t route
-          traffic to the container.
+          Bind to <code>0.0.0.0</code>, not <code>localhost</code>, or Render
+          can&apos;t route traffic to the container.
         </li>
         <li>
-          <code>healthCheckPath</code> must return 2xx within the timeout. Use the{" "}
-          <Link href="/docs/security/lifecycle-health">lifecycle plugin</Link>&apos;s health
-          endpoint.
+          <code>healthCheckPath</code> must return 2xx within the timeout. Use
+          the{" "}
+          <Link href="/docs/security/lifecycle-health">lifecycle plugin</Link>
+          &apos;s health endpoint.
         </li>
       </ul>
 

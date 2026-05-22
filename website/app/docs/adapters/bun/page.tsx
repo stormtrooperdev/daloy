@@ -6,13 +6,12 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Bun adapter",
   description:
-    "Run a DaloyJS app on Bun 1.2+ with native Bun.serve, TLS, Unix sockets, WebSocket upgrade, and hot reload.",
+    "Run a DaloyJS REST API on Bun 1.2+ with native Bun.serve, TLS, Unix sockets, and hot reload.",
   path: "/docs/adapters/bun",
   keywords: [
     "DaloyJS Bun adapter",
     "Bun.serve",
     "Bun TLS",
-    "Bun WebSocket upgrade",
     "Bun unix socket",
     "Bun idleTimeout",
   ],
@@ -24,15 +23,22 @@ export default function Page() {
     <>
       <h1>Bun</h1>
       <p>
-        The Bun adapter wraps the native <code>Bun.serve</code> API. You get fast startup, a smaller
-        memory footprint, and first-class TLS and Unix-socket support without extra middleware.
+        The Bun adapter wraps the native <code>Bun.serve</code> API for REST API
+        deployments. You get fast startup, a smaller memory footprint, and
+        first-class TLS and Unix-socket support without extra middleware.
       </p>
 
       <h2>When to choose Bun</h2>
       <ul>
-        <li>You want startup measured in milliseconds and lower per-request overhead than Node.</li>
+        <li>
+          You want startup measured in milliseconds and lower per-request
+          overhead than Node.
+        </li>
         <li>You ship a single self-contained binary or a small container.</li>
-        <li>You&apos;re fine with Bun 1.2+ (matches the adapter&apos;s expectations).</li>
+        <li>
+          You&apos;re fine with Bun 1.2+ (matches the adapter&apos;s
+          expectations).
+        </li>
       </ul>
 
       <h2>Install</h2>
@@ -60,21 +66,6 @@ console.log("listening on " + handle.url);`}
       <h2>Hot reload in dev</h2>
       <CodeBlock language="bash" code={`bun --hot src/server.ts`} />
 
-      <h2>WebSocket upgrade</h2>
-      <p>
-        Bun&apos;s upgrade API hasn&apos;t changed: <code>server.upgrade(req)</code> returns a
-        boolean. DaloyJS&apos;s WebSocket primitives use it under the hood; you don&apos;t need to
-        call it directly unless you&apos;re building a custom adapter.
-      </p>
-      <CodeBlock
-        language="ts"
-        code={`// inside a route handler
-if (server.upgrade(req)) {
-  return; // upgraded; do not send a response
-}
-return new Response("Expected upgrade", { status: 426 });`}
-      />
-
       <h2>Dockerfile</h2>
       <CodeBlock
         language="docker"
@@ -95,16 +86,17 @@ CMD ["dist/server.js"]`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          <code>idleTimeout</code> is in <strong>seconds</strong>, capped at 255. Pass{" "}
-          <code>0</code> to disable.
+          <code>idleTimeout</code> is in <strong>seconds</strong>, capped at
+          255. Pass <code>0</code> to disable.
         </li>
         <li>
-          Some npm packages with native bindings still need Node — test before committing to Bun in
-          production.
+          Some npm packages with native bindings still need Node — test before
+          committing to Bun in production.
         </li>
         <li>
-          Bun&apos;s built-in <code>routes</code> option is not used by the adapter; routing is
-          owned by DaloyJS so the same app stays portable across runtimes.
+          Bun&apos;s built-in <code>routes</code> option is not used by the
+          adapter; routing is owned by DaloyJS so the same REST API stays
+          portable across runtimes.
         </li>
       </ul>
 

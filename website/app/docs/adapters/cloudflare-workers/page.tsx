@@ -25,17 +25,26 @@ export default function Page() {
     <>
       <h1>Cloudflare Workers</h1>
       <p>
-        The Cloudflare adapter exports a Workers module entrypoint &mdash; the canonical{" "}
-        <code>export default &#123; fetch &#125;</code> shape. Service Worker style{" "}
-        (<code>addEventListener(&quot;fetch&quot;, ...)</code>) is no longer recommended; the
-        adapter does not emit it.
+        The Cloudflare adapter exports a Workers module entrypoint &mdash; the
+        canonical <code>export default &#123; fetch &#125;</code> shape. Service
+        Worker style (<code>addEventListener(&quot;fetch&quot;, ...)</code>) is
+        no longer recommended; the adapter does not emit it.
       </p>
 
       <h2>When to choose Workers</h2>
       <ul>
-        <li>You want global, low-latency execution without managing regions yourself.</li>
-        <li>You can live without raw TCP sockets (Workers Hyperdrive solves Postgres).</li>
-        <li>You want bindings (KV, R2, D1, Durable Objects, Queues) instead of standalone services.</li>
+        <li>
+          You want global, low-latency execution without managing regions
+          yourself.
+        </li>
+        <li>
+          You can live without raw TCP sockets (Workers Hyperdrive solves
+          Postgres).
+        </li>
+        <li>
+          You want bindings (KV, R2, D1, Durable Objects, Queues) instead of
+          standalone services.
+        </li>
       </ul>
 
       <h2>Scaffold</h2>
@@ -46,28 +55,29 @@ cd my-api
 pnpm dev   # wrangler dev under the hood`}
       />
 
-      <h2>Worker entrypoint</h2>
+      <h2>Worker entrypoint (no bindings)</h2>
+      <p>
+        If you don&apos;t need <code>env</code> bindings or the Worker{" "}
+        <code>ExecutionContext</code>, <code>toFetchHandler</code> is a
+        one-liner. It returns the <code>&#123; fetch &#125;</code> object
+        Workers expect as the default export &mdash; do <strong>not</strong>{" "}
+        wrap it again.
+      </p>
       <CodeBlock
         language="ts"
         code={`// src/index.ts
 import { toFetchHandler } from "@daloyjs/core/cloudflare";
 import { app } from "./server.js";
 
-export interface Env {
-  CACHE: KVNamespace;
-  DB: D1Database;
-}
-
-// toFetchHandler returns the { fetch } object Workers expect as the default
-// export. Do NOT wrap it again — export the result directly.
-export default toFetchHandler<Env>(app);`}
+export default toFetchHandler(app);`}
       />
 
       <h2>wrangler.jsonc</h2>
       <p>
-        Cloudflare now recommends <code>wrangler.jsonc</code> over <code>wrangler.toml</code> for
-        new projects; both are still supported. The single <code>nodejs_compat</code> flag is all
-        you need on a recent compatibility date — there&apos;s no separate{" "}
+        Cloudflare now recommends <code>wrangler.jsonc</code> over{" "}
+        <code>wrangler.toml</code> for new projects; both are still supported.
+        The single <code>nodejs_compat</code> flag is all you need on a recent
+        compatibility date — there&apos;s no separate{" "}
         <code>nodejs_compat_v2</code> to add.
       </p>
       <CodeBlock
@@ -103,15 +113,50 @@ pnpm wrangler secret put SESSION_SECRET
 pnpm wrangler deploy`}
       />
       <p>
-        <code>wrangler publish</code> was renamed to <code>wrangler deploy</code> in 2024.
-        Don&apos;t use the old name; some CI templates still reference it.
+        <code>wrangler publish</code> was renamed to{" "}
+        <code>wrangler deploy</code> in 2024. Don&apos;t use the old name; some
+        CI templates still reference it.
       </p>
 
-      <h2>Bindings</h2>
+      <h2>Bindings (env)</h2>
       <p>
-        DaloyJS doesn&apos;t hide bindings &mdash; <code>env</code> is the second argument to your
-        handler, and DaloyJS passes it through. Use them directly from inside route handlers via{" "}
-        <code>context.env</code>.
+        <code>toFetchHandler(app)</code> only forwards the <code>Request</code>.
+        To expose Worker bindings (KV, R2, D1, Durable Objects, Queues,
+        Hyperdrive, secrets) to your handlers, write the module-format export by
+        hand and inject the bindings into the app with{" "}
+        <code>app.decorate(...)</code> &mdash; that&apos;s how DaloyJS makes
+        runtime values available on <code>ctx.state</code> inside every handler.
+      </p>
+      <CodeBlock
+        language="ts"
+        code={`// src/index.ts
+import { app } from "./server.js";
+
+export interface Env {
+  CACHE: KVNamespace;
+  DB: D1Database;
+  SESSION_SECRET: string;
+}
+
+let decorated = false;
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Decorate once per isolate; app.decorate() throws if called twice with
+    // the same key, so guard it.
+    if (!decorated) {
+      app.decorate("env", env);
+      app.decorate("waitUntil", (p: Promise<unknown>) => ctx.waitUntil(p));
+      decorated = true;
+    }
+    return app.fetch(request);
+  },
+};`}
+      />
+      <p>
+        Inside any route handler, read the binding from{" "}
+        <code>ctx.state.env</code> (the key you passed to <code>decorate</code>
+        ):
       </p>
       <CodeBlock
         language="ts"
@@ -120,8 +165,8 @@ pnpm wrangler deploy`}
   path: "/cached/:key",
   request: { params: z.object({ key: z.string() }) },
   responses: { 200: { body: z.object({ value: z.string().nullable() }) } },
-  handler: async ({ params, context }) => {
-    const value = await context.env.CACHE.get(params.key);
+  handler: async ({ params, ctx }) => {
+    const value = await ctx.state.env.CACHE.get(params.key);
     return { status: 200, body: { value } };
   },
 });`}
@@ -130,21 +175,21 @@ pnpm wrangler deploy`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          No raw TCP. Use <strong>Hyperdrive</strong> for Postgres/MySQL, or HTTP drivers like
-          Neon&apos;s serverless driver, PlanetScale&apos;s <code>@planetscale/database</code>, or
-          Turso/libSQL. See <Link href="/docs/databases">Database hosting</Link>.
+          No raw TCP. Use <strong>Hyperdrive</strong> for Postgres/MySQL, or
+          HTTP drivers like Neon&apos;s serverless driver, PlanetScale&apos;s{" "}
+          <code>@planetscale/database</code>, or Turso/libSQL. See{" "}
+          <Link href="/docs/databases">Database hosting</Link>.
         </li>
         <li>
-          No filesystem &mdash; use <Link href="/docs/multipart">multipart uploads</Link> with R2,
-          not <code>node:fs</code>.
+          No filesystem &mdash; use{" "}
+          <Link href="/docs/multipart">multipart uploads</Link> with R2, not{" "}
+          <code>node:fs</code>.
         </li>
         <li>
-          For background work, use <code>ctx.waitUntil</code>; the adapter forwards it from the
-          handler context.
-        </li>
-        <li>
-          Static assets: use the GA <code>assets</code> binding in <code>wrangler.jsonc</code>{" "}
-          (replaces the deprecated Workers Sites).
+          For background work, decorate the app with a <code>waitUntil</code>{" "}
+          wrapper (see the bindings example above) &mdash;{" "}
+          <code>toFetchHandler</code> alone does not forward the Worker{" "}
+          <code>ExecutionContext</code>.
         </li>
       </ul>
 
@@ -161,7 +206,9 @@ pnpm wrangler deploy`}
         </li>
         <li>
           <Link href="/docs/security/session">Sessions</Link> ·{" "}
-          <Link href="/docs/security/rate-limit-redis">Distributed rate-limit store</Link>
+          <Link href="/docs/security/rate-limit-redis">
+            Distributed rate-limit store
+          </Link>
         </li>
       </ul>
     </>

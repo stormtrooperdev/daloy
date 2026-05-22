@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Adapters & runtimes",
   description:
-    "Run the same DaloyJS app on Node.js, Bun, Deno, Cloudflare Workers, Vercel, Netlify, Fastly Compute, and AWS Lambda. One codebase, multiple runtimes, zero rewrites.",
+    "Run the same DaloyJS REST API on Node.js, Bun, Deno, Cloudflare Workers, Vercel, Netlify, Fastly Compute, and AWS Lambda. One codebase, multiple runtimes, zero rewrites.",
   path: "/docs/adapters",
   keywords: [
     "runtime adapters",
@@ -39,7 +39,7 @@ const RUNTIMES: Target[] = [
     name: "Bun",
     href: "/docs/adapters/bun" as Route,
     blurb:
-      "Native Bun.serve. Fast startup, built-in TLS and Unix sockets, hot reload in dev.",
+      "Native Bun.serve for REST APIs. Fast startup, built-in TLS, Unix sockets, and hot reload in dev.",
   },
   {
     name: "Deno",
@@ -60,7 +60,7 @@ const EDGE: Target[] = [
     name: "Vercel",
     href: "/docs/adapters/vercel" as Route,
     blurb:
-      "Three handler shapes from one app: Next.js App Router, Vercel Node Functions, Vercel Edge Functions.",
+      "Deploy a standalone REST API as a Vercel Node Function or Edge Function.",
   },
   {
     name: "Netlify",
@@ -104,10 +104,11 @@ export default function Page() {
     <>
       <h1>Adapters &amp; runtimes</h1>
       <p>
-        The DaloyJS core only ever sees <code>Request &rarr; Response</code>. Runtime-specific
-        concerns &mdash; sockets, signals, edge handlers, Lambda event shapes &mdash; live in thin
-        adapters at the edge. The same <code>app</code> object runs everywhere; you only change the
-        adapter import and the deploy config.
+        DaloyJS is a REST API backend framework. The core only ever sees{" "}
+        <code>Request &rarr; Response</code>. Runtime-specific concerns &mdash;
+        sockets, signals, edge handlers, Lambda event shapes &mdash; live in
+        thin adapters at the edge. Choose the adapter for the place you want to
+        deploy your API.
       </p>
 
       <h2>Pick a target</h2>
@@ -120,23 +121,31 @@ export default function Page() {
 
       <h2>Roll your own</h2>
       <p>
-        If your runtime exposes the web <code>fetch</code> standard, you don&apos;t need an adapter
-        at all &mdash; just forward the request to <code>app.fetch</code>:
+        If your runtime exposes the web-standard <code>Request / Response</code>{" "}
+        contract and isn&apos;t listed above, you don&apos;t need an adapter at
+        all &mdash; pass the incoming request straight to <code>app.fetch</code>
+        :
       </p>
       <CodeBlock
         language="ts"
-        code={`addEventListener("fetch", (event) => event.respondWith(app.fetch(event.request)));`}
+        code={`// modules-format (Cloudflare Workers, Deno, Bun, etc.)
+export default {
+  fetch(request: Request): Promise<Response> {
+    return app.fetch(request);
+  },
+};`}
       />
 
       <h2>See also</h2>
       <ul>
         <li>
-          <Link href="/docs/deployment">Deployment</Link> &mdash; Docker, reverse proxies, health
-          checks, and Node platform guides (Fly.io, Render, Railway, Heroku).
+          <Link href="/docs/deployment">Deployment</Link> &mdash; Docker,
+          reverse proxies, health checks, and Node platform guides (Fly.io,
+          Render, Railway, Heroku).
         </li>
         <li>
-          <Link href="/docs/scaffolder">Scaffolder</Link> &mdash; <code>pnpm create daloy</code>{" "}
-          ships runtime-specific templates.
+          <Link href="/docs/scaffolder">Scaffolder</Link> &mdash;{" "}
+          <code>pnpm create daloy</code> ships runtime-specific templates.
         </li>
       </ul>
     </>

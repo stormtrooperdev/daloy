@@ -23,23 +23,29 @@ export default function Page() {
     <>
       <h1>Netlify</h1>
       <p>
-        Netlify gives you two runtime options for an API: <strong>Edge Functions</strong>{" "}
-        (Deno-based, global) and <strong>Functions v2</strong> (Node, fetch-style). Both speak the
-        web-standard <code>Request → Response</code> contract, so the DaloyJS adapter is the same
-        helper in both places &mdash; only the file location and the optional config export change.
+        Netlify gives you two runtime options for an API:{" "}
+        <strong>Edge Functions</strong> (Deno-based, global) and{" "}
+        <strong>Functions v2</strong> (Node, fetch-style). Both speak the
+        web-standard <code>Request → Response</code> contract, so the DaloyJS
+        adapter is the same helper in both places &mdash; only the file location
+        and the optional config export change.
       </p>
 
       <h2>When to choose Netlify</h2>
       <ul>
-        <li>You ship a Netlify-hosted frontend and want the API in the same project.</li>
+        <li>
+          You want a platform-managed REST API with Edge or Node function
+          options.
+        </li>
         <li>You want preview deploys per branch with zero config.</li>
         <li>You&apos;re fine with platform-managed cold starts.</li>
       </ul>
 
       <h2>Netlify Edge Functions (Deno)</h2>
       <p>
-        Edge Functions run on a Deno-based runtime. Use <code>toWebHandler</code> &mdash; the same
-        helper as the Vercel Edge adapter, because the input/output shape is identical.
+        Edge Functions run on a Deno-based runtime. Use{" "}
+        <code>toWebHandler</code> &mdash; the same helper as the Vercel Edge
+        adapter, because the input/output shape is identical.
       </p>
       <CodeBlock
         language="ts"
@@ -52,16 +58,16 @@ export default toWebHandler(app);
 
 export const config: Config = {
   path: "/api/*",
-  cache: "manual",   // optional: opt-in response caching
-  onError: "fail",   // optional: "fail" | "/error-page" | "bypass"
 };`}
       />
 
       <h2>Netlify Functions v2 (Node, fetch-style)</h2>
       <p>
-        Functions v2 is GA and is the recommended way to write Node functions on Netlify. The old
-        v1 lambda-style handler (<code>exports.handler = (event, context) =&gt; ...</code>) is
-        legacy &mdash; it still works for compatibility but you should write new code in v2.
+        Functions v2 is GA and is the recommended way to write Node functions on
+        Netlify. The old v1 lambda-style handler (
+        <code>exports.handler = (event, context) =&gt; ...</code>) is legacy
+        &mdash; it still works for compatibility but you should write new code
+        in v2.
       </p>
       <CodeBlock
         language="ts"
@@ -77,8 +83,8 @@ export const config: Config = {
 };`}
       />
       <p>
-        If you have an existing v1 codebase you can&apos;t migrate yet, the Lambda adapter still
-        works against the v1 event shape:
+        If you have an existing v1 codebase you can&apos;t migrate yet, the
+        Lambda adapter still works against the v1 event shape:
       </p>
       <CodeBlock
         language="ts"
@@ -90,11 +96,15 @@ export const handler = toLambdaHandler(app);`}
       />
 
       <h2>netlify.toml</h2>
+      <p>
+        For a REST-API-only project there is no static site to publish. Omit the{" "}
+        <code>publish</code> key (or point it at an empty directory) so Netlify
+        doesn&apos;t try to serve your compiled server code as static files.
+      </p>
       <CodeBlock
         language="toml"
         code={`[build]
   command = "pnpm build"
-  publish = "dist"
 
 [functions]
   node_bundler = "esbuild"
@@ -116,15 +126,17 @@ pnpm netlify deploy --build --prod`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Edge Functions don&apos;t expose <code>node:*</code> &mdash; same caveat as Vercel Edge
-          and Cloudflare Workers.
+          Edge Functions don&apos;t expose <code>node:*</code> &mdash; same
+          caveat as Vercel Edge and Cloudflare Workers.
         </li>
         <li>
-          Functions v2 returns a <code>Response</code> directly. Don&apos;t use the v1{" "}
-          <code>statusCode</code>/<code>body</code> object shape in v2 code.
+          Functions v2 returns a <code>Response</code> directly. Don&apos;t use
+          the v1 <code>statusCode</code>/<code>body</code> object shape in v2
+          code.
         </li>
         <li>
-          <code>context.waitUntil</code> is available in v2 for fire-and-forget work.
+          <code>context.waitUntil</code> is available in v2 for fire-and-forget
+          work.
         </li>
       </ul>
 

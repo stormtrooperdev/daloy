@@ -25,24 +25,29 @@ export default function Page() {
     <>
       <h1>AWS Lambda</h1>
       <p>
-        The Lambda adapter accepts <strong>API Gateway HTTP API payload v2.0</strong>,{" "}
-        <strong>API Gateway REST API payload v1.0</strong>, and <strong>Lambda Function URLs</strong>{" "}
-        without configuration. It handles base64 bodies, v2 <code>cookies</code>, v1{" "}
-        <code>multiValueHeaders</code>, and forwards method, path, query, and headers into a
-        standard <code>Request</code>.
+        The Lambda adapter accepts{" "}
+        <strong>API Gateway HTTP API payload v2.0</strong>,{" "}
+        <strong>API Gateway REST API payload v1.0</strong>, and{" "}
+        <strong>Lambda Function URLs</strong> without configuration. It handles
+        base64 bodies, v2 <code>cookies</code>, v1{" "}
+        <code>multiValueHeaders</code>, and forwards method, path, query, and
+        headers into a standard <code>Request</code>.
       </p>
 
       <h2>When to choose Lambda</h2>
       <ul>
         <li>You already run on AWS and want IAM-integrated invocation.</li>
         <li>You want per-request billing without managing a server.</li>
-        <li>You need long timeouts (up to 15 minutes) or larger memory than edge functions allow.</li>
+        <li>
+          You need long timeouts (up to 15 minutes) or larger memory than edge
+          functions allow.
+        </li>
       </ul>
 
       <h2>Install</h2>
       <p>
-        The adapter ships with <code>@daloyjs/core</code>. For deployment, use AWS SAM, CDK, the
-        Serverless Framework, or any IaC of your choice.
+        The adapter ships with <code>@daloyjs/core</code>. For deployment, use
+        AWS SAM, CDK, the Serverless Framework, or any IaC of your choice.
       </p>
 
       <h2>Function URL or API Gateway HTTP API</h2>
@@ -57,8 +62,9 @@ export const handler = toLambdaHandler(app);`}
 
       <h2>Streaming responses</h2>
       <p>
-        Lambda supports response streaming via <code>awslambda.streamifyResponse</code>. Use the
-        streaming variant of the adapter when you need to flush headers and bytes incrementally
+        Lambda supports response streaming via{" "}
+        <code>awslambda.streamifyResponse</code>. Use the streaming variant of
+        the adapter when you need to flush headers and bytes incrementally
         (Server-Sent Events, large downloads).
       </p>
       <CodeBlock
@@ -72,6 +78,12 @@ export const handler = toLambdaStreamHandler(app);
       />
 
       <h2>SAM template</h2>
+      <p>
+        DaloyJS requires Node 24+ (<code>engines.node &gt;= 24.0.0</code>). Use
+        the <code>nodejs24.x</code> managed runtime where available, or ship a
+        container image (see Lambda Web Adapter below) if your region&apos;s
+        runtime catalog is older.
+      </p>
       <CodeBlock
         language="yaml"
         code={`# template.yaml
@@ -84,7 +96,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: lambda.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 1024
       Timeout: 30
       FunctionUrlConfig:
@@ -102,8 +114,8 @@ Resources:
         >
           AWS Lambda Web Adapter
         </a>{" "}
-        translates Lambda invocations to plain HTTP. Useful when you want one image for both ECS
-        and Lambda.
+        translates Lambda invocations to plain HTTP. Useful when you want one
+        image for both ECS and Lambda.
       </p>
       <CodeBlock
         language="docker"
@@ -121,16 +133,19 @@ CMD ["node", "dist/server.js"]`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Callback-style handlers (<code>(event, context, callback) =&gt; ...</code>) are not
-          supported on Node 24+. Always use <code>async</code> handlers; the DaloyJS adapter does.
+          Callback-style handlers (
+          <code>(event, context, callback) =&gt; ...</code>) are not supported
+          on Node 24+. Always use <code>async</code> handlers; the DaloyJS
+          adapter does.
         </li>
         <li>
-          For Function URLs with streaming, set <code>InvokeMode: RESPONSE_STREAM</code> and use{" "}
+          For Function URLs with streaming, set{" "}
+          <code>InvokeMode: RESPONSE_STREAM</code> and use{" "}
           <code>toLambdaStreamHandler</code>.
         </li>
         <li>
-          Cold starts: prefer the Node adapter on provisioned concurrency or use a container with
-          the Web Adapter for warmer reuse.
+          Cold starts: prefer the Node adapter on provisioned concurrency or use
+          a container with the Web Adapter for warmer reuse.
         </li>
       </ul>
 
@@ -140,8 +155,8 @@ CMD ["node", "dist/server.js"]`}
           <Link href="/docs/adapters">Adapters overview</Link>
         </li>
         <li>
-          <Link href="/docs/adapters/netlify">Netlify Functions</Link> &mdash; v1 still uses the
-          same Lambda event shape if you need it.
+          <Link href="/docs/adapters/netlify">Netlify Functions</Link> &mdash;
+          v1 still uses the same Lambda event shape if you need it.
         </li>
         <li>
           <Link href="/docs/streaming">Streaming (SSE &amp; NDJSON)</Link>
