@@ -18,7 +18,7 @@ const POSTS = [
       "AI-Friendly Route Metadata: Machine-Readable Examples for Codegen Agents",
     description:
       "DaloyJS 0.14.x adds an optional meta field on every route() \u2014 structured examples, extra description copy, and free-form x-* extensions \u2014 validated against your Standard Schema at build time and surfaced into OpenAPI 3.1 plus sibling routes.json or routes.yaml dumps via daloy inspect --ai. Additive, non-breaking, and built so Hey API, Claude, GPT, and home-grown codegen agents can write correct call sites on the first try.",
-    date: "2026-06-08",
+    date: "2026-06-22",
     readingTime: "11 min read",
     author: "Devlin Duldulao",
   },
@@ -28,7 +28,7 @@ const POSTS = [
       "Branded API Docs Without Losing the Contract: Customizing Scalar in DaloyJS",
     description:
       "DaloyJS 0.14 adds docs.scalar \u2014 a JSON-only knob that lets you theme the Scalar API reference, hide the Try-it button, drop in a brand stylesheet, and pick a layout, without forking the docs route. And because Daloy locks the spec URL to your live OpenAPI path at serialize time, the prettiest docs page in the company can't drift away from the contract.",
-    date: "2026-06-07",
+    date: "2026-06-21",
     readingTime: "10 min read",
     author: "Devlin Duldulao",
   },
@@ -38,7 +38,7 @@ const POSTS = [
       "Designing for Coding Agents: Why DaloyJS Scaffolds AGENTS.md and Skills",
     description:
       "Every project created by create-daloy ships with a short AGENTS.md and a focused .agents/skills/daloyjs-best-practices/SKILL.md. Here's why those two files matter, why they're intentionally small, and how they let Copilot, Claude Code, Cursor, Codex, and friends make safer edits in your scaffolded DaloyJS app from the first prompt.",
-    date: "2026-06-06",
+    date: "2026-06-21",
     readingTime: "11 min read",
     author: "Devlin Duldulao",
   },
@@ -48,7 +48,7 @@ const POSTS = [
       "The DaloyJS CLI: Inspecting Routes, Schemas, OpenAPI, and Contract Health",
     description:
       "daloy inspect is the CLI you point at your App before a PR merges. It prints the full route table, schema presence, contract issues, and the live OpenAPI 3.1 document \u2014 loaded straight from your TypeScript entry through tsx with zero build step. This is the API-surface review tool platform teams keep wishing they had.",
-    date: "2026-06-05",
+    date: "2026-06-21",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
   },
@@ -57,7 +57,7 @@ const POSTS = [
     title: "Plugin Lifecycle Events for Large-Team Framework Code",
     description:
       "Why DaloyJS exposes onPluginInstalled() and onShutdown() as first-class events, and how a platform team uses them to ship observability, service registration, graceful drain, metrics flushing, and policy plugins that every route inherits \u2014 without a single import in the route files themselves.",
-    date: "2026-06-04",
+    date: "2026-06-21",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -67,7 +67,7 @@ const POSTS = [
       "Observability Without Lock-In: Structured Logs and OpenTelemetry-Compatible Tracing",
     description:
       "How DaloyJS gives you per-request structured logs, correlated request IDs, Server-Timing, and OpenTelemetry-shaped spans \u2014 without taking a hard dependency on @opentelemetry/api. The result is a single observability story that runs identically on Node, Bun, Workers, and Vercel Edge, with any tracer you bring.",
-    date: "2026-06-03",
+    date: "2026-06-21",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -85,7 +85,7 @@ const POSTS = [
     title: "File Uploads Without Framework Lock-In: Multipart in DaloyJS",
     description:
       "The fileField() and multipartObject() helpers: per-file size caps, MIME allowlists with wildcards, filename predicates, strict field validation, and OpenAPI binary schema emission \u2014 all while keeping the file as a Web standard File/Blob you can stream straight to S3, R2, or disk on any runtime.",
-    date: "2026-06-02",
+    date: "2026-05-20",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
   },
@@ -94,7 +94,7 @@ const POSTS = [
     title: "OpenAPI 3.1 Extras: Webhooks, Callbacks, and Discriminators",
     description:
       "A practical tour of the OpenAPI 3.1 features your generated clients are quietly waiting for: top-level webhooks for event-driven APIs, route-level callbacks for payment-style async flows, and the discriminator()/discriminatedUnion() pair that turns polymorphic payloads into tagged TypeScript unions you can switch on with confidence.",
-    date: "2026-06-01",
+    date: "2026-05-20",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -104,7 +104,7 @@ const POSTS = [
       "Middleware Without Mystery: Hooks, Ordering, and Response Transformation",
     description:
       "The DaloyJS request lifecycle, end to end: onRequest \u2192 beforeHandle \u2192 handler \u2192 afterHandle \u2192 onSend \u2192 onResponse, plus onError on the error path. Where each hook fires, what it can change, how scopes compose (global \u2192 group \u2192 route), and what to put in which slot \u2014 with real short-circuit, header-stamping, and logging recipes.",
-    date: "2026-05-31",
+    date: "2026-05-20",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -113,7 +113,7 @@ const POSTS = [
     title: "Building a Bookstore API with DaloyJS From Scratch",
     description:
       "A route-by-route walkthrough: create the project with create-daloy, model a Book with Zod, add list / create / fetch-by-id endpoints, watch validation errors arrive as RFC 9457 problem+json automatically, emit OpenAPI, generate a typed client, and write the whole test suite with app.request() \u2014 no HTTP server required.",
-    date: "2026-05-29",
+    date: "2026-05-20",
     readingTime: "14 min read",
     author: "Devlin Duldulao",
   },
@@ -122,7 +122,7 @@ const POSTS = [
     title: "Problem Details Done Right: RFC 9457 Errors in DaloyJS",
     description:
       "Why every framework needs a predictable error contract \u2014 and how DaloyJS uses RFC 9457 application/problem+json for HttpError, ValidationError, UnauthorizedError, TooManyRequestsError, and the rest, with automatic 5xx redaction in production and a Retry-After story that just works.",
-    date: "2026-05-28",
+    date: "2026-05-20",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
   },
@@ -132,7 +132,7 @@ const POSTS = [
       "Scaffolding a Production-Ready DaloyJS App in 60 Seconds with create-daloy",
     description:
       "A tour of pnpm create daloy@latest \u2014 the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel Edge), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
-    date: "2026-05-27",
+    date: "2026-05-19",
     readingTime: "11 min read",
     author: "Devlin Duldulao",
   },
@@ -142,7 +142,7 @@ const POSTS = [
       "Supply-Chain Hardening for TypeScript Libraries: Everything We Did and Why",
     description:
       "A maintainer's field guide to the supply-chain posture we shipped for DaloyJS \u2014 .npmrc that says no by default, pnpm 11 workspace keys (blockExoticSubdeps / strictDepBuilds / verifyDepsBeforeRun), SHA-pinned actions, permissions: {}, no Actions cache on installs, zizmor + Scorecard + CodeQL, npm trusted publishing with provenance, and the create-daloy --with-ci bundle that drops the same posture into your project.",
-    date: "2026-05-26",
+    date: "2026-05-19",
     readingTime: "16 min read",
     author: "Devlin Duldulao",
   },
@@ -152,7 +152,7 @@ const POSTS = [
       "Sessions on the Edge: Signed Cookies, Rotating Secrets, and a Pluggable Store",
     description:
       "Tour of the new session() middleware \u2014 __Host- cookie defaults, secret: [current, ...previous] rotation, regenerate() to kill session fixation, MemorySessionStore for tests, and how to plug in Redis or Workers KV via the SessionStore contract. Pairs naturally with the rate-limit Redis post.",
-    date: "2026-05-25",
+    date: "2026-05-19",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -161,7 +161,7 @@ const POSTS = [
     title: "CSP Nonces and Trusted Types Without Tears",
     description:
       "A practical tour of secureHeaders({ contentSecurityPolicy: { nonce: true, trustedTypes: { policies: [...] } } }) \u2014 how ctx.state.cspNonce flows into a server-rendered template, why the nonce now lands on all four script/style directives, and how to roll out Trusted Types in report-only mode first without setting your weekend on fire.",
-    date: "2026-05-24",
+    date: "2026-05-19",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
   },
@@ -171,7 +171,7 @@ const POSTS = [
       "CSRF in 2026: Why DaloyJS Ships Both Double-Submit and Fetch-Metadata",
     description:
       'A short history of the double-submit cookie, the case for tokenless protection via Sec-Fetch-Site, when each one fails, and why strategy: "both" is the realistic default for apps that still have to serve a 2018 mobile browser somewhere.',
-    date: "2026-05-23",
+    date: "2026-05-19",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -181,7 +181,7 @@ const POSTS = [
       "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge — Verified",
     description:
       "One Bookstore app, five entry files, five deployments — Node serve(), Bun handle.url, Deno onListen, Workers ctx.waitUntil, and Vercel's three handler shapes. With receipts.",
-    date: "2026-05-22",
+    date: "2026-05-18",
     readingTime: "14 min read",
     author: "Devlin Duldulao",
   },
@@ -191,7 +191,7 @@ const POSTS = [
       "Contract-First Without the Codegen Dance: OpenAPI, Typed Client, and Contract Tests From One Definition",
     description:
       "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app) — plus pnpm gen for a Hey API typed fetch SDK your frontend can import.",
-    date: "2026-05-21",
+    date: "2026-05-18",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
   },
@@ -201,7 +201,7 @@ const POSTS = [
       "Secure by Default: The Defaults DaloyJS Ships So You Don't Have To Remember Them",
     description:
       "A tour of the always-on defenses in the DaloyJS request path, plus the opt-in upgrades worth turning on today.",
-    date: "2026-05-20",
+    date: "2026-05-18",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
   },
@@ -210,7 +210,7 @@ const POSTS = [
     title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
     description:
       "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests — and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
-    date: "2026-05-19",
+    date: "2026-05-18",
     readingTime: "11 min read",
     author: "Devlin Duldulao",
   },
