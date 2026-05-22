@@ -184,10 +184,11 @@ export default function RootLayout({
           </footer>
           <BackToTop />
         </ThemeProvider>
+        <SpeedInsights />
+        <Analytics />
       </body>
       <GoogleAnalytics gaId="G-DSBFBZT7RQ" />
-      <SpeedInsights />
-      <Analytics />
+
     </html>
   );
 }
