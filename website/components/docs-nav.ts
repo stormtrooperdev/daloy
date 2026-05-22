@@ -86,6 +86,21 @@ export const docsNav: DocsNavSection[] = [
     ],
   },
   {
+    title: "Payments",
+    items: [
+      { title: "Overview", href: "/docs/payments" as Route },
+      { title: "Shopify", href: "/docs/payments/shopify" as Route },
+      { title: "Braintree (PayPal)", href: "/docs/payments/braintree" as Route },
+      { title: "Authorize.Net", href: "/docs/payments/authorize-net" as Route },
+      { title: "Adyen", href: "/docs/payments/adyen" as Route },
+      { title: "Mollie", href: "/docs/payments/mollie" as Route },
+      { title: "Tap Payments", href: "/docs/payments/tap" as Route },
+      { title: "PayTabs", href: "/docs/payments/paytabs" as Route },
+      { title: "Razorpay", href: "/docs/payments/razorpay" as Route },
+      { title: "Square", href: "/docs/payments/square" as Route },
+    ],
+  },
+  {
     title: "Authentication",
     items: [
       { title: "Overview", href: "/docs/auth" },
