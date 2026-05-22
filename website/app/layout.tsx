@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { LogoLockup } from "@/components/daloyjs-logo";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReadingProgress } from "@/components/reading-progress";
+import { BackToTop } from "@/components/back-to-top";
 import { cn } from "@/lib/utils";
 import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -179,6 +180,7 @@ export default function RootLayout({
               </p>
             </div>
           </footer>
+          <BackToTop />
         </ThemeProvider>
       </body>
       <GoogleAnalytics gaId="G-DSBFBZT7RQ" />
