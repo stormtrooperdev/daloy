@@ -21,13 +21,17 @@ import { Badge } from "../components/ui/badge";
 import { CodeBlock } from "../components/code-block";
 import { ContractFlowVisual } from "../components/contract-flow-visual";
 import { FlowHeroScene } from "../components/flow-hero-scene";
-import { buildMetadata, CORE_PACKAGE_VERSION, SITE_URL } from "@/lib/seo";
+import {
+  buildMetadata,
+  CORE_PACKAGE_VERSION,
+  HOME_DESCRIPTION,
+  HOME_TITLE,
+  SITE_URL,
+} from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title:
-    "DaloyJS - The runtime-portable TypeScript framework with supply-chain-aware defaults",
-  description:
-    "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients. create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, and source-verified lockfiles, with an optional hardened GitHub Actions bundle for teams on GitHub.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   path: "/",
   keywords: [
     "DaloyJS",
@@ -185,8 +189,7 @@ export default function HomePage() {
       name: "DaloyJS",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Cross-platform",
-      description:
-        "The secure-by-default, runtime-portable TypeScript web framework with portable runtime guardrails, pnpm supply-chain hardening, and package provenance you can verify on any CI host. DaloyJS combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients while create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, source-verified lockfiles, a zero-runtime-dependency core, and an optional hardened GitHub Actions bundle for teams on GitHub. Built for the LLM-era surge in supply-chain attacks, with contract-first routing, Standard Schema validation, OpenAPI 3.1 generation, typed clients, streaming, OpenTelemetry tracing, edge-friendly sessions, and core-enforced security guardrails.",
+      description: HOME_DESCRIPTION,
       url: SITE_URL,
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       programmingLanguage: "TypeScript",

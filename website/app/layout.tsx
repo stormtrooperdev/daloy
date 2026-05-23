@@ -9,15 +9,20 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ReadingProgress } from "@/components/reading-progress";
 import { BackToTop } from "@/components/back-to-top";
 import { cn } from "@/lib/utils";
-import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/seo";
+import {
+  DEFAULT_KEYWORDS,
+  HOME_DESCRIPTION,
+  HOME_TITLE,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
 const DEFAULT_TITLE =
-  "DaloyJS — the runtime-portable TypeScript framework with secure-by-default supply-chain hardening";
-const DEFAULT_DESCRIPTION =
-  "DaloyJS is a contract-first TypeScript web framework with secure-by-default runtime guardrails, hardened pnpm installs (ignore-scripts, 24h release-age cooldown), source-verified lockfiles, and a zero-runtime-dependency core published with SBOM and npm provenance — runtime-portable across Node.js, Bun, Deno, Cloudflare Workers, and Vercel Edge. Typed end-to-end with Standard Schema validation, OpenAPI 3.1, and Hey API typed clients. Ships an optional hardened GitHub Actions bundle for teams on GitHub.";
+  `${SITE_NAME} - ${HOME_TITLE}`;
+const DEFAULT_DESCRIPTION = HOME_DESCRIPTION;
 const COPYRIGHT_YEAR = 2026;
 
 export const metadata: Metadata = {

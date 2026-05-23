@@ -13,6 +13,12 @@ export const SITE_NAME = "DaloyJS"
 export const CORE_PACKAGE_VERSION =
   process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION ?? "0.34.3"
 
+export const HOME_TITLE =
+  "The runtime-portable TypeScript framework with supply-chain-aware defaults"
+
+export const HOME_DESCRIPTION =
+  "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients. create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, and source-verified lockfiles, with an optional hardened GitHub Actions bundle for teams on GitHub."
+
 export const SITE_TAGLINE =
   "The runtime-portable TypeScript framework with secure-by-default runtime guardrails, hardened pnpm installs, source-verified lockfiles, and typed end-to-end APIs. Optional hardened GitHub Actions bundle for teams on GitHub."
 

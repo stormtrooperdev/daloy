@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
+import { HOME_TITLE, SITE_NAME } from "@/lib/seo";
 
-export const alt =
-  "DaloyJS — the runtime-portable TypeScript framework with secure-by-default supply-chain hardening";
+export const alt = `${SITE_NAME} - ${HOME_TITLE}`;
 export const size = {
   width: 1200,
   height: 630,
@@ -86,7 +86,7 @@ export default function Image() {
             letterSpacing: 0,
           }}
         >
-          Runtime-portable. Secure by default.
+          Runtime-portable. Supply-chain-aware.
         </div>
         <div
           style={{
