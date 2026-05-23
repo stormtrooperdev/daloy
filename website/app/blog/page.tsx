@@ -13,6 +13,16 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "international-ai-safety-report-2026-minimum-safety-baseline-for-ai-backends",
+    title:
+      "The International AI Safety Report 2026, Translated Into a Minimum Safety Baseline for AI Backends",
+    description:
+      "Aikido's read of the International AI Safety Report 2026 lands on a short list of deployment-time requirements for any backend an autonomous AI system can call \u2014 layered defense, independent verification, prompt-injection-resistant guardrails, network scope control, inference/execution separation, full observability and emergency controls. Here's the honest per-requirement mapping to what a DaloyJS app already enforces by default, what one opt-in line adds, and what still lives above the HTTP layer.",
+    date: "2026-05-24",
+    readingTime: "12 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "secure-sdlc-five-pillars-mapped-to-daloyjs",
     title: "The 5 Pillars of a Secure SDLC, Mapped to DaloyJS",
     description:
