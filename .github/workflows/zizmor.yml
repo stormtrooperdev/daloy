@@ -6,10 +6,19 @@
 # unpinned third-party actions, secret leakage via cache, etc.
 name: Zizmor
 
+# Path filters: zizmor only inspects files under `.github/workflows`, so any
+# change that does not touch a workflow file cannot change its findings.
+# The daily schedule still runs against `main` for drift detection.
 on:
   push:
     branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - ".github/zizmor.yml"
   pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/zizmor.yml"
   schedule:
     - cron: "0 7 * * *"
 

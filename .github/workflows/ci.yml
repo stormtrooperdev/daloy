@@ -19,11 +19,20 @@
 
 name: CI
 
+# Path filters: skip package CI when a change only touches the marketing/docs
+# site. The website has its own Vercel build pipeline and does not consume
+# `@daloyjs/core`, so running the npm-package test matrix on a typo-fix or
+# blog post is pure waste of Actions minutes.
+# If a PR mixes code + docs, any non-ignored path re-enables the full run.
 on:
   pull_request:
+    paths-ignore:
+      - "website/**"
   push:
     branches:
       - main
+    paths-ignore:
+      - "website/**"
 
 permissions: {}
 

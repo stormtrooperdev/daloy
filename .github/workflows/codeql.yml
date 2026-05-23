@@ -1,10 +1,17 @@
 name: CodeQL
 
+# Path filters: skip per-PR/push CodeQL when a change only touches the
+# marketing/docs site. The weekly schedule still covers the whole repo to
+# catch new query rules.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "website/**"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "website/**"
   schedule:
     # Weekly re-scan even when nothing changes — catches new query rules.
     - cron: "37 4 * * 1"
