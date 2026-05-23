@@ -25,9 +25,9 @@ import { buildMetadata, CORE_PACKAGE_VERSION, SITE_URL } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title:
-    "DaloyJS - The runtime-portable TypeScript framework with secure-by-default supply-chain hardening",
+    "DaloyJS - The runtime-portable TypeScript framework with supply-chain-aware defaults",
   description:
-    "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails, pnpm supply-chain hardening, and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients, while create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, source-verified lockfiles, a zero-runtime-dependency core, and an optional hardened GitHub Actions bundle for teams on GitHub.",
+    "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients. create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, and source-verified lockfiles, with an optional hardened GitHub Actions bundle for teams on GitHub.",
   path: "/",
   keywords: [
     "DaloyJS",
@@ -108,8 +108,8 @@ const DEVELOPER_PITCH = [
 const FEATURES = [
   {
     icon: LockIcon,
-    title: "Supply-chain hardened by default",
-    body: "The default pnpm scaffold ships a hardened .npmrc: ignore-scripts=true blocks malicious post-install payloads, minimum-release-age=1440 waits out fresh-package attacks, and verify-store-integrity keeps installs honest. The generated CI bundle adds lockfile source checks so git deps and non-registry tarballs cannot quietly sneak in.",
+    title: "Supply-chain-hardened pnpm scaffolds",
+    body: "Pick pnpm in create-daloy and you get a hardened .npmrc out of the box: ignore-scripts=true blocks malicious post-install payloads, minimum-release-age=1440 waits out fresh-package attacks, and verify-store-integrity keeps installs honest. The optional GitHub Actions bundle adds lockfile source checks so git deps and non-registry tarballs cannot quietly sneak in.",
   },
   {
     icon: ShieldCheckIcon,
@@ -228,8 +228,8 @@ export default function HomePage() {
               className="float-up max-w-4xl text-4xl leading-tight font-bold tracking-tight sm:text-5xl lg:text-6xl"
               style={{ animationDelay: "80ms" }}
             >
-              The runtime-portable TypeScript framework with secure-by-default
-              supply-chain hardening
+              The runtime-portable TypeScript framework with supply-chain-aware
+              defaults
             </h1>
             <p
               className="float-up max-w-3xl text-base font-medium text-foreground/80 sm:text-lg"
@@ -377,11 +377,12 @@ export default function HomePage() {
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold tracking-tight">Why DaloyJS</h2>
             <p className="mx-auto mt-3 max-w-2xl leading-8 text-muted-foreground">
-              The JS framework that is <strong>secure by default</strong> — and
-              hands that same protection to every project scaffolded with{" "}
-              <code>create-daloy</code>, so your supply chain is hardened
-              against LLM-era attacks from day one, without giving up OpenAPI
-              ergonomics, runtime portability, typed clients, or Node ops.
+              The JS framework that is <strong>secure by default</strong> at the
+              runtime layer — and ships <code>create-daloy</code> with pnpm
+              install-time hardening and an optional hardened GitHub Actions
+              bundle, so the app-safe pieces of the LLM-era supply-chain defense
+              are on the happy path without giving up OpenAPI ergonomics,
+              runtime portability, typed clients, or Node ops.
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
