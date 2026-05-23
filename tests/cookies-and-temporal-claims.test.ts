@@ -469,6 +469,69 @@ test("verify-no-unsafe-buffer accepts the live src/ tree", async () => {
   );
 });
 
+// ---------- verify-no-weak-random (Aikido Python Top 10 #10 gate) ----------
+
+test("verify-no-weak-random flags Math.random() without the allow marker", async () => {
+  const { findForbiddenWeakRandomCalls } = await import(
+    "../scripts/verify-no-weak-random.js"
+  );
+  const sample = [
+    "// non-crypto token mint -- should trip",
+    "const tok = Math.random().toString(36).slice(2);",
+    "",
+    "// spaced variant -- should also trip",
+    "const jitter = Math . random ( ) * 1000;",
+  ].join("\n");
+  const findings = findForbiddenWeakRandomCalls("sample.ts", sample);
+  assert.equal(findings.length, 2);
+  assert.match(findings[0]!.reason, /non-cryptographic/);
+  assert.match(findings[0]!.text, /Math\.random/);
+  assert.match(findings[1]!.text, /Math \. random/);
+});
+
+test("verify-no-weak-random ignores Math.random() inside comments, strings, and allow-marked lines", async () => {
+  const { findForbiddenWeakRandomCalls } = await import(
+    "../scripts/verify-no-weak-random.js"
+  );
+  const sample = [
+    "/* Block comment about Math.random() must not trip. */",
+    'const msg = "do not call Math.random() here";',
+    "// inline mention of Math.random() in a line comment is also fine",
+    "// allow-marked fallback (documented runtime gap)",
+    "const fallback = Math.random().toString(36); // daloy-allow-weak-random: only runs when Web Crypto is unavailable",
+    "const safe = crypto.randomUUID();",
+  ].join("\n");
+  const findings = findForbiddenWeakRandomCalls("sample.ts", sample);
+  assert.equal(findings.length, 0);
+});
+
+test("verify-no-weak-random accepts the live src/ tree", async () => {
+  const { findForbiddenWeakRandomCalls } = await import(
+    "../scripts/verify-no-weak-random.js"
+  );
+  const { readFile, readdir } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const srcRoot = path.resolve(process.cwd(), "src");
+  async function* walk(dir: string): AsyncGenerator<string> {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const child = path.join(dir, entry.name);
+      if (entry.isDirectory()) yield* walk(child);
+      else if (entry.isFile() && /\.(?:m?ts|m?js)$/.test(entry.name)) yield child;
+    }
+  }
+  let total = 0;
+  for await (const absolute of walk(srcRoot)) {
+    const rel = path.relative(process.cwd(), absolute);
+    const text = await readFile(absolute, "utf8");
+    total += findForbiddenWeakRandomCalls(rel, text).length;
+  }
+  assert.equal(
+    total,
+    0,
+    "src/ must remain free of `Math.random()` outside the allow-marked Web-Crypto fallback; see https://www.aikido.dev/blog/python-security-vulnerabilities (item #10)",
+  );
+});
+
 // ---------- verify-no-remote-exec (Aikido BlokTrooper gate) ----------
 
 test("verify-no-remote-exec flags every documented BlokTrooper-class primitive", async () => {

@@ -196,7 +196,7 @@ export function randomId(): string {
     return Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join("");
   }
   // Last-resort fallback (should never trigger on Node 20+/Bun/Deno/Workers).
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`; // daloy-allow-weak-random: Web Crypto unavailable; documented in randomId() TSDoc above.
 }
 
 /**
