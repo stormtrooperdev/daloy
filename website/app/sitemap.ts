@@ -161,6 +161,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/security/compression", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/security/secure-defaults-enforcement", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/security/session", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/security/compliance", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/adapters", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/adapters/node", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/adapters/bun", changeFrequency: "monthly", priority: 0.7 },
