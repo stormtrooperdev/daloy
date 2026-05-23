@@ -115,6 +115,7 @@ export const docsNav: DocsNavSection[] = [
     title: "Production",
     items: [
       { title: "Security", href: "/docs/security" },
+      { title: "OWASP API Top 10 mapping", href: "/docs/security/owasp-api-top-10" as Route },
       { title: "Runtime protections (portable)", href: "/docs/security/runtime-protections" as Route },
       { title: "Secure-by-default", href: "/docs/security/secure-defaults" },
       { title: "Boot guards", href: "/docs/security/boot-guards" },

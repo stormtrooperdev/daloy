@@ -494,6 +494,21 @@ provenance=true`}
         <code>pnpm audit --prod</code> in CI and before release.
       </p>
 
+      <h2>OWASP API Security Top 10 mapping</h2>
+      <p>
+        For a per-item walkthrough of how Daloy addresses every entry in the{" "}
+        <a
+          href="https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          OWASP API Security Top 10 (2023)
+        </a>{" "}
+        &mdash; plus the cross-cutting best practices (encryption, validation,
+        rate limiting, logging, inventory, third-party API safety) &mdash; read{" "}
+        <a href="/docs/security/owasp-api-top-10">OWASP API Top 10 mapping</a>.
+      </p>
+
       <h2>Reporting a vulnerability</h2>
       <p>
         Use GitHub&apos;s private vulnerability reporting at{" "}
