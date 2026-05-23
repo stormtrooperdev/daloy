@@ -15,6 +15,8 @@ export const metadata = buildMetadata({
     "Shai-Hulud",
     "TanStack postmortem",
     "GitHub Actions hardening",
+    "quantum incident response",
+    "Aikido safe-chain",
   ],
   type: "article",
 });
@@ -188,6 +190,47 @@ strict-peer-dependencies=true`}
         through as ordinary version churn.
       </p>
 
+      <h2>Optional: install-time malware scanners</h2>
+      <p>
+        The 24-hour <code>minimum-release-age</code> cooldown is what bridges
+        the gap between a malicious version being published and the registry
+        yanking it. Aikido&apos;s{" "}
+        <a
+          href="https://www.aikido.dev/blog/quantum-incident-response"
+          target="_blank"
+          rel="noreferrer"
+        >
+          &ldquo;quantum incident response&rdquo;
+        </a>{" "}
+        write-up makes the point that you cannot out-react an npm worm once it
+        lands &mdash; prevention at install time is the only viable defense.
+        DaloyJS&apos;s install defaults already implement that thesis (cooldown,
+        no transitive lifecycle hooks, zero runtime deps in{" "}
+        <code>@daloyjs/core</code>, frozen + verified store). For belt-and-
+        braces beyond the cooldown, install a real-time scanner that intercepts
+        package-manager calls and checks each requested version against a live
+        malware feed before it touches disk:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`# Aikido Safe Chain — free, no account required.
+# Wraps npm / pnpm / yarn / npx / pnpx and refuses known-malicious
+# package versions before they install.
+npm install -g @aikidosec/safe-chain
+safe-chain setup`}
+      />
+      <p>
+        DaloyJS deliberately does <strong>not</strong> add{" "}
+        <code>safe-chain</code> (or any other third-party scanner) as a
+        dependency or scaffold default &mdash; <code>@daloyjs/core</code> ships
+        zero runtime dependencies by policy and any install-time tool you run is
+        your trust decision, not the framework&apos;s. Equivalent commercial
+        offerings (Socket, Snyk Advisor, JFrog Curation, npm&apos;s own Package
+        Trust) sit at the same layer; pick one or run none, but understand that{" "}
+        <code>minimum-release-age=1440</code> is already doing most of the work
+        the article recommends.
+      </p>
+
       <h2>What to do if a maintainer account is phished</h2>
       <p>
         The September 2025 chalk/debug compromise started with a single fake{" "}
@@ -266,6 +309,18 @@ strict-peer-dependencies=true`}
 
       <h2>Further reading</h2>
       <ul>
+        <li>
+          <a
+            href="https://www.aikido.dev/blog/quantum-incident-response"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Aikido: Quantum incident response
+          </a>{" "}
+          &mdash; why traditional IR cannot catch an npm worm, and why
+          install-time prevention (cooldowns, blocked scripts, malware-feed
+          scanners) is the only viable defense.
+        </li>
         <li>
           <a
             href="https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
