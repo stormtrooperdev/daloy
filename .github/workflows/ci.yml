@@ -101,6 +101,9 @@ jobs:
       - name: Verify no runtime registry-exfiltration primitives (Socket GemStuffer gate)
         run: pnpm verify:no-registry-exfiltration
 
+      - name: Verify dev-dependency license posture (Aikido continuous-code-quality license gate)
+        run: pnpm verify:dep-licenses
+
       - name: Verify GitHub Actions are SHA-pinned (Socket tj-actions/changed-files CVE-2025-30066 gate)
         run: pnpm verify:actions-pinned
 
