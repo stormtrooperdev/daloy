@@ -165,6 +165,20 @@ For Node-style templates, the bundle adds:
   *after* the last PR or push and provides SOC 2 CC7.1
   ([continuous vulnerability management](https://www.aikido.dev/blog/a-guide-to-automating-technical-vulnerability-management-for-soc-2))
   evidence even when developers are not touching the repo.
+- `.github/workflows/osv-scan.yml` — a SECOND, independent SCA source.
+  `vuln-scan.yml` queries the package manager's audit feed (GHSA); this one
+  runs Google's OSV-Scanner against the committed lockfile and cross-references
+  the OpenSSF
+  [malicious-packages](https://github.com/ossf/malicious-packages) corpus, so
+  a malware advisory that lands in OSV.dev before it propagates to GHSA still
+  fails the build. The binary is downloaded from a pinned official release and
+  verified by SHA-256 before execution — no third-party action is added to the
+  supply chain just for this scan. This is the missing layer the Aikido
+  [SAST vs SCA](https://www.aikido.dev/blog/sast-vs-sca) and
+  [npm-audit-guide](https://www.aikido.dev/blog/npm-audit-guide) write-ups
+  warn about, and the Deno scaffold gets it too (Deno has no `audit` built
+  in, so without OSV-Scanner a Deno scaffold would have no scheduled SCA at
+  all).
 - `.github/workflows/secret-scan.yml` — runs [gitleaks](https://github.com/gitleaks/gitleaks)
   on every PR / push (working tree) and on a daily schedule across the **full
   git history**, so a credential leaked anywhere in any commit, branch, or tag
@@ -184,8 +198,9 @@ out a reusable package, opt into npm trusted publishing yourself.
 
 For `deno-basic`, `--with-ci` generates a Deno-native CI workflow, a manual-only
 container publish starter for GHCR that is guarded to `main` or a tag by
-default, plus CodeQL, Scorecard, zizmor, Dependabot for GitHub Actions,
-CODEOWNERS, and `SECURITY.md`.
+default, plus CodeQL, Opengrep, **OSV-Scanner** (the only scheduled SCA layer
+a Deno scaffold has, since Deno ships no `audit`), Scorecard, zizmor,
+Dependabot for GitHub Actions, CODEOWNERS, and `SECURITY.md`.
 
 If you want the governance bundle but not the deployment starter, pass
 `--with-ci --no-deploy`. If you only want a deployment starter, pass

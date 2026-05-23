@@ -494,6 +494,7 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
     await access(path.join(projectDir, ".github/workflows/ci.yml"));
     await access(path.join(projectDir, ".github/workflows/deploy.yml"));
     await access(path.join(projectDir, ".github/workflows/vuln-scan.yml"));
+    await access(path.join(projectDir, ".github/workflows/osv-scan.yml"));
     await access(path.join(projectDir, ".github/workflows/codeql.yml"));
     await access(path.join(projectDir, ".github/workflows/scorecard.yml"));
     await access(path.join(projectDir, ".github/workflows/zizmor.yml"));
@@ -575,6 +576,24 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
     assert.match(vulnScan, /cron: "13 6 \* \* \*"/);
     assert.doesNotMatch(vulnScan, /__[A-Z_]+__/);
 
+    // Second-source SCA gate (Aikido "SAST vs SCA" / npm-audit-guide).
+    // OSV-Scanner is downloaded by pinned SHA-256 from the official
+    // google/osv-scanner release — no third-party action wrapper.
+    const osvScan = await readFile(
+      path.join(projectDir, ".github/workflows/osv-scan.yml"),
+      "utf8",
+    );
+    assert.match(osvScan, /name: OSV scan/);
+    assert.match(osvScan, /permissions:\s*\{\}/);
+    assert.match(osvScan, /OSV_SCANNER_VERSION:/);
+    assert.match(osvScan, /OSV_SCANNER_SHA256:\s*"[0-9a-f]{64}"/);
+    assert.match(osvScan, /sha256sum --check --status/);
+    assert.match(osvScan, /\.\/osv-scanner scan source --recursive/);
+    assert.match(osvScan, /step-security\/harden-runner@[0-9a-f]{40}\s+# v2/);
+    assert.match(osvScan, /actions\/checkout@[0-9a-f]{40}\s+# v6/);
+    assert.match(osvScan, /cron: "47 6 \* \* \*"/);
+    assert.doesNotMatch(osvScan, /uses:\s*google\/osv-scanner-action/);
+
     const containerScan = await readFile(
       path.join(projectDir, ".github/workflows/container-scan.yml"),
       "utf8",
@@ -650,6 +669,10 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
     assert.match(
       codeowners,
       /\/\.github\/workflows\/vuln-scan\.yml\s+@acme\/security/,
+    );
+    assert.match(
+      codeowners,
+      /\/\.github\/workflows\/osv-scan\.yml\s+@acme\/security/,
     );
     assert.doesNotMatch(codeowners, /release\.yml/);
   } finally {
@@ -1144,6 +1167,7 @@ test("--with-ci scaffolds runtime-native security files for deno-basic", async (
       access(path.join(projectDir, "scripts/verify-lockfile-sources.mjs")),
     );
     await access(path.join(projectDir, ".github/workflows/container-scan.yml"));
+    await access(path.join(projectDir, ".github/workflows/osv-scan.yml"));
 
     const ci = await readFile(
       path.join(projectDir, ".github/workflows/ci.yml"),
@@ -1153,6 +1177,24 @@ test("--with-ci scaffolds runtime-native security files for deno-basic", async (
     assert.match(ci, /deno task typecheck/);
     assert.match(ci, /deno task test/);
     assert.doesNotMatch(ci, /pull_request_target/);
+
+    // Second-source SCA gate for the Deno scaffold (Aikido "SAST vs
+    // SCA"). Deno has no `audit` built in, so OSV-Scanner is the only
+    // scheduled SCA layer covering `deno.lock`.
+    const osvScan = await readFile(
+      path.join(projectDir, ".github/workflows/osv-scan.yml"),
+      "utf8",
+    );
+    assert.match(osvScan, /name: OSV scan/);
+    assert.match(osvScan, /permissions:\s*\{\}/);
+    assert.match(osvScan, /OSV_SCANNER_VERSION:/);
+    assert.match(osvScan, /OSV_SCANNER_SHA256:\s*"[0-9a-f]{64}"/);
+    assert.match(osvScan, /sha256sum --check --status/);
+    assert.match(osvScan, /--lockfile=deno\.lock/);
+    assert.match(osvScan, /step-security\/harden-runner@[0-9a-f]{40}\s+# v2/);
+    assert.match(osvScan, /actions\/checkout@[0-9a-f]{40}\s+# v6/);
+    assert.match(osvScan, /cron: "47 6 \* \* \*"/);
+    assert.doesNotMatch(osvScan, /uses:\s*google\/osv-scanner-action/);
 
     const dependabot = await readFile(
       path.join(projectDir, ".github/dependabot.yml"),
