@@ -13,6 +13,7 @@ import {
 import { buttonVariants } from "./ui/button";
 import { LogoMark } from "./daloyjs-logo";
 import { NavLink } from "./nav-link";
+import { PwaInstallButton } from "./pwa-install-button";
 import { ThemeSwitcher } from "./theme-switcher";
 import { CORE_PACKAGE_VERSION } from "@/lib/seo";
 
@@ -150,6 +151,8 @@ export function SiteHeader() {
 
             <ThemeSwitcher />
 
+            <PwaInstallButton onInstalled={closeMobileNav} />
+
             <div className="hidden items-center gap-2 xl:flex">
               {socialLinks.map((link) => {
                 const Icon = link.icon;
@@ -256,6 +259,11 @@ export function SiteHeader() {
                 </nav>
 
                 <div className="mt-2 flex items-center gap-2 border-t border-border px-1 pt-2">
+                  <PwaInstallButton
+                    className="flex-1 px-3"
+                    onInstalled={closeMobileNav}
+                  />
+
                   {socialLinks.map((link) => {
                     const Icon = link.icon;
 

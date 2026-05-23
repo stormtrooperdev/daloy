@@ -8,6 +8,7 @@ import { LogoLockup } from "@/components/daloyjs-logo";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReadingProgress } from "@/components/reading-progress";
 import { BackToTop } from "@/components/back-to-top";
+import { PwaServiceWorker } from "@/components/pwa-service-worker";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_KEYWORDS,
@@ -20,8 +21,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
-const DEFAULT_TITLE =
-  `${SITE_NAME} - ${HOME_TITLE}`;
+const DEFAULT_TITLE = `${SITE_NAME} - ${HOME_TITLE}`;
 const DEFAULT_DESCRIPTION = HOME_DESCRIPTION;
 const COPYRIGHT_YEAR = 2026;
 
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
+  manifest: "/manifest.webmanifest",
   generator: "Next.js",
   keywords: DEFAULT_KEYWORDS,
   authors: [{ name: "DaloyJS contributors", url: SITE_URL }],
@@ -191,6 +192,7 @@ export default function RootLayout({
         </ThemeProvider>
         <SpeedInsights />
         <Analytics />
+        <PwaServiceWorker />
       </body>
       <GoogleAnalytics gaId="G-DSBFBZT7RQ" />
     </html>
