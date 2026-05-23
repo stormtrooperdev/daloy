@@ -57,6 +57,39 @@ SHA-pinned open-source tooling:
   - All findings are uploaded as SARIF to the GitHub **Code Scanning**
     tab alongside CodeQL.
 
+## Cloud posture (operator checklist)
+
+The framework cannot author your cloud configuration for you, but the
+[Aikido "Top 7 Cloud Security Vulnerabilities"](https://www.aikido.dev/blog/top-cloud-security-vulnerabilities)
+write-up maps cleanly onto a short checklist. Adopt these alongside the
+container and CI defaults above:
+
+- **IMDSv2 only.** On EC2 / equivalent, require token-based IMDSv2 and disable
+  IMDSv1 at the launch-template / instance-metadata-options level. Combined
+  with the framework's `fetchGuard()` on user-controlled outbound fetches,
+  this closes the Capital One 2019 / Pandoc CVE-2025-51591 SSRF → IAM chain.
+- **Least-privilege execution role.** Scope the workload's IAM role to the
+  minimum actions and resource ARNs the handler actually calls (e.g.
+  `s3:GetObject` on a single bucket prefix, never `s3:*`). Enable IAM Access
+  Analyzer / unused-permission scans and prune quarterly.
+- **Pod security on Kubernetes.** Deploy with `runAsNonRoot: true`,
+  `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`,
+  `capabilities: { drop: ["ALL"] }`, and `automountServiceAccountToken: false`
+  on pods that do not call the kube API. The shipped `Dockerfile` already
+  runs as non-root UID 1001 with no writable paths required at runtime, so
+  these settings work out of the box.
+- **Network segmentation.** Keep development, staging, and production in
+  separate cloud accounts / projects. Apply default-deny `NetworkPolicy` (k8s)
+  or Security Group egress rules so a compromised workload cannot freely
+  reach the metadata service, the database tier, or the internet.
+- **Log agent isolation.** If you run FluentBit / Vector / Fluentd as a
+  sidecar or DaemonSet, run it under its own ServiceAccount with read-only
+  access to the log path, pin the agent image to a digest, and subscribe to
+  its CVE feed (FluentBit had CVE-2025-12969 auth bypass + CVE-2025-12972
+  path traversal disclosed in 2025). The framework's structured logger
+  already redacts known credential shapes **before** the line leaves the
+  process, so a compromised agent receives pre-redacted data.
+
 ## Required repository settings
 
 Before relying on these files for a company project:

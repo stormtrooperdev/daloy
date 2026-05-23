@@ -26,6 +26,32 @@ The `--with-ci` bundle adds these defaults:
 - CodeQL, OpenSSF Scorecard, zizmor, Dependabot for GitHub Actions and Docker
 	base images, and CODEOWNERS are generated.
 
+## Cloud posture (operator checklist)
+
+The framework cannot author your cloud configuration for you, but the
+[Aikido "Top 7 Cloud Security Vulnerabilities"](https://www.aikido.dev/blog/top-cloud-security-vulnerabilities)
+write-up maps cleanly onto a short checklist. Adopt these alongside the
+container and CI defaults above:
+
+- **IMDSv2 only.** On EC2 / equivalent, require token-based IMDSv2 and disable
+  IMDSv1. Combined with the framework's `fetchGuard()` on user-controlled
+  outbound fetches, this closes the Capital One 2019 / Pandoc CVE-2025-51591
+  SSRF → IAM chain.
+- **Least-privilege execution role.** Scope the workload's IAM role to the
+  minimum actions and resource ARNs the handler actually calls (e.g.
+  `s3:GetObject` on a single bucket prefix, never `s3:*`).
+- **Pod security on Kubernetes.** `runAsNonRoot: true`,
+  `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`,
+  `capabilities: { drop: ["ALL"] }`, and `automountServiceAccountToken: false`
+  on pods that do not call the kube API.
+- **Network segmentation.** Keep dev / staging / prod in separate accounts /
+  projects. Apply default-deny `NetworkPolicy` or Security Group egress so a
+  compromised workload cannot freely reach the metadata service or the
+  database tier.
+- **Log agent isolation.** Run FluentBit / Vector under its own ServiceAccount
+  with read-only access to the log path, pin the agent image to a digest, and
+  subscribe to its CVE feed.
+
 ## Required repository settings
 
 Before relying on these files for a company project:

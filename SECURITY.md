@@ -557,6 +557,55 @@ not mis-scope the claim:
   removing them from the scaffolded template is an opt-out away from
   the shipped posture and outside what the framework can enforce.
 
+### Aikido "Top 7 cloud security vulnerabilities" mapping
+
+The Aikido 2025-12-04 write-up
+["Top 7 Cloud Security Vulnerabilities"](https://www.aikido.dev/blog/top-cloud-security-vulnerabilities)
+enumerates seven recurring failure modes that put cloud workloads in the
+news: Instance Metadata Service (IMDS) abuse, Kubernetes cluster CVEs,
+weak network segmentation, FluentBit logging-agent CVEs, vulnerable
+container base images, misconfigured firewalls / WAFs (the Capital One
+SSRF → IMDS chain), and over-permissive serverless / IAM. DaloyJS is a
+web framework, not a cloud platform — Kubernetes cluster security, VPC
+segmentation, and IAM policy authoring are operator territory by
+definition — but for every item the framework can plausibly influence
+the controls already ship in core or in `create-daloy`'s scaffolded
+templates. The table below is the explicit mapping so an operator
+evaluating Daloy against the article can answer "what does the
+framework already do, and what is left for me?" without grepping the
+codebase.
+
+| Aikido item | DaloyJS / `create-daloy` control |
+| --- | --- |
+| **1. IMDS Vulnerability** (CVE-2025-51591 Pandoc-style SSRF to `169.254.169.254` to steal short-lived IAM credentials). | `fetchGuard()` ([`src/fetch-guard.ts`](src/fetch-guard.ts)) is the framework-layer prevention for this exact class. Default-deny posture rejects every documented cloud metadata IP — AWS / Azure / DigitalOcean `169.254.169.254` (link-local), GCP `metadata.google.internal` (link-local), Alibaba `100.100.100.200` (CGNAT, always-deny), Oracle Cloud `192.0.0.192` (IANA-reserved, always-deny) — before any network call. Redirects are followed manually with re-validation at every hop so a `302 → http://169.254.169.254/` cannot bypass the check; `file:` / `data:` / `gopher:` / `ftp:` are rejected pre-DNS; IPv4-mapped IPv6 (`::ffff:169.254.169.254`) is recursively re-checked against the embedded IPv4. The framework cannot force the host to run IMDSv2 — that is an EC2 launch-template setting — but the SSRF path the Pandoc attack relied on is closed at the handler boundary when user-controlled outbound fetches go through `fetchGuard()`. Regression-tested in [`tests/fetch-guard.test.ts`](tests/fetch-guard.test.ts) (literal `169.254.169.254`, IPv4-mapped IPv6 form, DNS-resolution-time, and redirect-time variants). See also the **Outbound SSRF** row in the in-scope table above. |
+| **2. Kubernetes Vulnerabilities** (CVE-2020-8559 default service-account token abuse, cluster-level privilege escalation). | Out of scope at the framework layer — kube-apiserver patching, RBAC, NetworkPolicy, and PodSecurity admission are cluster-operator concerns. Daloy's contribution is the workload-side defense in depth that limits blast radius if a pod is compromised: the scaffolded [`_Dockerfile`](packages/create-daloy/templates/node-basic/_Dockerfile) runs as non-root UID 1001 with `tini` as PID 1 and no `curl` / package manager in the runtime stage; the scaffolded [`SECURITY.md`](packages/create-daloy/templates/_ci/node/SECURITY.md) instructs operators to deploy with `readOnlyRootFilesystem: true`, drop all capabilities, set `automountServiceAccountToken: false` on pods that don't need the kube API, and bind the workload to a dedicated ServiceAccount with the minimum RBAC verbs needed. A compromised handler in a Daloy pod cannot mint new tokens or write to the filesystem if these are set. |
+| **3. Weak Network Segmentation** (flat networks → lateral movement, Target-2013-style). | Operator territory by definition — VPC / subnet / SecurityGroup / NetworkPolicy design is not something a web framework can author for you. Daloy's contribution is to make the workload behave correctly inside a properly segmented network: `ipRestriction()` ([`src/ip-restriction.ts`](src/ip-restriction.ts)) gives handler-level CIDR allow/deny against the post-proxy client IP; `connInfo()` ([`src/conn-info.ts`](src/conn-info.ts)) honors a configured trusted-proxy chain rather than naively trusting `X-Forwarded-For` (so an attacker on a flat overlay cannot spoof a "trusted internal" client IP through the workload); the scaffolded `SECURITY.md` calls out separate dev / staging / prod accounts and least-privilege egress as required posture. The **Trusted-proxy header spoofing** row in the in-scope table above is the regression-tested guarantee for the workload half. |
+| **4. FluentBit Vulnerabilities** (CVE-2025-12969 auth bypass, CVE-2025-12972 path traversal via unsanitized tag values, etc. — log agent compromise → log tampering, RCE). | Daloy does not bundle, embed, or recommend a specific log-shipping agent. The core logger ([`src/logger.ts`](src/logger.ts)) emits structured JSON to stdout with `redactRecord()` masking `authorization`, `cookie`, `set-cookie`, `proxy-authorization`, AWS / GitHub / npm / Stripe / Slack token shapes, JWT, PEM blocks, and `*_authToken=` patterns **before** the log line leaves the process — so even if FluentBit (or any log agent) is later compromised on the host, the pre-redacted payload denies the agent a credential to exfiltrate. Operators choose their own log shipper; the scaffolded `SECURITY.md` recommends running it in a sidecar with its own ServiceAccount and pinning its image digest. The **Token-value leaked into a log line** mapping below is the regression posture for the framework half of this surface. |
+| **5. Container Image Vulnerabilities** (vulnerable base images, transitive CVEs in the runtime layer). | Covered in detail in the **Aikido x Root.io container & base-image hardening mapping** above. Short version: shipped [`_Dockerfile`](packages/create-daloy/templates/node-basic/_Dockerfile) uses a `NODE_IMAGE` build-arg so operators can pin to a digest (`node:22-bookworm-slim@sha256:…`), runs as non-root UID 1001 with `tini` as PID 1, ships no `curl` / package manager in the runtime stage, sets `STOPSIGNAL SIGTERM` and a `HEALTHCHECK` against `/readyz`, and uses `pnpm install --frozen-lockfile --ignore-scripts` in the build stage. The scaffolded [`container-scan.yml`](packages/create-daloy/templates/_ci/node/_github/workflows/container-scan.yml) runs hadolint + Trivy filesystem + Trivy image (`severity: HIGH,CRITICAL`, blocking on CRITICAL) on every PR, every push to `main`, and on a weekly cron — so a base-image CVE disclosed mid-week surfaces by Monday at the latest even if nobody opens a PR. |
+| **6. Misconfigured Firewalls** (Capital One 2019 — SSRF in the WAF used to reach `169.254.169.254` and steal IAM credentials → 100M records). | Same `fetchGuard()` defense as item 1, applied at the handler layer rather than the WAF layer. The Capital One chain was *WAF SSRF → IMDSv1 → IAM credentials → S3 exfil*. A Daloy handler that wraps user-controlled outbound `fetch` with `fetchGuard()` short-circuits the second hop regardless of how the first hop got there, and the framework's default-deny request path (body cap, header CRLF/NUL rejection, router path-traversal rejection, real `405`, per-handler timeout) makes the WAF's job smaller rather than larger — Daloy is augmenting a default-deny path, not backstopping a permissive one (same posture documented in the **Level 1 — Use a web application firewall (WAF / RASP)** row of the vibe-coders mapping above). The scaffolded `SECURITY.md` also calls out IMDSv2-only as required posture on the underlying compute. |
+| **7. Misconfigured Serverless Functions** (overly permissive IAM, e.g. Lambda with `s3:*` → exfil every bucket). | Operator territory by definition — IAM policy authoring is not something a web framework can do for you, and a Daloy app deployed to Lambda / Cloud Run / Workers / Fly inherits whatever execution role the operator attached. Daloy's contribution is to make the *runtime* posture compatible with least-privilege: zero runtime dependencies in `@daloyjs/core` (no transitive package can demand a permission your IAM role doesn't grant), `defineConfig()` reads from `process.env` / Workers `env` / Deno `Deno.env` so secrets are loaded from the platform's secret manager rather than baked into the image, and the runtime-parity audits ([`pnpm verify:runtime-parity`](scripts)) ensure the same handler runs identically across Node / Bun / Deno / Workers / Vercel without needing a node-only escape hatch. The scaffolded [`SECURITY.md`](packages/create-daloy/templates/_ci/node/SECURITY.md) instructs operators to scope the execution role to the minimum verbs the workload actually calls (S3 `GetObject` on a single prefix, not `s3:*`) and to enable the provider's IAM-access-analyzer / unused-permission scan. |
+
+What this **does not** defend against, said explicitly so operators do
+not mis-scope the claim:
+
+- **Item 1 if the operator never wraps the outbound call.** `fetchGuard()`
+  is opt-in by design — the framework cannot intercept a raw `fetch()` in
+  user code without breaking handlers that legitimately need to call
+  `127.0.0.1` (sidecars), `10.0.0.0/8` (internal services), or
+  `169.254.169.254` (legitimate IMDSv2 reads from a worker). The scaffolded
+  example handlers use `fetchGuard()` for any user-controlled URL and the
+  in-scope table above is explicit about which calls need the wrapper.
+- **Items 2, 3, 7** — kube-apiserver patching, VPC design, and IAM policy
+  authoring. Daloy ships hardened *workload* defaults so the blast radius
+  is contained if these go wrong, but the controls themselves live outside
+  the framework.
+- **Item 4 if a third-party log agent is run with elevated privileges and
+  access to unredacted application memory.** The framework's `redactRecord()`
+  protects the *log line*; it cannot protect against an agent that scrapes
+  `/proc/<pid>/environ` or the workload's secret manager directly. Run the
+  agent as a non-root sidecar with its own ServiceAccount, as the scaffolded
+  `SECURITY.md` recommends.
+
 ### npm publishing
 
 - **Releases are isolated.** The publish workflow
