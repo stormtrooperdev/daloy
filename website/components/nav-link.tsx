@@ -3,7 +3,7 @@
 import type * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, useTransition } from "react";
+import { addTransitionType, Suspense, useTransition } from "react";
 import type { Route } from "next";
 import { useClientPathname } from "@/hooks/use-client-pathname";
 
@@ -91,6 +91,7 @@ function NavLinkInner<T extends string>({
   exact = false,
   onClick,
   target,
+  transitionTypes,
   ...rest
 }: Props<T>) {
   // `useClientPathname` returns null on the server / first client render so
@@ -120,10 +121,12 @@ function NavLinkInner<T extends string>({
 
         e.preventDefault();
         startTransition(() => {
+          transitionTypes?.forEach(addTransitionType);
           router.push(href.toString() as Route);
         });
       }}
       target={target}
+      transitionTypes={transitionTypes}
       {...rest}
     >
       {resolve(children, props)}
