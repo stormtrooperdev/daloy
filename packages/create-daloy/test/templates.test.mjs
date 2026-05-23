@@ -327,6 +327,40 @@ test("pnpm templates ship hardened supply-chain .npmrc defaults", async () => {
   }
 });
 
+test("pnpm templates ship a local SCA `audit` script", async () => {
+  // Aikido's "SCA in the IDE" write-up
+  // (https://www.aikido.dev/blog/sca-in-ide-scan-and-fix-dependencies)
+  // argues that developers should be able to scan their dependency tree
+  // for known CVEs *locally*, not only in CI. DaloyJS already runs
+  // `pnpm audit --prod` and OSV-Scanner on every PR and on a daily
+  // schedule (see `.github/workflows/vuln-scan.yml` and
+  // `.github/workflows/osv-scan.yml`), but the scaffolded user project
+  // is the layer closest to the IDE. Every shippable template must
+  // therefore expose an out-of-the-box `audit` script so a developer can
+  // run a production-tree SCA scan with a single command from their
+  // editor's task runner.
+  const templates = [
+    "node-basic",
+    "vercel-edge",
+    "cloudflare-worker",
+    "bun-basic",
+  ];
+
+  for (const template of templates) {
+    const pkg = JSON.parse(
+      await readFile(
+        path.join(pkgRoot, "templates", template, "package.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(
+      pkg.scripts.audit,
+      "pnpm audit --prod",
+      `${template} should ship an \`audit\` script for local SCA scans`,
+    );
+  }
+});
+
 test("pnpm templates ship workspace-level supply-chain defaults", async () => {
   const templates = [
     "node-basic",

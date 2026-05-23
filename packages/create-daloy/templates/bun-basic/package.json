@@ -13,7 +13,8 @@
     "test": "bun test",
     "gen:openapi": "bun run scripts/dump-openapi.ts",
     "gen:client": "openapi-ts",
-    "gen": "pnpm gen:openapi && pnpm gen:client"
+    "gen": "pnpm gen:openapi && pnpm gen:client",
+    "audit": "pnpm audit --prod"
   },
   "dependencies": {
     "@daloyjs/core": "^0.34.3",
