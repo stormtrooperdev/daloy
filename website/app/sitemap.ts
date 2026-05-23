@@ -13,6 +13,11 @@ const STATIC_PATHS: Array<{
   { path: "/", changeFrequency: "weekly", priority: 1.0 },
   { path: "/blog", changeFrequency: "weekly", priority: 0.8 },
   {
+    path: "/blog/secure-sdlc-five-pillars-mapped-to-daloyjs",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
     path: "/blog/owasp-top-10-agentic-applications-mapped-to-daloyjs",
     changeFrequency: "monthly",
     priority: 0.7,

@@ -13,6 +13,15 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "secure-sdlc-five-pillars-mapped-to-daloyjs",
+    title: "The 5 Pillars of a Secure SDLC, Mapped to DaloyJS",
+    description:
+      "Aikido's 'Secure SDLC Explained' lists the five pillars every engineering team needs \u2014 Visibility, Early Feedback, Developer Adoption, Consistency, Actionability. Here's the honest per-pillar mapping of what a DaloyJS app and its create-daloy scaffold already give you on day one, what you still configure, and the few items no framework can own.",
+    date: "2026-05-24",
+    readingTime: "11 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "owasp-top-10-agentic-applications-mapped-to-daloyjs",
     title:
       "OWASP Top 10 for Agentic Applications (2026), Mapped to the DaloyJS Tool Surface",
