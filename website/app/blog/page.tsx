@@ -13,6 +13,15 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "cloud-security-architecture-mapped-to-daloyjs",
+    title: "Cloud Security Architecture, Mapped to the DaloyJS App Layer",
+    description:
+      "Aikido's 'Cloud Security Architecture' guide is a fine high-level checklist \u2014 Zero Trust, defense-in-depth, IAM, segmentation, IaC scanning, continuous monitoring. Here's the honest, per-principle mapping of what DaloyJS already ships for the application-layer half of that checklist, what the cloud platform still owns, and the opt-ins worth turning on today.",
+    date: "2026-05-23",
+    readingTime: "11 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "ai-friendly-route-metadata-machine-readable-examples-for-codegen-agents",
     title:
       "AI-Friendly Route Metadata: Machine-Readable Examples for Codegen Agents",

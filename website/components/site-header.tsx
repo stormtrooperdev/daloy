@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { buttonVariants } from "./ui/button";
 import { LogoMark } from "./daloyjs-logo";
+import { NavLink } from "./nav-link";
 import { ThemeSwitcher } from "./theme-switcher";
 import { CORE_PACKAGE_VERSION } from "@/lib/seo";
 
@@ -115,30 +116,37 @@ export function SiteHeader() {
 
           <nav className="ml-8 hidden items-center gap-5 text-sm xl:flex">
             {primaryNav.map((item) => (
-              <Link
+              <NavLink
                 key={item.href}
                 href={item.href}
+                exact
                 transitionTypes={["nav-forward"]}
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className={({ isActive }) =>
+                  isActive
+                    ? "font-medium text-foreground transition-colors"
+                    : "text-muted-foreground transition-colors hover:text-foreground"
+                }
               >
                 {item.label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <Link
+            <NavLink
               href="/docs/installation"
               transitionTypes={["nav-forward"]}
               aria-label="Installation"
               onClick={closeMobileNav}
-              className={
-                buttonVariants({ variant: "ghost", size: "sm" }) +
-                " hidden sm:inline-flex xl:hidden"
+              className={({ isActive }) =>
+                buttonVariants({
+                  variant: isActive ? "secondary" : "ghost",
+                  size: "sm",
+                }) + " hidden sm:inline-flex xl:hidden"
               }
             >
               <PackageIcon className="size-4" />
-            </Link>
+            </NavLink>
 
             <ThemeSwitcher />
 
@@ -161,14 +169,19 @@ export function SiteHeader() {
                 );
               })}
 
-              <Link
+              <NavLink
                 href="/docs/installation"
                 transitionTypes={["nav-forward"]}
                 aria-label="Installation"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
+                className={({ isActive }) =>
+                  buttonVariants({
+                    variant: isActive ? "secondary" : "ghost",
+                    size: "sm",
+                  })
+                }
               >
                 <PackageIcon className="size-4" />
-              </Link>
+              </NavLink>
             </div>
 
             <div className="relative xl:hidden">
@@ -212,25 +225,34 @@ export function SiteHeader() {
               >
                 <nav className="flex flex-col gap-1">
                   {primaryNav.map((item) => (
-                    <Link
+                    <NavLink
                       key={item.href}
                       href={item.href}
+                      exact
                       transitionTypes={["nav-forward"]}
                       onClick={closeMobileNav}
-                      className="rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "rounded-lg bg-muted px-3 py-2 text-sm font-medium text-foreground transition-colors"
+                          : "rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                      }
                     >
                       {item.label}
-                    </Link>
+                    </NavLink>
                   ))}
 
-                  <Link
+                  <NavLink
                     href="/docs/installation"
                     transitionTypes={["nav-forward"]}
                     onClick={closeMobileNav}
-                    className="rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "rounded-lg bg-muted px-3 py-2 text-sm font-medium text-foreground transition-colors"
+                        : "rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                    }
                   >
                     Installation
-                  </Link>
+                  </NavLink>
                 </nav>
 
                 <div className="mt-2 flex items-center gap-2 border-t border-border px-1 pt-2">
