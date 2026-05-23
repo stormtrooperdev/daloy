@@ -458,7 +458,16 @@ test("cors preflight from an unknown origin omits allow-origin and still respond
   const res = await app.request("/pre", { method: "OPTIONS", headers: { origin: "https://unknown.test" } });
   assert.equal(res.status, 204);
   assert.equal(res.headers.get("access-control-allow-origin"), null);
-  assert.equal(res.headers.get("access-control-allow-methods"), "GET, HEAD, POST");
+  // Disallowed origins must not learn the configured method/header
+  // allowlist via a preflight — the policy is only echoed to origins
+  // that pass the allowlist check.
+  assert.equal(res.headers.get("access-control-allow-methods"), null);
+  assert.equal(res.headers.get("access-control-allow-headers"), null);
+  assert.equal(res.headers.get("access-control-max-age"), null);
+  // The response still varies on Origin so a shared cache can't serve a
+  // policy-bearing 204 from a previously-allowed origin to this caller.
+  const vary = res.headers.get("vary") ?? "";
+  assert.match(vary, /Origin/);
 });
 
 test("rateLimit cleans up expired entries when buckets grow past the watermark", async () => {

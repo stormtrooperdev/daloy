@@ -49,6 +49,115 @@ test("cors rejects disallowed origins and never emits credentials with wildcard 
   assert.equal(denied.headers.get("access-control-allow-origin"), null);
 });
 
+test("cors emits Vary: Origin even when the origin is rejected (cache poisoning defense)", async () => {
+  // Aikido "CORS Security: Beyond Basic Configuration" §6: a shared cache
+  // (CDN / reverse proxy) that doesn't vary on Origin can serve a
+  // CORS-bearing response generated for an allowed origin to a different,
+  // disallowed origin. The framework must therefore set Vary: Origin
+  // whenever the response decision *depends on* the Origin header, even
+  // when the answer is "no".
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(cors({ origin: "https://app.example.com" }));
+  app.route({
+    method: "GET",
+    path: "/v",
+    operationId: "v",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: { ok: true } }),
+  });
+
+  const allowed = await app.request("/v", { headers: { origin: "https://app.example.com" } });
+  assert.match(allowed.headers.get("vary") ?? "", /Origin/);
+  assert.equal(allowed.headers.get("access-control-allow-origin"), "https://app.example.com");
+
+  const denied = await app.request("/v", { headers: { origin: "https://evil.test" } });
+  assert.equal(denied.headers.get("access-control-allow-origin"), null);
+  assert.match(denied.headers.get("vary") ?? "", /Origin/);
+});
+
+test("cors preflight varies on Origin + Access-Control-Request-* and hides policy from disallowed origins", async () => {
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(cors({ origin: "https://app.example.com" }));
+  app.route({
+    method: "GET",
+    path: "/p",
+    operationId: "p",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  const allowed = await app.request("/p", {
+    method: "OPTIONS",
+    headers: { origin: "https://app.example.com", "access-control-request-method": "GET" },
+  });
+  assert.equal(allowed.status, 204);
+  const allowedVary = allowed.headers.get("vary") ?? "";
+  assert.match(allowedVary, /Origin/);
+  assert.match(allowedVary, /Access-Control-Request-Method/);
+  assert.match(allowedVary, /Access-Control-Request-Headers/);
+  assert.equal(allowed.headers.get("access-control-allow-methods"), "GET, HEAD, POST");
+
+  const denied = await app.request("/p", {
+    method: "OPTIONS",
+    headers: { origin: "https://evil.test", "access-control-request-method": "GET" },
+  });
+  assert.equal(denied.status, 204);
+  assert.equal(denied.headers.get("access-control-allow-origin"), null);
+  // Policy disclosure is the unhappy path: a disallowed origin must not
+  // see the configured method/header allowlist or the cache TTL.
+  assert.equal(denied.headers.get("access-control-allow-methods"), null);
+  assert.equal(denied.headers.get("access-control-allow-headers"), null);
+  assert.equal(denied.headers.get("access-control-max-age"), null);
+  assert.match(denied.headers.get("vary") ?? "", /Origin/);
+});
+
+test("cors appends Vary: Origin without clobbering an upstream Vary header", async () => {
+  // Regression: previously `set("vary", "Origin")` overwrote any Vary
+  // header set by an earlier middleware (e.g. `compression()` writes
+  // `Vary: Accept-Encoding`). The result was that compressed responses
+  // could be cached without varying on Accept-Encoding, breaking older
+  // clients. The append helper must preserve all prior tokens.
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use({
+    beforeHandle(ctx) {
+      ctx.set.headers.set("vary", "Accept-Encoding");
+      return undefined;
+    },
+  });
+  app.use(cors({ origin: "https://app.example.com" }));
+  app.route({
+    method: "GET",
+    path: "/m",
+    operationId: "m",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  const res = await app.request("/m", { headers: { origin: "https://app.example.com" } });
+  const vary = res.headers.get("vary") ?? "";
+  assert.match(vary, /Accept-Encoding/);
+  assert.match(vary, /Origin/);
+});
+
+test("cors does not set Vary: Origin when no Origin header is present", async () => {
+  // Same-origin requests (no Origin header) must not advertise that the
+  // response varies on Origin — otherwise the cache key gets needlessly
+  // partitioned and CDN hit rates suffer for plain server-rendered
+  // traffic. Only requests where Origin actually drove the decision pay
+  // the cache-fragmentation cost.
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(cors({ origin: "https://app.example.com" }));
+  app.route({
+    method: "GET",
+    path: "/n",
+    operationId: "n",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: { ok: true } }),
+  });
+  const res = await app.request("/n");
+  assert.equal(res.headers.get("vary"), null);
+  assert.equal(res.headers.get("access-control-allow-origin"), null);
+});
+
 test("cors throws when origin '*' is combined with credentials: true", () => {
   // Browsers refuse this combination per the CORS spec; failing closed at
   // construction prevents silently broken auth in production.

@@ -394,6 +394,29 @@ const DEFAULT_CORS_METHODS = ["GET", "HEAD", "POST"];
 const DEFAULT_CORS_ALLOWED_HEADERS = ["content-type", "authorization"];
 
 /**
+ * Append `token` to an existing `Vary` header (or create one) without
+ * clobbering values written by other middleware (e.g. `Vary:
+ * Accept-Encoding` from `compression()`). `Vary: *` short-circuits to a
+ * no-op because the spec treats `*` as "varies on everything".
+ *
+ * @internal
+ */
+function appendVary(headers: Headers, token: string): void {
+  const existing = headers.get("vary");
+  if (!existing) {
+    headers.set("vary", token);
+    return;
+  }
+  const lowerToken = token.toLowerCase();
+  for (const raw of existing.split(",")) {
+    const trimmed = raw.trim();
+    if (trimmed === "*") return;
+    if (trimmed.toLowerCase() === lowerToken) return;
+  }
+  headers.set("vary", `${existing}, ${token}`);
+}
+
+/**
  * Marker stamped on the `Hooks` object returned by {@link cors} so the
  * framework can detect that a CORS policy has been installed. Used by the
  * Secure-defaults cross-origin guard: if `App` is constructed with
@@ -537,22 +560,40 @@ export function cors(opts: CorsOptions): Hooks {
     beforeHandle(ctx) {
       const origin = ctx.request.headers.get("origin");
       const allowed = allow(origin);
+      // Always advertise that the response depends on `Origin` when the
+      // request carried one, even if we decided not to allow it. Otherwise
+      // an HTTP cache (CDN, reverse proxy) that fronts the API can serve a
+      // response generated for an allowed origin to a different,
+      // disallowed origin — the classic CORS cache-poisoning footgun
+      // called out in Aikido's "CORS Security: Beyond Basic Configuration"
+      // (section 6: Vary: Origin on cached preflight responses).
+      if (origin !== null) appendVary(ctx.set.headers, "Origin");
       if (allowed) {
         ctx.set.headers.set("access-control-allow-origin", allowed);
-        ctx.set.headers.set("vary", "Origin");
         if (opts.credentials) ctx.set.headers.set("access-control-allow-credentials", "true");
         if (exposed) ctx.set.headers.set("access-control-expose-headers", exposed);
       }
       if (ctx.request.method === "OPTIONS") {
         const h = new Headers();
+        // Preflights are themselves cacheable by both browsers and shared
+        // caches; vary on Origin and on the preflight-specific request
+        // headers so a cache cannot serve one origin's preflight result
+        // to another. (See `Vary` discussion in MDN's CORS guide.)
+        appendVary(h, "Origin");
+        appendVary(h, "Access-Control-Request-Method");
+        appendVary(h, "Access-Control-Request-Headers");
         if (allowed) {
           h.set("access-control-allow-origin", allowed);
-          h.set("vary", "Origin");
           if (opts.credentials) h.set("access-control-allow-credentials", "true");
+          // Only advertise the configured method/header allowlist to
+          // origins we actually trust. Echoing the policy back to a
+          // disallowed origin leaks our CORS configuration to anyone who
+          // can send an OPTIONS request and lets attackers map the API's
+          // accepted surface area without ever being approved.
+          h.set("access-control-allow-methods", methods);
+          h.set("access-control-allow-headers", allowedHeaders);
+          h.set("access-control-max-age", maxAge);
         }
-        h.set("access-control-allow-methods", methods);
-        h.set("access-control-allow-headers", allowedHeaders);
-        h.set("access-control-max-age", maxAge);
         return new Response(null, { status: 204, headers: h });
       }
       return undefined;
