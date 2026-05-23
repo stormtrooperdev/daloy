@@ -3,16 +3,15 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Secure-by-default (0.16.0)",
+  title: "Secure-by-default",
   description:
-    "Daloy 0.16.0 auto-applies secureHeaders() and rejects cross-origin state-changing requests unless cors() is registered. Learn the new defaults, escape hatches, and per-route opt-ins.",
+    "Daloy auto-applies secureHeaders() and rejects cross-origin state-changing requests unless cors() is registered. Learn the new defaults, escape hatches, and per-route opt-ins.",
   path: "/docs/security/secure-defaults",
   keywords: [
     "DaloyJS secure defaults",
     "secureHeaders auto",
     "CORS cross-origin guard",
     "CORS origin allowlist",
-    "0.16.0 breaking changes",
     "secureDefaults",
   ],
   type: "article",
@@ -21,14 +20,13 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Secure-by-default (0.16.0)</h1>
+      <h1>Secure-by-default</h1>
       <p>
-        Daloy <strong>0.16.0</strong> is the first release in the
-        &ldquo;secure-by-default&rdquo; series. It flips secure headers and
-        cross-origin write protection on by default, adds a per-route content
-        type opt-in, and keeps a single master escape hatch (
-        <code>secureDefaults: false</code>) plus per-feature opt-outs for the
-        rare cases where you genuinely need the old behavior.
+        Daloy is the first release in the &ldquo;secure-by-default&rdquo;
+        series. It flips secure headers and cross-origin write protection on by
+        default, adds a per-route content type opt-in, and keeps a single master
+        escape hatch (<code>secureDefaults: false</code>) plus per-feature
+        opt-outs for the rare cases where you genuinely need the old behavior.
       </p>
 
       <h2>What flipped</h2>

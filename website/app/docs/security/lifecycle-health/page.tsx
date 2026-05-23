@@ -3,9 +3,9 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Lifecycle & health (0.18.0)",
+  title: "Lifecycle & health",
   description:
-    "Daloy 0.18.0 ships connection-draining shutdown with Connection: close, crash-on-unhandled-rejection in production, and app.healthcheck() / app.readinesscheck() primitives that refuse-to-boot in production without an explicit auth or unauthenticated acknowledgement.",
+    "Daloy ships connection-draining shutdown with Connection: close, crash-on-unhandled-rejection in production, and app.healthcheck() / app.readinesscheck() primitives that refuse-to-boot in production without an explicit auth or unauthenticated acknowledgement.",
   path: "/docs/security/lifecycle-health",
   keywords: [
     "DaloyJS shutdown",
@@ -14,7 +14,6 @@ export const metadata = buildMetadata({
     "crashOnUnhandledRejection",
     "healthcheck",
     "readinesscheck",
-    "0.18.0",
     "secureDefaults",
   ],
   type: "article",
@@ -23,13 +22,13 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Lifecycle &amp; health (0.18.0)</h1>
+      <h1>Lifecycle &amp; health</h1>
       <p>
-        Daloy <strong>0.18.0</strong> ships the lifecycle & health slice of the
-        secure-by-default initiative: connection-draining shutdown,
-        crash-on-unhandled-rejection, and first-class <code>healthcheck()</code>{" "}
-        / <code>readinesscheck()</code> primitives. All three default-on the
-        safe behaviour and let you opt out per-feature or globally with{" "}
+        Daloy ships the lifecycle & health slice of the secure-by-default
+        initiative: connection-draining shutdown, crash-on-unhandled-rejection,
+        and first-class <code>healthcheck()</code> /{" "}
+        <code>readinesscheck()</code> primitives. All three default-on the safe
+        behaviour and let you opt out per-feature or globally with{" "}
         <code>
           app({"{"} secureDefaults: false {"}"})
         </code>

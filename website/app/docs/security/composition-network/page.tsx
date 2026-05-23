@@ -3,9 +3,9 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Composition & network (0.19.0)",
+  title: "Composition & network",
   description:
-    "Daloy 0.19.0 ships rateLimit({ groupId }) shared buckets, combine primitives every/some/except, ipRestriction() with CIDR allow/deny, and the internal: true route flag with app.inject().",
+    "Daloy ships rateLimit({ groupId }) shared buckets, combine primitives every/some/except, ipRestriction() with CIDR allow/deny, and the internal: true route flag with app.inject().",
   path: "/docs/security/composition-network",
   keywords: [
     "DaloyJS combine",
@@ -15,7 +15,6 @@ export const metadata = buildMetadata({
     "rateLimit groupId",
     "internal routes",
     "app.inject",
-    "0.19.0",
     "secureDefaults",
   ],
   type: "article",
@@ -24,12 +23,12 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Composition &amp; network (0.19.0)</h1>
+      <h1>Composition &amp; network</h1>
       <p>
-        Daloy <strong>0.19.0</strong> ships the composition & network slice of
-        the secure-by-default initiative: four primitives that compose the
-        security stack you already have. Every item is opt-in; no existing
-        behaviour changes unless you call the new helper.
+        Daloy ships the composition & network slice of the secure-by-default
+        initiative: four primitives that compose the security stack you already
+        have. Every item is opt-in; no existing behaviour changes unless you
+        call the new helper.
       </p>
 
       <h2>

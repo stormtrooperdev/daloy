@@ -3,9 +3,9 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Boot guards (0.17.0)",
+  title: "Boot guards",
   description:
-    "Daloy 0.17.0 refuses to boot in production on weak session secrets, wildcard CORS, session() without csrf() on state-changing routes, and unconfigured X-Forwarded-* headers. Learn each guard, how to opt out, and how to migrate.",
+    "Daloy refuses to boot in production on weak session secrets, wildcard CORS, session() without csrf() on state-changing routes, and unconfigured X-Forwarded-* headers. Learn each guard, how to opt out, and how to migrate.",
   path: "/docs/security/boot-guards",
   keywords: [
     "DaloyJS boot guards",
@@ -13,7 +13,6 @@ export const metadata = buildMetadata({
     "cors wildcard production",
     "csrf required",
     "trustProxy unconfigured",
-    "0.17.0",
     "secureDefaults",
   ],
   type: "article",
@@ -22,12 +21,12 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Boot guards (0.17.0)</h1>
+      <h1>Boot guards</h1>
       <p>
-        Daloy <strong>0.17.0</strong> ships the boot-guards slice of the
-        secure-by-default initiative: four refuse-to-boot / first-request guards
-        that turn the most common production misconfigurations into loud
-        failures during startup instead of silent vulnerabilities under load.
+        Daloy ships the boot-guards slice of the secure-by-default initiative:
+        four refuse-to-boot / first-request guards that turn the most common
+        production misconfigurations into loud failures during startup instead
+        of silent vulnerabilities under load.
       </p>
 
       <p>

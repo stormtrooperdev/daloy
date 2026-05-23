@@ -3,12 +3,11 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "secureDefaults enforcement (0.26.0)",
+  title: "secureDefaults enforcement",
   description:
     "Daloy 0.26.0 ships a focused cross-cutting bake-in: secureDefaults: false master-flag enforcement (production refuse + once-per-process audit log), JWT HS-secret length refuse-to-construct (< 32 bytes), secureHeaders() refusing simultaneous frame-defense disable, and mandatory hardware-backed 2FA for every contributor with publish access.",
   path: "/docs/security/secure-defaults-enforcement",
   keywords: [
-    "DaloyJS 0.26.0",
     "secureDefaults",
     "acknowledgeInsecureDefaults",
     "JWT weak secret",
@@ -27,17 +26,17 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>secureDefaults enforcement (0.26.0)</h1>
+      <h1>secureDefaults enforcement</h1>
       <p>
-        Daloy <strong>0.26.0</strong> ships a focused slice of{" "}
-        <strong>cross-cutting bake-ins</strong> from the secure-by-default
-        initiative. Three items are implemented now; the remaining cross-cutting
-        bullets (single-source helpers for cookie / client IP / time-claim /
-        secret comparison, the <code>__Secure-</code> cookie without TLS
-        refuse-to-boot, the <code>daloy doctor --audit-secrets</code>{" "}
-        subcommand, and the zero-runtime-dependency governance CI grep gate)
-        remain tracked on the roadmap and will land in subsequent additive{" "}
-        <code>0.26.x</code> releases.
+        Daloy ships a focused slice of <strong>cross-cutting bake-ins</strong>{" "}
+        from the secure-by-default initiative. Three items are implemented now;
+        the remaining cross-cutting bullets (single-source helpers for cookie /
+        client IP / time-claim / secret comparison, the <code>__Secure-</code>{" "}
+        cookie without TLS refuse-to-boot, the{" "}
+        <code>daloy doctor --audit-secrets</code> subcommand, and the
+        zero-runtime-dependency governance CI grep gate) remain tracked on the
+        roadmap and will land in subsequent additive <code>0.26.x</code>{" "}
+        releases.
       </p>
 
       <h2>

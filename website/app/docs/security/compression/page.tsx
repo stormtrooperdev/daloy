@@ -3,12 +3,11 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Compression middleware (0.25.0)",
+  title: "Compression middleware",
   description:
-    "Daloy 0.25.0 adds portable response compression with CompressionStream, BREACH-aware skip rules, safe cache headers, and ETag handling.",
+    "Daloy adds portable response compression with CompressionStream, BREACH-aware skip rules, safe cache headers, and ETag handling.",
   path: "/docs/security/compression",
   keywords: [
-    "DaloyJS 0.25.0",
     "compression middleware",
     "CompressionStream",
     "BREACH guard",
@@ -22,12 +21,12 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Compression middleware (0.25.0)</h1>
+      <h1>Compression middleware</h1>
       <p>
-        Daloy <strong>0.25.0</strong> ships a focused compression slice: a
-        first-party <code>compression()</code> middleware that uses the
-        web-standard <code>CompressionStream</code> API instead of a Node-only
-        compression package.
+        Daloy ships a focused compression slice: a first-party{" "}
+        <code>compression()</code> middleware that uses the web-standard{" "}
+        <code>CompressionStream</code> API instead of a Node-only compression
+        package.
       </p>
 
       <CodeBlock

@@ -3,9 +3,9 @@ import { CodeBlock } from "../../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Auth-cohesive slice (0.22.0)",
+  title: "Auth-cohesive slice",
   description:
-    "Daloy 0.22.0 ships the auth-cohesive leftover slice: jwk() asymmetric-only JWKS middleware, per-scheme verify() revalidation hook on bearerAuth() and jwk(), basicAuth({ onAuthSuccess }) typed callback, and Cache-Control: no-store on every first-party auth helper 401 challenge.",
+    "Daloy ships the auth-cohesive leftover slice: jwk() asymmetric-only JWKS middleware, per-scheme verify() revalidation hook on bearerAuth() and jwk(), basicAuth({ onAuthSuccess }) typed callback, and Cache-Control: no-store on every first-party auth helper 401 challenge.",
   path: "/docs/security/auth-slice",
   keywords: [
     "DaloyJS jwk",
@@ -19,7 +19,6 @@ export const metadata = buildMetadata({
     "asymmetric JWT",
     "kid",
     "alg cross-check",
-    "0.22.0",
     "secureDefaults",
   ],
   type: "article",
@@ -28,11 +27,10 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <>
-      <h1>Auth-cohesive slice (0.22.0)</h1>
+      <h1>Auth-cohesive slice</h1>
       <p>
-        Daloy <strong>0.22.0</strong> closes the auth-cohesive subset of the
-        leftover items from the secure-by-default initiative. Each one is
-        additive and opt-in:
+        Daloy closes the auth-cohesive subset of the leftover items from the
+        secure-by-default initiative. Each one is additive and opt-in:
       </p>
       <ul>
         <li>
