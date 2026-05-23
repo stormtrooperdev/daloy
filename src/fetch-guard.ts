@@ -24,12 +24,20 @@
  * Plus an always-deny floor that no flag can lift:
  *
  * - `0.0.0.0/8` (this-network), `100.64.0.0/10` (carrier-grade NAT — covers
- *   Alibaba `100.100.100.200`), `192.0.0.0/24` (covers Oracle Cloud
- *   `192.0.0.192`), `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`,
- *   `203.0.113.0/24` (IANA-reserved), `224.0.0.0/4` (multicast),
- *   `240.0.0.0/4` (reserved), `255.255.255.255` (broadcast).
- * - IPv6: `::/128` (unspecified), `ff00::/8` (multicast), IPv4-mapped
+ *   Alibaba `100.100.100.200`), `169.254.169.254/32` (AWS / Azure /
+ *   DigitalOcean / GCP IMDS), `169.254.170.2/32` and `169.254.170.23/32`
+ *   (AWS ECS task metadata / EKS Pod Identity), `192.0.0.0/24` (covers
+ *   Oracle Cloud `192.0.0.192`), `192.0.2.0/24`, `198.18.0.0/15`,
+ *   `198.51.100.0/24`, `203.0.113.0/24` (IANA-reserved), `224.0.0.0/4`
+ *   (multicast), `240.0.0.0/4` (reserved), `255.255.255.255` (broadcast).
+ * - IPv6: `::/128` (unspecified), `ff00::/8` (multicast),
+ *   `fd00:ec2::254/128` (AWS IMDSv2 IPv6), IPv4-mapped
  *   `::ffff:0:0/96` is re-checked against the embedded IPv4 address.
+ *
+ * The floor also picks up any user-supplied `denyAddresses` — these win
+ * over `allowAddresses` and over the soft-deny class flags, so an
+ * operator-pinned internal range is never accidentally re-exposed by a
+ * later `allowAddresses` carveout.
  *
  * Redirects are followed **manually** with re-validation at each hop so
  * an attacker cannot bypass the check via a `302 → http://169.254...`.
@@ -157,6 +165,9 @@ export interface FetchGuardOptions {
 const ALWAYS_DENY: readonly string[] = [
   "0.0.0.0/8", // "this network"
   "100.64.0.0/10", // CGNAT (Alibaba metadata 100.100.100.200)
+  "169.254.169.254/32", // AWS / Azure / DigitalOcean / GCP IMDS — hard floor
+  "169.254.170.2/32", // AWS ECS task metadata v2 / EKS Pod Identity
+  "169.254.170.23/32", // AWS EKS Pod Identity (IPv4)
   "192.0.0.0/24", // IANA reserved (Oracle metadata 192.0.0.192)
   "192.0.2.0/24", // TEST-NET-1
   "198.18.0.0/15", // benchmarking
@@ -166,6 +177,7 @@ const ALWAYS_DENY: readonly string[] = [
   "240.0.0.0/4", // reserved (includes 255.255.255.255)
   "::/128", // unspecified
   "ff00::/8", // IPv6 multicast
+  "fd00:ec2::254/128", // AWS IMDSv2 IPv6
 ];
 
 const LOOPBACK = ["127.0.0.0/8", "::1/128"];
@@ -203,7 +215,17 @@ export function fetchGuard(options: FetchGuardOptions = {}): typeof fetch {
   const allowProtocols = new Set(
     (options.allowProtocols ?? ["http:", "https:"]).map((s) => s.toLowerCase()),
   );
-  const denyMatchers: IpMatcher[] = [];
+  // Hard-deny floor: ALWAYS_DENY (cloud metadata + reserved) plus any
+  // user-supplied `denyAddresses`. No allow flag, including
+  // `allowAddresses`, can lift these — this is what keeps a misconfigured
+  // egress allow-list from accidentally re-exposing 169.254.169.254 or
+  // an operator-pinned internal range.
+  const hardDenyMatchers: IpMatcher[] = [];
+  // Soft-deny class defaults: loopback / private / link-local /
+  // unique-local. These reflect "off by default" classes that the
+  // matching `allow*` flag — or an explicit `allowAddresses` range —
+  // is allowed to opt into.
+  const softDenyMatchers: IpMatcher[] = [];
   const allowMatchers: IpMatcher[] = [];
   const allowHosts = new Set((options.allowHosts ?? []).map((h) => h.toLowerCase()));
   const maxRedirects = options.maxRedirects ?? 5;
@@ -213,19 +235,28 @@ export function fetchGuard(options: FetchGuardOptions = {}): typeof fetch {
   }
   const resolveFn = options.resolve ?? createDefaultResolver();
 
-  for (const c of ALWAYS_DENY) denyMatchers.push(compileCidrMatcher(c));
-  if (!options.allowLoopback) for (const c of LOOPBACK) denyMatchers.push(compileCidrMatcher(c));
-  if (!options.allowPrivate) for (const c of PRIVATE) denyMatchers.push(compileCidrMatcher(c));
-  if (!options.allowLinkLocal) for (const c of LINK_LOCAL) denyMatchers.push(compileCidrMatcher(c));
-  if (!options.allowUniqueLocal) {
-    for (const c of UNIQUE_LOCAL) denyMatchers.push(compileCidrMatcher(c));
+  for (const c of ALWAYS_DENY) hardDenyMatchers.push(compileCidrMatcher(c));
+  for (const c of options.denyAddresses ?? []) hardDenyMatchers.push(compileCidrMatcher(c));
+  if (!options.allowLoopback) {
+    for (const c of LOOPBACK) softDenyMatchers.push(compileCidrMatcher(c));
   }
-  for (const c of options.denyAddresses ?? []) denyMatchers.push(compileCidrMatcher(c));
+  if (!options.allowPrivate) {
+    for (const c of PRIVATE) softDenyMatchers.push(compileCidrMatcher(c));
+  }
+  if (!options.allowLinkLocal) {
+    for (const c of LINK_LOCAL) softDenyMatchers.push(compileCidrMatcher(c));
+  }
+  if (!options.allowUniqueLocal) {
+    for (const c of UNIQUE_LOCAL) softDenyMatchers.push(compileCidrMatcher(c));
+  }
   for (const c of options.allowAddresses ?? []) allowMatchers.push(compileCidrMatcher(c));
 
   function isAddressAllowed(parsed: ParsedIp): boolean {
+    // Hard-deny wins over every allow knob — cloud metadata IPs and
+    // operator-pinned `denyAddresses` are non-negotiable.
+    if (hardDenyMatchers.some((m) => matchesMatcher(parsed, m))) return false;
     if (allowMatchers.some((m) => matchesMatcher(parsed, m))) return true;
-    return !denyMatchers.some((m) => matchesMatcher(parsed, m));
+    return !softDenyMatchers.some((m) => matchesMatcher(parsed, m));
   }
 
   async function validateUrl(url: URL): Promise<void> {

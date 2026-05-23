@@ -208,7 +208,7 @@ test("fetchGuard: allowAddresses (CIDR) overrides default deny", async () => {
   assert.equal(res.status, 200);
 });
 
-test("fetchGuard: denyAddresses still rejects after allow", async () => {
+test("fetchGuard: denyAddresses beats overlapping allowAddresses", async () => {
   const r = recordingFetch();
   const guarded = fetchGuard({
     fetch: r.fn,
@@ -216,15 +216,51 @@ test("fetchGuard: denyAddresses still rejects after allow", async () => {
     denyAddresses: ["10.6.6.0/24"],
     resolve: async () => ["10.6.6.6"],
   });
-  // matches allow AND deny -> deny wins (allow only overrides default deny floor).
-  // Implementation order: allow short-circuits to "allowed"; verify deny wins by
-  // checking that an allowAddresses range that overlaps a denyAddresses range
-  // still permits non-overlapping addresses but blocks overlapping ones.
+  // Non-overlapping address in the allow range is still permitted.
   const okRes = await guarded("http://10.1.2.3/");
   assert.equal(okRes.status, 200);
-  // For the overlapping case, current semantics treat allowAddresses as a hard
-  // override; document by asserting the documented behavior in the helper.
-  // (No further assertion — this test just guards against accidental reordering.)
+  // Overlapping address is denied — operator-pinned `denyAddresses` is a
+  // hard floor that no allow knob can lift. Regression for the prior
+  // ordering where `allowAddresses` short-circuited the deny check.
+  await assert.rejects(
+    () => guarded("http://blocked.example.com/"),
+    (e: unknown) =>
+      e instanceof SsrfBlockedError &&
+      e.reason === "address-not-allowed" &&
+      e.address === "10.6.6.6",
+  );
+});
+
+test("fetchGuard: allowAddresses cannot lift the cloud-metadata floor", async () => {
+  // An operator who *thinks* they're carving out a trusted internal
+  // range should never accidentally re-expose AWS/Azure/DigitalOcean
+  // (169.254.169.254), Alibaba (100.100.100.200), or Oracle Cloud
+  // (192.0.0.192) metadata IPs.
+  const metadataIps: Array<[string, string]> = [
+    ["169.254.169.254", "169.254.0.0/16"], // AWS / Azure / DigitalOcean
+    ["100.100.100.200", "100.64.0.0/10"], // Alibaba
+    ["192.0.0.192", "192.0.0.0/24"], // Oracle Cloud
+  ];
+  for (const [ip, cidr] of metadataIps) {
+    const r = recordingFetch();
+    const guarded = fetchGuard({
+      fetch: r.fn,
+      // Deliberately try to allow the metadata range.
+      allowAddresses: [cidr],
+      // And also flip the soft-deny class that would normally cover it.
+      allowLinkLocal: true,
+      allowPrivate: true,
+      resolve: async () => [ip],
+    });
+    await assert.rejects(
+      () => guarded(`http://target-${ip}.example.com/`),
+      (e: unknown) =>
+        e instanceof SsrfBlockedError &&
+        e.reason === "address-not-allowed" &&
+        e.address === ip,
+      `expected cloud metadata IP ${ip} to remain blocked`,
+    );
+  }
 });
 
 test("fetchGuard: allowHosts skips DNS for explicitly trusted hostnames", async () => {
