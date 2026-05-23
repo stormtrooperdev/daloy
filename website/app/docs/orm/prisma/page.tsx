@@ -230,6 +230,31 @@ const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
 export const prisma = new PrismaClient({ adapter });`}
       />
 
+      <h2>Operator injection — validate your filter shapes</h2>
+      <p>
+        Prisma always emits parameterized SQL, but the <em>filter object</em>{" "}
+        you pass to <code>where</code> is interpreted by Prisma. If a field
+        annotated as <code>string</code> arrives at runtime as an object like{" "}
+        <code>{`{ "not": "" }`}</code>, Prisma treats it as an operator and an
+        attacker can bypass equality checks &mdash; the
+        &ldquo;NoSQL-injection-in-Prisma&rdquo; pattern{" "}
+        <a
+          href="https://www.aikido.dev/blog/prisma-and-postgresql-vulnerable-to-nosql-injection"
+          target="_blank"
+          rel="noreferrer"
+        >
+          documented by Aikido
+        </a>
+        . Daloy&apos;s contract-first routes neutralize this when you keep the
+        request body typed with primitive Zod schemas (<code>z.string()</code>,{" "}
+        <code>z.number()</code>, &hellip;) instead of <code>z.any()</code>,{" "}
+        <code>z.unknown()</code>, or a pass-through <code>z.record()</code>. See{" "}
+        <Link href="/docs/security/sql-injection">
+          Security &rarr; SQL injection
+        </Link>{" "}
+        for the full pattern and review-time rules.
+      </p>
+
       <h2>Mapping errors to problem+json</h2>
       <CodeBlock
         code={`import { Prisma } from "../generated/prisma/client";

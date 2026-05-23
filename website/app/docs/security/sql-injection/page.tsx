@@ -200,6 +200,105 @@ await mysql.execute("SELECT * FROM users WHERE email = ?", [params.email]);
 await pg.query(\`SELECT * FROM users WHERE email = '\${params.email}'\`);`}
       />
 
+      <h2>
+        Operator injection (the &ldquo;NoSQL injection in Prisma&rdquo; trap)
+      </h2>
+      <p>
+        Aikido&apos;s{" "}
+        <a
+          href="https://www.aikido.dev/blog/prisma-and-postgresql-vulnerable-to-nosql-injection"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Prisma + PostgreSQL is vulnerable to NoSQL-style injection
+        </a>{" "}
+        write-up describes a real, common bug: even though Prisma always emits
+        parameterized SQL, the <em>filter object</em> you pass to{" "}
+        <code>where</code> is interpreted by Prisma itself. If a field is
+        annotated as <code>string</code> in TypeScript but the runtime value is
+        an object like <code>{`{ "not": "x" }`}</code> or{" "}
+        <code>{`{ "contains": "" }`}</code>, Prisma treats it as a filter
+        operator. An attacker who can submit raw JSON to a login or
+        password-reset endpoint can use that to bypass equality checks. The same
+        idea bites Mongoose, TypeORM <code>FindOptions</code>, and any builder
+        that accepts &ldquo;value or operator&rdquo; in the same slot.
+      </p>
+      <p>
+        Daloy&apos;s contract-first routes neutralize this <em>by default</em>:
+        every <code>body</code>, <code>query</code>, and <code>params</code>{" "}
+        slot is validated against a Zod schema before your handler runs, and
+        Zod&apos;s primitive checks (<code>z.string()</code>,{" "}
+        <code>z.string().email()</code>, <code>z.number()</code>, &hellip;)
+        reject nested objects with a <strong>400 problem+json</strong>. The
+        vulnerability shows up when developers route around that &mdash; usually
+        with <code>z.any()</code>, <code>z.unknown()</code>, a pass-through{" "}
+        <code>z.record()</code>, or by reading <code>await req.json()</code>{" "}
+        directly and spreading it into <code>where</code>.
+      </p>
+      <CodeBlock
+        code={`// DANGEROUS — \`email\` is typed as string but Zod accepts anything.
+// Attacker posts {"email":{"not":""},"password":"x"} and \`findFirst\`
+// returns the first user whose email is not empty (i.e. any user).
+const Login = z.object({ email: z.any(), password: z.any() });
+
+app.route({
+  method: "POST",
+  path: "/login",
+  request: { body: Login },
+  responses: { 200: { description: "ok" } },
+  handler: async ({ body, state }) => {
+    const user = await state.db.user.findFirst({
+      where: { email: body.email, password: body.password },
+    });
+    return { status: 200 as const, body: { ok: Boolean(user) } };
+  },
+});
+
+// SAFE — primitives are enforced at the wire, so \`body.email\` is a string.
+const SafeLogin = z.object({
+  email: z.string().email().max(254),
+  password: z.string().min(1).max(1024),
+});`}
+      />
+      <p>
+        If you genuinely need to accept a caller-controlled filter (an admin
+        search endpoint, for example), wrap each operator explicitly so a rogue
+        key can&apos;t reach Prisma:
+      </p>
+      <CodeBlock
+        code={`// SAFE — build the \`where\` yourself from validated primitives. The
+// shape passed to Prisma is owned by your code, not the request body.
+const Search = z.object({
+  email: z.string().email().optional(),
+  emailContains: z.string().min(1).max(64).optional(),
+});
+
+const where = {
+  ...(query.email ? { email: query.email } : {}),
+  ...(query.emailContains ? { email: { contains: query.emailContains } } : {}),
+};
+await state.db.user.findMany({ where });`}
+      />
+      <p>Review-time rules:</p>
+      <ul>
+        <li>
+          Never use <code>z.any()</code>, <code>z.unknown()</code>, or
+          unconstrained <code>z.record()</code> for a field that is then read
+          out of a Prisma / Mongoose / TypeORM <code>where</code> clause.
+          Constrain each property with a primitive schema.
+        </li>
+        <li>
+          Never spread <code>...body</code> or <code>...query</code> into{" "}
+          <code>where</code>, <code>data</code>, or <code>orderBy</code>. Map
+          fields one at a time after validation.
+        </li>
+        <li>
+          Treat a missing <code>request</code> schema on a route that touches
+          the DB as the same severity as a missing CSRF token &mdash;
+          Daloy&apos;s strict-schema gate is doing real work here.
+        </li>
+      </ul>
+
       <h2>Dynamic SQL: when you can&apos;t parameterize</h2>
       <p>
         Bind parameters cover values, not identifiers. <code>ORDER BY</code>{" "}
