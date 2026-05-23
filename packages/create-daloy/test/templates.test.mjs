@@ -458,6 +458,7 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
 
     const projectDir = path.join(tmpDir, projectName);
     await access(path.join(projectDir, ".github/workflows/ci.yml"));
+    await access(path.join(projectDir, ".github/workflows/deploy.yml"));
     await access(path.join(projectDir, ".github/workflows/vuln-scan.yml"));
     await access(path.join(projectDir, ".github/workflows/codeql.yml"));
     await access(path.join(projectDir, ".github/workflows/scorecard.yml"));
@@ -496,6 +497,24 @@ test("--with-ci scaffolds hardened GitHub security files for pnpm projects", asy
     assert.match(ci, /pnpm\/action-setup@[0-9a-f]{40}\s+# v6/);
     assert.match(ci, /actions\/setup-node@[0-9a-f]{40}\s+# v6/);
     assert.doesNotMatch(ci, /__[A-Z_]+__/);
+
+    const deploy = await readFile(
+      path.join(projectDir, ".github/workflows/deploy.yml"),
+      "utf8",
+    );
+    assert.match(deploy, /on:\s*\n\s*workflow_dispatch:/);
+    assert.match(deploy, /permissions:\s*\{\}/);
+    assert.match(deploy, /environment:\s*\n\s*name:\s*production/);
+    assert.match(deploy, /packages:\s*write/);
+    assert.match(deploy, /docker login ghcr\.io/);
+    assert.match(deploy, /docker build/);
+    assert.match(deploy, /docker push/);
+    assert.match(deploy, /step-security\/harden-runner@[0-9a-f]{40}\s+# v2/);
+    assert.match(deploy, /actions\/checkout@[0-9a-f]{40}\s+# v6/);
+    assert.match(deploy, /pnpm verify:lockfile/);
+    assert.match(deploy, /if: github\.ref == 'refs\/heads\/main' \|\| github\.ref_type == 'tag'/);
+    assert.doesNotMatch(deploy, /pull_request_target/);
+    assert.doesNotMatch(deploy, /__[A-Z_]+__/);
 
     const vulnScan = await readFile(
       path.join(projectDir, ".github/workflows/vuln-scan.yml"),
@@ -773,6 +792,14 @@ test("--with-ci adds Bun runtime setup when bun-basic uses pnpm", async () => {
     assert.match(ci, /pnpm test/);
     assert.doesNotMatch(ci, /__[A-Z_]+__/);
 
+    const deploy = await readFile(
+      path.join(tmpDir, projectName, ".github/workflows/deploy.yml"),
+      "utf8",
+    );
+    assert.match(deploy, /packages:\s*write/);
+    assert.match(deploy, /docker build/);
+    assert.doesNotMatch(deploy, /__[A-Z_]+__/);
+
     const dockerfile = await readFile(
       path.join(tmpDir, projectName, "Dockerfile"),
       "utf8",
@@ -780,6 +807,96 @@ test("--with-ci adds Bun runtime setup when bun-basic uses pnpm", async () => {
     assert.match(dockerfile, /^FROM \$\{NODE_IMAGE\} AS builder$/m);
     assert.match(dockerfile, /^FROM \$\{BUN_IMAGE\} AS runner$/m);
     assert.match(dockerfile, /pnpm install --frozen-lockfile --ignore-scripts/);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("--with-ci --no-deploy keeps the security bundle but omits deploy.yml", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "create-daloy-"));
+  const projectName = "ci-no-deploy";
+  try {
+    const exitCode = await new Promise((resolve) => {
+      const proc = spawn(
+        process.execPath,
+        [
+          path.join(pkgRoot, "bin/create-daloy.mjs"),
+          projectName,
+          "--template",
+          "node-basic",
+          "--package-manager",
+          "npm",
+          "--with-ci",
+          "--no-deploy",
+          "--no-install",
+          "--no-git",
+          "--yes",
+        ],
+        { cwd: tmpDir, stdio: "ignore" },
+      );
+      proc.on("exit", (code) => resolve(code ?? 1));
+      proc.on("error", () => resolve(1));
+    });
+    assert.equal(exitCode, 0);
+
+    const projectDir = path.join(tmpDir, projectName);
+    await access(path.join(projectDir, ".github/workflows/ci.yml"));
+    await assert.rejects(access(path.join(projectDir, ".github/workflows/deploy.yml")));
+    await access(path.join(projectDir, ".github/CODEOWNERS"));
+    await access(path.join(projectDir, "SECURITY.md"));
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("--with-deploy --no-ci scaffolds deploy.yml without the rest of the security bundle", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "create-daloy-"));
+  const projectName = "deploy-only";
+  try {
+    const exitCode = await new Promise((resolve) => {
+      const proc = spawn(
+        process.execPath,
+        [
+          path.join(pkgRoot, "bin/create-daloy.mjs"),
+          projectName,
+          "--template",
+          "node-basic",
+          "--package-manager",
+          "npm",
+          "--with-deploy",
+          "--no-ci",
+          "--no-install",
+          "--no-git",
+          "--yes",
+        ],
+        { cwd: tmpDir, stdio: "ignore" },
+      );
+      proc.on("exit", (code) => resolve(code ?? 1));
+      proc.on("error", () => resolve(1));
+    });
+    assert.equal(exitCode, 0);
+
+    const projectDir = path.join(tmpDir, projectName);
+    await access(path.join(projectDir, ".github/workflows/deploy.yml"));
+    await assert.rejects(access(path.join(projectDir, ".github/workflows/ci.yml")));
+    await assert.rejects(access(path.join(projectDir, ".github/CODEOWNERS")));
+    await assert.rejects(access(path.join(projectDir, ".github/dependabot.yml")));
+    await assert.rejects(access(path.join(projectDir, "SECURITY.md")));
+    await assert.rejects(access(path.join(projectDir, "scripts/verify-lockfile-sources.mjs")));
+
+    const pkg = JSON.parse(await readFile(path.join(projectDir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts["verify:lockfile"], undefined);
+
+    // In deploy-only mode the verify:lockfile script does not exist on disk,
+    // so the deploy workflow must omit the corresponding step rather than
+    // fail fast on a missing file. The ref guard still applies.
+    const deploy = await readFile(
+      path.join(projectDir, ".github/workflows/deploy.yml"),
+      "utf8",
+    );
+    assert.doesNotMatch(deploy, /verify:lockfile/);
+    assert.match(deploy, /if: github\.ref == 'refs\/heads\/main' \|\| github\.ref_type == 'tag'/);
+    assert.doesNotMatch(deploy, /__[A-Z_]+__/);
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }
@@ -930,6 +1047,7 @@ test("--with-ci scaffolds runtime-native security files for deno-basic", async (
     await assert.rejects(
       access(path.join(projectDir, ".github/workflows/release.yml")),
     );
+    await access(path.join(projectDir, ".github/workflows/deploy.yml"));
     await assert.rejects(
       access(path.join(projectDir, "scripts/verify-lockfile-sources.mjs")),
     );
@@ -961,6 +1079,17 @@ test("--with-ci scaffolds runtime-native security files for deno-basic", async (
       /DENO_IMAGE=denoland\/deno:alpine@sha256:<digest>/,
     );
     assert.match(containerScan, /aquasecurity\/trivy-action@[0-9a-f]{40}\s+# v0/);
+
+    const deploy = await readFile(
+      path.join(projectDir, ".github/workflows/deploy.yml"),
+      "utf8",
+    );
+    assert.match(deploy, /on:\s*\n\s*workflow_dispatch:/);
+    assert.match(deploy, /packages:\s*write/);
+    assert.match(deploy, /denoland\/setup-deno@[0-9a-f]{40}\s+# v2\.0\.4/);
+    assert.match(deploy, /docker login ghcr\.io/);
+    assert.match(deploy, /if: github\.ref == 'refs\/heads\/main' \|\| github\.ref_type == 'tag'/);
+    assert.doesNotMatch(deploy, /__[A-Z_]+__/);
 
     const codeowners = await readFile(
       path.join(projectDir, ".github/CODEOWNERS"),
@@ -1046,6 +1175,66 @@ test("npm scaffold rewrites pnpm-prefixed scripts so `npm run gen` works", async
     assert.match(skill, /npm install <package>/);
     assert.doesNotMatch(skill, /pnpm/);
     assert.doesNotMatch(skill, /hardened `\.npmrc`/i);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("--with-ci scaffolds provider-specific deploy starters for edge adapters", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "create-daloy-"));
+  try {
+    const cases = [
+      {
+        projectName: "vercel-deploy",
+        template: "vercel-edge",
+        packageManager: "npm",
+        expected: [/npx vercel deploy --prod --yes --token/, /VERCEL_TOKEN/, /VERCEL_PROJECT_ID/],
+      },
+      {
+        projectName: "cloudflare-deploy",
+        template: "cloudflare-worker",
+        packageManager: "pnpm",
+        expected: [/pnpm exec wrangler deploy/, /CLOUDFLARE_API_TOKEN/, /CLOUDFLARE_ACCOUNT_ID/],
+      },
+    ];
+
+    for (const testCase of cases) {
+      const exitCode = await new Promise((resolve) => {
+        const proc = spawn(
+          process.execPath,
+          [
+            path.join(pkgRoot, "bin/create-daloy.mjs"),
+            testCase.projectName,
+            "--template",
+            testCase.template,
+            "--package-manager",
+            testCase.packageManager,
+            "--with-ci",
+            "--no-install",
+            "--no-git",
+            "--yes",
+          ],
+          { cwd: tmpDir, stdio: "ignore" },
+        );
+        proc.on("exit", (code) => resolve(code ?? 1));
+        proc.on("error", () => resolve(1));
+      });
+      assert.equal(exitCode, 0);
+
+      const deploy = await readFile(
+        path.join(tmpDir, testCase.projectName, ".github/workflows/deploy.yml"),
+        "utf8",
+      );
+      assert.match(deploy, /on:\s*\n\s*workflow_dispatch:/);
+      assert.match(deploy, /environment:\s*\n\s*name:\s*production/);
+      assert.match(deploy, /if: github\.ref == 'refs\/heads\/main' \|\| github\.ref_type == 'tag'/);
+      assert.match(deploy, /verify:lockfile/);
+      for (const expected of testCase.expected) {
+        assert.match(deploy, expected);
+      }
+      assert.doesNotMatch(deploy, /packages:\s*write/);
+      assert.doesNotMatch(deploy, /__[A-Z_]+__/);
+    }
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }
@@ -1713,6 +1902,9 @@ test("--yes + non-pnpm package manager defaults --with-ci to Y", async () => {
     await access(
       path.join(tmpDir, projectName, ".github/workflows/ci.yml"),
     );
+    await access(
+      path.join(tmpDir, projectName, ".github/workflows/deploy.yml"),
+    );
     await access(path.join(tmpDir, projectName, ".github/CODEOWNERS"));
     await access(path.join(tmpDir, projectName, "SECURITY.md"));
   } finally {
@@ -1736,4 +1928,5 @@ test("--help documents the secure-by-default install + CI defaults", async () =>
   assert.match(out, /minimumReleaseAge/);
   assert.match(out, /onlyBuiltDependencies/);
   assert.match(out, /--with-ci.*\(default: Y\)/);
+  assert.match(out, /--with-deploy.*inherits --with-ci/);
 });

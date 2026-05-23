@@ -333,6 +333,7 @@ ${heading("Options")}
   ${color(COLORS.green, "--git / --no-git")}           Initialize a git repository.
   ${color(COLORS.green, "--minimal")}                  Strip the bookstore + OpenAPI docs demo routes.
   ${color(COLORS.green, "--with-ci / --no-ci")}         Add hardened GitHub Actions + governance files. ${color(COLORS.dim, "(default: Y)")}
+  ${color(COLORS.green, "--with-deploy / --no-deploy")} Add starter deploy.yml workflow(s). ${color(COLORS.dim, "(default: inherits --with-ci)")}
   ${color(COLORS.green, "--code-owner <owner>")}        CODEOWNERS owner for --with-ci, e.g. @acme/security.
   ${color(COLORS.green, "--force")}                    Overwrite an existing non-empty directory.
   ${color(COLORS.green, "--yes, -y")}                  Accept all defaults; never prompt.
@@ -380,6 +381,7 @@ function parseArgs(argv) {
     listTemplates: false,
     minimal: false,
     ci: undefined,
+    deploy: undefined,
     codeOwner: undefined,
   };
   const args = [...argv];
@@ -393,6 +395,8 @@ function parseArgs(argv) {
     else if (a === "--minimal") out.minimal = true;
     else if (a === "--with-ci") out.ci = true;
     else if (a === "--no-ci") out.ci = false;
+    else if (a === "--with-deploy") out.deploy = true;
+    else if (a === "--no-deploy") out.deploy = false;
     else if (a === "--code-owner") out.codeOwner = args.shift();
     else if (a?.startsWith("--code-owner=")) out.codeOwner = a.slice("--code-owner=".length);
     else if (a === "--install") out.install = true;
@@ -686,6 +690,15 @@ function runScriptCommand(packageManager, scriptName) {
   return `${packageManager} run ${scriptName}`;
 }
 
+function execCommand(packageManager, binary, args = "") {
+  const suffix = args ? ` ${args}` : "";
+  if (packageManager === "pnpm") return `pnpm exec ${binary}${suffix}`;
+  if (packageManager === "npm") return `npx ${binary}${suffix}`;
+  if (packageManager === "yarn") return `yarn exec ${binary}${suffix}`;
+  if (packageManager === "bun") return `bunx ${binary}${suffix}`;
+  return `${binary}${suffix}`;
+}
+
 function installCommand(packageManager) {
   if (packageManager === "pnpm") return "pnpm install --frozen-lockfile --ignore-scripts";
   if (packageManager === "npm") return "npm ci --ignore-scripts";
@@ -740,6 +753,163 @@ function setupBunStep() {
           bun-version: latest`;
 }
 
+function setupNodeStep() {
+  return `      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          # Package-manager caching is intentionally disabled. Shared caches
+          # can bridge fork PRs into trusted branches when mis-keyed.`;
+}
+
+function installDependenciesStep(command) {
+  return `      - name: Install dependencies
+        run: ${command}
+        env:
+          npm_config_ignore_scripts: "true"`;
+}
+
+function joinWorkflowBlocks(blocks) {
+  return blocks.filter(Boolean).join("\n\n");
+}
+
+// Deploy job ref guard. `workflow_dispatch` accepts any branch by default, so
+// a junior could trigger a production deploy from an unreviewed feature
+// branch by accident. This `if:` limits the deploy job to `main` or a tag
+// push while still allowing maintainers to flip the guard off if they need
+// to deploy from a release branch.
+function deployRefGuard() {
+  return `    # Lock production deploys to main or a tag push. \`workflow_dispatch\`
+    # accepts any branch, so this guard stops an accidental dispatch from a
+    # feature branch from shipping unreviewed code.
+    if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'`;
+}
+
+function containerRegistryHeader() {
+  return `# Default target: GitHub Container Registry (GHCR).
+# No extra secret is required; the workflow uses the repo-scoped GITHUB_TOKEN.
+# After the image is published, point your platform at GHCR or replace the
+# final push steps with your provider's deploy command.
+#
+# Optional container-host handoff examples:
+#   - Fly.io: install flyctl in a later step and run
+#       flyctl deploy --image "$IMAGE_REPO:sha-\${GITHUB_SHA}" --remote-only
+#   - Render: create an image-backed service that tracks
+#       ghcr.io/<owner>/<repo>:sha-\${GITHUB_SHA}`;
+}
+
+function containerPublishSteps() {
+  return `      - name: Log in to GHCR
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          set -eu
+          echo "$GH_TOKEN" | docker login ghcr.io -u "\${{ github.actor }}" --password-stdin
+
+      - name: Derive image name
+        run: |
+          set -eu
+          owner="\${GITHUB_REPOSITORY_OWNER,,}"
+          repo="\${GITHUB_REPOSITORY#*/}"
+          repo="\${repo,,}"
+          echo "IMAGE_REPO=ghcr.io/\${owner}/\${repo}" >> "$GITHUB_ENV"
+
+      - name: Build image
+        env:
+          DOCKER_BUILDKIT: "1"
+        run: |
+          set -eu
+          docker build \
+            --tag "$IMAGE_REPO:sha-\${GITHUB_SHA}" \
+            --tag "$IMAGE_REPO:latest" \
+            .
+
+      - name: Push image
+        run: |
+          set -eu
+          docker push "$IMAGE_REPO:sha-\${GITHUB_SHA}"
+          docker push "$IMAGE_REPO:latest"`;
+}
+
+function vercelDeployHeader() {
+  return `# Configure before the first run:
+#   - GitHub Actions secret: VERCEL_TOKEN
+#   - GitHub Actions variables or environment variables: VERCEL_ORG_ID and VERCEL_PROJECT_ID
+# This workflow stays manual-only until you wire those in and decide whether
+# you want automatic deploys from main.`;
+}
+
+function cloudflareDeployHeader() {
+  return `# Configure before the first run:
+#   - GitHub Actions secret: CLOUDFLARE_API_TOKEN
+#   - GitHub Actions variable or environment variable: CLOUDFLARE_ACCOUNT_ID
+# Keep this manual-only until the worker is linked to the right account and
+# the production environment has approval rules.`;
+}
+
+function providerDeploySetup({ packageManager, needsBunRuntime }) {
+  return joinWorkflowBlocks([
+    setupPackageManagerStep(packageManager),
+    setupNodeStep(),
+    needsBunRuntime ? setupBunStep() : "",
+    installDependenciesStep(installCommand(packageManager)),
+  ]);
+}
+
+function vercelDeploySteps(packageManager) {
+  return `      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: \${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: \${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          set -eu
+          : "\${VERCEL_TOKEN:?Set the VERCEL_TOKEN Actions secret before running this workflow.}"
+          : "\${VERCEL_ORG_ID:?Set the VERCEL_ORG_ID Actions variable before running this workflow.}"
+          : "\${VERCEL_PROJECT_ID:?Set the VERCEL_PROJECT_ID Actions variable before running this workflow.}"
+          ${execCommand(packageManager, "vercel", "deploy --prod --yes --token \"$VERCEL_TOKEN\"")}`;
+}
+
+function cloudflareDeploySteps(packageManager) {
+  return `      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: \${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -eu
+          : "\${CLOUDFLARE_API_TOKEN:?Set the CLOUDFLARE_API_TOKEN Actions secret before running this workflow.}"
+          : "\${CLOUDFLARE_ACCOUNT_ID:?Set the CLOUDFLARE_ACCOUNT_ID Actions variable before running this workflow.}"
+          ${execCommand(packageManager, "wrangler", "deploy")}`;
+}
+
+function renderDeployConfig({ template, packageManager, needsBunRuntime }) {
+  if (template === "vercel-edge") {
+    return {
+      header: vercelDeployHeader(),
+      jobName: "Deploy to Vercel",
+      jobPermissions: "",
+      setupSteps: providerDeploySetup({ packageManager, needsBunRuntime }),
+      steps: vercelDeploySteps(packageManager),
+    };
+  }
+  if (template === "cloudflare-worker") {
+    return {
+      header: cloudflareDeployHeader(),
+      jobName: "Deploy to Cloudflare Workers",
+      jobPermissions: "",
+      setupSteps: providerDeploySetup({ packageManager, needsBunRuntime }),
+      steps: cloudflareDeploySteps(packageManager),
+    };
+  }
+  return {
+    header: containerRegistryHeader(),
+    jobName: "Publish container image",
+    jobPermissions: "      packages: write",
+    setupSteps: "",
+    steps: containerPublishSteps(),
+  };
+}
+
 function workflowStep(name, command) {
   return `      - name: ${name}
         run: ${command}`;
@@ -763,13 +933,21 @@ async function addLockfileVerifyScript(dir) {
   await writePackageJson(dir, packageJson);
 }
 
-function renderCiReplacements({ packageManager, template, packageJson, codeOwner }) {
+function renderCiReplacements({ packageManager, template, packageJson, codeOwner, includeSecurityBundle = true }) {
   const setupPm = setupPackageManagerStep(packageManager);
   const needsBunRuntime = template === "bun-basic" && packageManager !== "bun";
   const audit = auditCommand(packageManager);
   const auditFull = auditFullCommand(packageManager);
   const buildStep = hasPackageScript(packageJson, "build") ? workflowStep("Build", runScriptCommand(packageManager, "build")) : "";
   const auditStep = audit ? workflowStep(auditStepName(packageManager), audit) : "";
+  const deploy = renderDeployConfig({ template, packageManager, needsBunRuntime });
+  // The verify:lockfile script is only scaffolded when the security bundle
+  // ships. In a deploy-only scaffold the script does not exist on disk, so
+  // the deploy workflow must omit the step instead of failing fast on a
+  // missing file.
+  const deployVerifyLockfileStep = includeSecurityBundle
+    ? workflowStep("Verify lockfile sources", runScriptCommand(packageManager, "verify:lockfile"))
+    : "";
   // vuln-scan.yml: production-tree audit is blocking, full-tree audit is
   // advisory (continue-on-error) so a low-severity dev-tool advisory does
   // not page the on-call on a daily cron.
@@ -781,6 +959,13 @@ function renderCiReplacements({ packageManager, template, packageJson, codeOwner
     : "";
 
   return new Map([
+    ["__DEPLOY_HEADER__", deploy.header],
+    ["__DEPLOY_JOB_NAME__", deploy.jobName],
+    ["__DEPLOY_JOB_PERMISSIONS__", deploy.jobPermissions],
+    ["__DEPLOY_SETUP_STEPS__", deploy.setupSteps],
+    ["__DEPLOY_STEPS__", deploy.steps],
+    ["__DEPLOY_VERIFY_LOCKFILE_STEP__", deployVerifyLockfileStep],
+    ["__DEPLOY_REF_GUARD__", deployRefGuard()],
     ["__CODE_OWNER__", codeOwner],
     ["__SETUP_PACKAGE_MANAGER_STEP__", setupPm],
     ["__SETUP_BUN_RUNTIME_STEP__", needsBunRuntime ? setupBunStep() : ""],
@@ -817,7 +1002,35 @@ async function replacePlaceholdersInTree(dir, replacements) {
   }
 }
 
-async function copyCiBundle(targetDir, template, packageManager, skipPackageManager, codeOwner) {
+async function pruneCiBundle(targetDir, flavor, { includeSecurityBundle, includeDeployWorkflow }) {
+  if (!includeSecurityBundle) {
+    const workflowFiles = flavor === "deno"
+      ? ["ci.yml", "codeql.yml", "container-scan.yml", "scorecard.yml", "zizmor.yml"]
+      : ["ci.yml", "codeql.yml", "container-scan.yml", "scorecard.yml", "vuln-scan.yml", "zizmor.yml"];
+    for (const file of workflowFiles) {
+      await rm(path.join(targetDir, ".github", "workflows", file), { force: true });
+    }
+    await rm(path.join(targetDir, ".github", "dependabot.yml"), { force: true });
+    await rm(path.join(targetDir, ".github", "CODEOWNERS"), { force: true });
+    await rm(path.join(targetDir, "SECURITY.md"), { force: true });
+    if (flavor === "node") {
+      await rm(path.join(targetDir, "scripts", "verify-lockfile-sources.mjs"), { force: true });
+    }
+  }
+
+  if (!includeDeployWorkflow) {
+    await rm(path.join(targetDir, ".github", "workflows", "deploy.yml"), { force: true });
+  }
+}
+
+async function copyCiBundle(
+  targetDir,
+  template,
+  packageManager,
+  skipPackageManager,
+  codeOwner,
+  { includeSecurityBundle = true, includeDeployWorkflow = true } = {},
+) {
   const flavor = skipPackageManager ? "deno" : "node";
   const sourceDir = path.join(CI_TEMPLATES_DIR, flavor);
   if (!existsSync(sourceDir)) {
@@ -825,23 +1038,42 @@ async function copyCiBundle(targetDir, template, packageManager, skipPackageMana
   }
   await copyTemplate(sourceDir, targetDir);
 
-  const candidate = codeOwner?.trim() ?? "";
-  if (candidate && !VALID_CODE_OWNER.test(candidate)) {
-    throw new Error(
-      `Invalid --code-owner "${candidate}". Use a GitHub handle (@user), a team (@org/team), or an email address.`,
-    );
+  await pruneCiBundle(targetDir, flavor, { includeSecurityBundle, includeDeployWorkflow });
+
+  if (!includeSecurityBundle && !includeDeployWorkflow) {
+    return;
   }
+
+  const candidate = codeOwner?.trim() ?? "";
   const owner = candidate || "@your-org/security-team";
   if (skipPackageManager) {
+    if (includeSecurityBundle && candidate && !VALID_CODE_OWNER.test(candidate)) {
+      throw new Error(
+        `Invalid --code-owner "${candidate}". Use a GitHub handle (@user), a team (@org/team), or an email address.`,
+      );
+    }
     await replacePlaceholdersInTree(targetDir, new Map([["__CODE_OWNER__", owner]]));
     return;
   }
 
-  await addLockfileVerifyScript(targetDir);
+  if (includeSecurityBundle) {
+    if (candidate && !VALID_CODE_OWNER.test(candidate)) {
+      throw new Error(
+        `Invalid --code-owner "${candidate}". Use a GitHub handle (@user), a team (@org/team), or an email address.`,
+      );
+    }
+    await addLockfileVerifyScript(targetDir);
+  }
   const packageJson = await readPackageJsonIfPresent(targetDir);
   await replacePlaceholdersInTree(
     targetDir,
-    renderCiReplacements({ packageManager, template, packageJson, codeOwner: owner }),
+    renderCiReplacements({
+      packageManager,
+      template,
+      packageJson,
+      codeOwner: owner,
+      includeSecurityBundle,
+    }),
   );
 }
 
@@ -1213,7 +1445,7 @@ function createSpinner(initialMessage) {
   };
 }
 
-function printSummary({ projectName, template, packageManager, installDeps, skipPackageManager, withCi }) {
+function printSummary({ projectName, template, packageManager, installDeps, skipPackageManager, withCi, withDeploy }) {
   const templateMeta = TEMPLATE_OPTIONS.find((option) => option.value === template);
   const templateLabel = templateMeta ? `${templateMeta.title} ${color(COLORS.dim, `(${template})`)}` : template;
   const summaryLines = [
@@ -1229,6 +1461,9 @@ function printSummary({ projectName, template, packageManager, installDeps, skip
   }
   if (withCi) {
     summaryLines.push(`${color(COLORS.gray, "Security  ")} ${color(COLORS.cyan, "GitHub CI bundle")}`);
+  }
+  if (withDeploy) {
+    summaryLines.push(`${color(COLORS.gray, "Deploy    ")} ${color(COLORS.cyan, "Starter workflow")}`);
   }
   console.log("");
   console.log(renderBox(summaryLines, { accent: COLORS.green }));
@@ -1413,6 +1648,15 @@ async function main() {
       withCi = rl ? await askYesNo(rl, "Add hardened GitHub Actions and security files?", true) : true;
     }
 
+    let withDeploy = opts.deploy;
+    if (withDeploy === undefined) {
+      if (withCi) {
+        withDeploy = true;
+      } else {
+        withDeploy = rl ? await askYesNo(rl, "Add a starter deployment workflow?", false) : false;
+      }
+    }
+
     rl?.close();
 
     if (interactive) {
@@ -1443,9 +1687,18 @@ async function main() {
       }
     }
 
-    if (withCi) {
-      await copyCiBundle(targetDir, template, packageManager, skipPackageManager, opts.codeOwner);
-      logStep("GitHub security bundle added", skipPackageManager ? "deno" : packageManager);
+    if (withCi || withDeploy) {
+      await copyCiBundle(targetDir, template, packageManager, skipPackageManager, opts.codeOwner, {
+        includeSecurityBundle: withCi,
+        includeDeployWorkflow: withDeploy,
+      });
+      if (withCi && withDeploy) {
+        logStep("GitHub automation added", `${skipPackageManager ? "deno" : packageManager} + deploy`);
+      } else if (withCi) {
+        logStep("GitHub security bundle added", skipPackageManager ? "deno" : packageManager);
+      } else if (withDeploy) {
+        logStep("Deploy starter added", template);
+      }
     }
 
     if (initGit) {
@@ -1474,7 +1727,7 @@ async function main() {
       }
     }
 
-    printSummary({ projectName, template, packageManager, installDeps, skipPackageManager, withCi });
+    printSummary({ projectName, template, packageManager, installDeps, skipPackageManager, withCi, withDeploy });
   } catch (err) {
     rl?.close();
     if (err && err.message === "Cancelled") {

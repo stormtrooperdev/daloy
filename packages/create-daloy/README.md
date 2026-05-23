@@ -57,6 +57,7 @@ pnpm create daloy@latest my-api \
 | `--git` / `--no-git` | Initialize a git repository. Defaults to interactive. |
 | `--minimal` | Strip the bookstore demo route and the built-in `/docs` + `/openapi.json` routes so only the framework bootstrap and `/healthz` ship. |
 | `--with-ci` / `--no-ci` | Add the hardened GitHub Actions, Dependabot, CODEOWNERS, SECURITY.md, and lockfile-source verification bundle. **Defaults to Y** so scaffolded projects are secure by default. |
+| `--with-deploy` / `--no-deploy` | Add the starter `.github/workflows/deploy.yml`. Defaults to the same value as `--with-ci`, so you can keep CI but opt out of deploy scaffolding with `--no-deploy`. |
 | `--code-owner <owner>` | Replace the CODEOWNERS placeholder when `--with-ci` is used, for example `@acme/security`. |
 | `--force` | Overwrite an existing non-empty directory. |
 | `--yes` | Accept all defaults; never prompt. |
@@ -153,6 +154,12 @@ For Node-style templates, the bundle adds:
 - `.github/workflows/ci.yml` with top-level `permissions: {}`, pinned actions,
   `harden-runner`, `persist-credentials: false`, no package-manager cache, and
   install scripts disabled.
+- `.github/workflows/deploy.yml` as a manual-only deployment starter. Container
+  templates publish a Docker image to GHCR with the repo-scoped `GITHUB_TOKEN`,
+  while Vercel and Cloudflare templates ship concrete CLI deploy steps that
+  read their platform credentials from GitHub Actions secrets/variables. The
+  deploy job is gated to `main` or a tag by default, and Node-style templates
+  re-run `verify:lockfile` before shipping.
 - `.github/workflows/vuln-scan.yml` — a daily scheduled SCA cron that runs the
   package manager's audit against the committed lockfile. Catches CVEs disclosed
   *after* the last PR or push and provides SOC 2 CC7.1
@@ -166,8 +173,14 @@ The bundle deliberately does **not** generate an npm publish workflow.
 `create-daloy` scaffolds REST API services, not libraries; if you later carve
 out a reusable package, opt into npm trusted publishing yourself.
 
-For `deno-basic`, `--with-ci` generates a Deno-native CI workflow plus CodeQL,
-Scorecard, zizmor, Dependabot for GitHub Actions, CODEOWNERS, and `SECURITY.md`.
+For `deno-basic`, `--with-ci` generates a Deno-native CI workflow, a manual-only
+container publish starter for GHCR that is guarded to `main` or a tag by
+default, plus CodeQL, Scorecard, zizmor, Dependabot for GitHub Actions,
+CODEOWNERS, and `SECURITY.md`.
+
+If you want the governance bundle but not the deployment starter, pass
+`--with-ci --no-deploy`. If you only want a deployment starter, pass
+`--with-deploy --no-ci`.
 
 If you omit `--code-owner`, the generated CODEOWNERS file uses
 `@your-org/security-team` as a placeholder. Replace it before relying on branch
