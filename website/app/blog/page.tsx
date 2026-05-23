@@ -13,6 +13,16 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "aikido-top-10-app-security-problems-mapped-to-daloyjs",
+    title:
+      "Aikido's Top 10 App Security Problems, Mapped to DaloyJS (and the One Gap We Just Closed)",
+    description:
+      "Aikido's 'Top 10 App Security Problems' is the short, blunt version of the OWASP list \u2014 SQLi, XSS, SSRF, path traversal, XXE, deserialization, shell injection, LFI, prototype pollution, open redirects. Here's the honest per-item mapping of what a DaloyJS app already blocks by default, what one opt-in line adds, and the single gap we shipped a new helper for in 0.34.4: safeRedirect().",
+    date: "2026-05-24",
+    readingTime: "10 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "international-ai-safety-report-2026-minimum-safety-baseline-for-ai-backends",
     title:
       "The International AI Safety Report 2026, Translated Into a Minimum Safety Baseline for AI Backends",
