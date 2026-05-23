@@ -35,6 +35,61 @@ Please include:
 - Triage decision: within 7 business days.
 - Fix release: as soon as practical, prioritized ahead of normal roadmap work.
 
+### Patch SLA (for downstream NIS2 / EU CRA procurement clauses)
+
+EU procurement contracts written against NIS2 risk-management measures
+(Article 21) and the Cyber Resilience Act increasingly demand explicit
+upstream patch windows keyed to CVSS severity, measured **from the moment
+the upstream patch becomes available** (see Aikido's
+["Your Client Requires NIS2 Vulnerability Patching. Now What?"](https://www.aikido.dev/blog/your-client-requires-nis2-vulnerability-patching-now-what)).
+For confirmed vulnerabilities in `@daloyjs/core` or `create-daloy`, the
+upstream release commitment is:
+
+| Severity (CVSS v3.1 base score) | Patch released within | Measured from |
+| --- | --- | --- |
+| **Critical** (9.0–10.0) | **48 hours** | Triage decision confirming the report |
+| **High** (7.0–8.9) | **7 days** | Triage decision confirming the report |
+| **Medium** (4.0–6.9) | **30 days** | Triage decision confirming the report |
+| **Low** (0.1–3.9) | **90 days** | Triage decision confirming the report |
+
+These are commitments for the **upstream patch** (a new `@daloyjs/core` /
+`create-daloy` version on npm with a matching GitHub Security Advisory);
+the consumer's own deploy window is the consumer's responsibility. SLA
+timers start once triage has confirmed the report is in-scope and
+reproducible — open questions, "won't fix" decisions, and reports that
+turn out to be in user code rather than the framework do not consume the
+clock. When a fix slips the SLA, the GitHub Security Advisory carries a
+visible `slo-breach: …` note explaining why so downstream procurement can
+record the cause rather than guess.
+
+### Evidence produced per advisory (NIS2 documentation pattern)
+
+For every confirmed vulnerability we publish a [GitHub Security
+Advisory](https://github.com/daloyjs/daloy/security/advisories) (GHSA) and
+request a CVE through GitHub's CNA. Each advisory carries the three
+timestamps a NIS2-aligned procurement audit needs:
+
+1. **Discovered** — date the private report landed in the inbox (or, for
+   internally-discovered issues, the date of the first PR / commit
+   referencing the class).
+2. **Patch available** — the published `@daloyjs/core` / `create-daloy`
+   version and the npm publish timestamp, bound to the source commit by
+   the npm `--provenance` Sigstore attestation (§ npm publishing).
+3. **Fix deployed** — for the framework itself, identical to (2); for the
+   consumer, the consumer's `pnpm install` is the deploy event and is
+   evidenced by the consumer's lockfile diff.
+
+The advisory also lists the CVSS v3.1 vector, the affected version range,
+the fixed version, and the `pnpm` / `npm` upgrade command. The npm
+provenance attestation on the fixed tarball binds the patched bytes to the
+public `release.yml` workflow run on the Rekor transparency log, so
+auditors can verify (2) without trusting a vendor portal. The published
+CycloneDX 1.5 and SPDX 2.3 SBOM (§ Aikido SBOM-standards mapping) is the
+dependency-inventory of record for matching CVEs against installed
+versions; the daily `pnpm audit --prod`
+([`.github/workflows/vuln-scan.yml`](.github/workflows/vuln-scan.yml)) is
+the upstream continuous-monitoring signal.
+
 ## Scope
 
 Security reports are especially useful for:
@@ -777,6 +832,66 @@ mis-scope the claim:
   CVE is later disclosed, the daily `pnpm audit --prod`
   ([`.github/workflows/vuln-scan.yml`](.github/workflows/vuln-scan.yml)) is
   the live signal; the SBOM is the dependency-inventory of record.
+
+### Aikido NIS2 vulnerability-patching mapping (Article 21 procurement clauses)
+
+Aikido's 2025-01-14 write-up
+["Your Client Requires NIS2 Vulnerability Patching. Now What?"](https://www.aikido.dev/blog/your-client-requires-nis2-vulnerability-patching-now-what)
+documents the now-standard procurement-contract clauses EU enterprises are
+pushing down to every supplier under Article 21 of the NIS2 directive
+(transposed into national law across the EU through 2024/2025): explicit
+severity-keyed patch SLAs measured from patch-availability, three-timestamp
+documentation per advisory (discovered / patch-available / deployed),
+continuous (daily) vulnerability scanning, and a documented vulnerability-
+management process the buyer can audit. DaloyJS is an upstream npm package,
+not an end-user service, so we cannot satisfy NIS2 on the consumer's behalf
+— but every primitive a NIS2-regulated consumer needs from an upstream
+dependency to answer their own procurement audit is shipped today. The
+mapping below is explicit so a Daloy consumer who receives the email from
+the article ("all software components used for delivering the services must
+be patched within the following timeframes…") can answer per-clause from a
+single link instead of an internal investigation.
+
+| NIS2 procurement-clause requirement (Aikido article) | DaloyJS control |
+| --- | --- |
+| **Patch SLA — Critical 48 h / High 7 d / Medium 30 d / Low 90 d**, measured from patch-availability | The upstream patch-release SLA in § Patch SLA above commits to **identical** windows (Critical 48 h, High 7 d, Medium 30 d, Low 90 d) for confirmed in-scope vulnerabilities in `@daloyjs/core` and `create-daloy`, measured from triage confirmation. The consumer's downstream deploy window is the consumer's responsibility, but the upstream patch will be available inside the same window the consumer's contract names. |
+| **Three-timestamp documentation per advisory** — when discovered, when patch became available, when deployed | Every GitHub Security Advisory we publish carries the discovered date and the fixed-version publish timestamp (§ Evidence produced per advisory). The fixed-version publish timestamp is bound to the source commit and the `release.yml` workflow run via the npm `--provenance` Sigstore attestation on the Rekor transparency log, so the "patch available" timestamp is publicly verifiable without a vendor portal. The consumer's "deployed" timestamp is their lockfile diff (`pnpm-lock.yaml` blame on the `@daloyjs/core` line). |
+| **Continuous vulnerability scanning — "most companies interpret this as daily"** | The daily SCA workflow ([`.github/workflows/vuln-scan.yml`](.github/workflows/vuln-scan.yml), 06:13 UTC) runs `pnpm audit --prod` against the committed lockfile on a fixed schedule, independent of PR/push activity, so newly-disclosed CVEs in pinned dependencies are surfaced even on quiet days — the same cadence Aikido recommends and the SOC 2 CC7.1 "continuous monitoring" baseline (§ CI/CD). OpenSSF Scorecard publishes a continuous score and CodeQL re-scans on schedule. |
+| **CVE monitoring for every component in the stack** | The CycloneDX 1.5 (`dist/sbom.cdx.json`) and SPDX 2.3 (`dist/sbom.spdx.json`) SBOMs ship inside every `@daloyjs/core` / `create-daloy` tarball (§ Aikido SBOM-standards mapping), with purls (`pkg:npm/<name>@<version>`) for every runtime component, so a consumer's SCA can match published CVEs against the exact versions actually installed. `@daloyjs/core` declares **zero runtime dependencies**, so the framework's contribution to that match-set is empty by construction. |
+| **Documented vulnerability-management process the buyer can audit** | This `SECURITY.md` is the documented process: § Reporting a Vulnerability (private channel via GitHub Security Advisories), § Response Target (acknowledgement / triage / patch SLA), § Evidence produced per advisory (three-timestamp documentation), § Recurring security-disclosure exercise (quarterly re-verification), § Maintainer accounts (mandatory hardware-backed 2FA), and § Governance floor (CI gates that refuse to remove any control). The whole file is version-controlled, signed-commit history is on GitHub, and the active rotation in [`SECURITY-CONTACTS.md`](SECURITY-CONTACTS.md) is enforced by the pre-publish `verify` job in [`release.yml`](.github/workflows/release.yml). |
+| **Evidence of compliance through automated tracking** | The CI gate stack runs on every PR, every push to `main`, and inside the publish job — `pnpm verify:governance-audits`, `verify:lockfile`, `verify:no-runtime-deps`, `verify:no-lifecycle-scripts`, `verify:no-remote-exec`, `verify:actions-pinned`, `verify:sbom`, `verify:no-leaked-credentials`, `verify:no-invisible-unicode`, etc. Every run is publicly visible in the GitHub Actions tab. The npm `--provenance` Sigstore attestation on every published tarball is the cryptographic evidence that the bytes were produced by the public workflow — auditable without trusting any private dashboard. |
+| **Regular status updates on remediation efforts** | GitHub Security Advisories transition through `draft → published`, list the fixed version, and are surfaced to `pnpm audit` consumers immediately. Each advisory links the underlying PR and the npm publish URL with its provenance attestation. For incidents that affect more than one release line, [`PROJECT_HISTORY.md`](PROJECT_HISTORY.md) carries a one-line bullet at the top so the timeline is append-only and reviewable. |
+| **Risk-management measures — severity assessment, remediation tracking, justified delays, SLA reporting** | Severity assessment uses CVSS v3.1 (vector + base score in every GHSA). Remediation tracking is the GHSA + linked PR + linked release. Justified delays carry a visible `slo-breach: …` note in the GHSA when an SLA window slips, so the cause is on the record. The recurring quarterly disclosure exercise (§ Recurring security-disclosure exercise) re-verifies that the inbox, the active rotation, the `npm-publish` Environment, the governance gate, and the active contacts' recovery-email domains are all still working — a missed quarter fails CI loud. |
+| **Supply-chain security pushdown** (NIS2 Article 21 §2(d): "supply chain security, including security-related aspects concerning the relationships between each entity and its direct suppliers or service providers") | Every per-incident mapping in this file (Snyk's foundational pattern, shopsprint, IR.* NuGet, axios 2026, node-ipc 2026-05-14, Lightning / Shai-Hulud, GlassWorm, Lazarus BeaverTail, RATatouille, xrpl, Telegram-bot, advcash, fast-draft / BlokTrooper, Aikido "Malware Dating Guide") is the granular supply-chain-security evidence a NIS2 buyer can cite when their own procurement asks "what does your upstream framework do about supply-chain attacks". Zero runtime deps in `@daloyjs/core` (`pnpm verify:no-runtime-deps`), `ignore-scripts=true` + `minimum-release-age=1440` in both the root [`.npmrc`](.npmrc) and every scaffolded template `_npmrc`, SHA-pinned third-party Actions, `step-security/harden-runner` egress block on publish, and npm Trusted Publishing (OIDC) with no long-lived `NPM_TOKEN` are the framework-level controls; the per-incident tables are the regression-tested proof. |
+
+What this **does not** defend against, said explicitly so operators do
+not mis-scope the claim:
+
+- **NIS2 compliance for the consumer's own service.** NIS2 obligations
+  attach to the consumer (the "essential" or "important" entity providing
+  the service), not to upstream framework authors. DaloyJS gives a
+  consumer the upstream evidence they need to answer one item in their
+  procurement audit; the rest of their dependency tree, their own
+  application code, their cloud configuration, their incident-reporting
+  process to the national CSIRT (24 h early warning, 72 h notification,
+  1-month final report under Article 23), and their staff training are
+  the consumer's responsibility.
+- **A patch SLA on vulnerabilities that turn out not to be in
+  `@daloyjs/core` or `create-daloy`.** Reports that resolve to user code,
+  to a misconfigured handler, to a non-Daloy third-party dependency the
+  consumer installed, or to "won't fix" decisions (e.g. an out-of-scope
+  request from § Explicitly out of scope) do not consume the SLA timer.
+  We will say so in the triage response and link to the relevant
+  in-scope/out-of-scope row.
+- **Procurement-portal integration.** We publish GitHub Security
+  Advisories, the npm registry's vulnerability metadata, and an SBOM in
+  every tarball. Mapping that into a buyer's specific procurement portal
+  (Aikido, OneTrust, ServiceNow GRC, etc.) is the buyer's integration
+  work; we deliberately do not vend a portal or an API key.
+
+If a future NIS2-aligned procurement clause names a control the framework
+should support and currently does not, treat the gap as a release-blocking
+bug and open a private advisory.
 
 ### Governance floor (reaffirmed)
 
