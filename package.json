@@ -175,6 +175,7 @@
     "verify:lockfile": "node --import tsx scripts/verify-lockfile-sources.ts",
     "verify:no-runtime-deps": "node --import tsx scripts/verify-no-runtime-deps.ts",
     "verify:no-lifecycle-scripts": "node --import tsx scripts/verify-no-lifecycle-scripts.ts",
+    "verify:no-shrinkwrap": "node --import tsx scripts/verify-no-shrinkwrap.ts",
     "verify:no-bin-shadowing": "node --import tsx scripts/verify-no-bin-shadowing.ts",
     "verify:secret-comparisons": "node --import tsx scripts/verify-secret-comparisons.ts",
     "verify:no-unsafe-buffer": "node --import tsx scripts/verify-no-unsafe-buffer.ts",

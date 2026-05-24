@@ -15,6 +15,14 @@ generated/
 # pnpm
 .pnpm-store/
 
+# npm shrinkwrap — DaloyJS publishes via pnpm with `frozen-lockfile=true`
+# and `verify-store-integrity=true`; an `npm-shrinkwrap.json` checked in
+# here would silently override that posture for anyone installing
+# `@daloyjs/core` via plain `npm install`. Enforced at CI by
+# `pnpm verify:no-shrinkwrap` (Socket npm-shrinkwrap gate).
+npm-shrinkwrap.json
+package-lock.json
+
 
 PROJECT_HISTORY.md
 

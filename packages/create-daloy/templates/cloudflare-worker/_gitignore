@@ -9,3 +9,8 @@ dist/
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
+
+# An `npm-shrinkwrap.json` published with a package overrides the
+# consumer's lockfile and can pin transitives to unsigned tarballs.
+# See https://socket.dev/blog/understanding-the-security-concerns-of-npm-shrinkwrap
+npm-shrinkwrap.json
