@@ -173,6 +173,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/ai-metadata", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/typed-client", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/streaming", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/docs/tracing", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/websocket", changeFrequency: "monthly", priority: 0.8 },
   {
     path: "/docs/architecture/modular-monolith",
@@ -199,6 +200,8 @@ const STATIC_PATHS: Array<{
   { path: "/docs/security/session", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/security/compliance", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/security/scanning-tools", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/security/rate-limit-redis", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/security/supply-chain", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/adapters", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/adapters/node", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/adapters/bun", changeFrequency: "monthly", priority: 0.7 },
@@ -268,6 +271,11 @@ const STATIC_PATHS: Array<{
   { path: "/docs/auth/clerk", changeFrequency: "monthly", priority: 0.7 },
   {
     path: "/docs/tutorials/bookstore",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/docs/tutorials/fake-rest-api",
     changeFrequency: "monthly",
     priority: 0.7,
   },

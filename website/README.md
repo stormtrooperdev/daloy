@@ -27,19 +27,32 @@ pnpm start        # serve the production build
 
 ## Structure
 
-- `src/app/page.tsx` — landing page (hero, features, comparison matrix, CTA)
-- `src/app/docs/layout.tsx` — sidebar layout for all docs routes
-- `src/app/docs/**` — every docs page (intro, installation, getting started, routing, validation, plugins, errors, openapi, typed-client, testing, security, adapters, deployment, tutorials, api-reference)
-- `src/components/site-header.tsx` — top nav
-- `src/components/docs-sidebar.tsx` — docs sidebar (edit `docsNav` to add pages)
-- `src/components/code-block.tsx` — code-block component used in docs pages
-- `src/components/ui/*` — shadcn/ui primitives (button, card, badge, separator)
+This project uses Next.js' App Router at the repository root (no `src/` directory).
+
+- `app/page.tsx` — landing page (hero, features, comparison matrix, CTA)
+- `app/layout.tsx` — root layout, metadata, theme provider
+- `app/docs/layout.tsx` — sidebar layout shared by all docs routes
+- `app/docs/**` — every docs page (intro, installation, getting started, routing, validation, plugins, errors, openapi, typed-client, testing, security, adapters, deployment, tutorials, api-reference)
+- `app/blog/**` — blog posts (one folder per slug)
+- `app/sitemap.ts`, `app/robots.ts`, `app/manifest.ts`, `app/opengraph-image.tsx` — generated SEO/PWA assets
+- `components/site-header.tsx` — top nav
+- `components/docs-sidebar.tsx` + `components/docs-nav.ts` — docs sidebar (edit `docsNav` in `docs-nav.ts` to add pages)
+- `components/docs-search.tsx` — `cmdk`-powered docs search
+- `components/code-block.tsx` — Shiki-rendered code blocks used in docs and blog pages
+- `components/ui/*` — shadcn/ui primitives (button, card, badge, separator, dialog, command, input, input-group, textarea)
+- `lib/` — small shared helpers (SEO, structured data, code highlighting)
+- `hooks/` — client-side React hooks
+- `scripts/` — build-time asset generators (e.g. `assets:render`)
+- `proxy.ts` — Next.js proxy / rewrite configuration
 
 ## Add a page
 
-1. Create `src/app/docs/<slug>/page.tsx` — export a default React component.
-2. Add `{ title: "...", href: "/docs/<slug>" }` to the appropriate section of `docsNav` in `src/components/docs-sidebar.tsx`.
+1. Create `app/docs/<slug>/page.tsx` — export a default React component.
+2. Add `{ title: "...", href: "/docs/<slug>" }` to the appropriate section of `docsNav` in `components/docs-nav.ts`.
+3. Add the route to `app/sitemap.ts` so it ships in the sitemap.
+
+For a blog post, create `app/blog/<slug>/page.tsx`, register it in `app/blog/page.tsx`, and add the matching entry to `app/sitemap.ts`. See [`AGENTS.md`](./AGENTS.md) for the full voice/stack rules.
 
 ## Add a shadcn component
 
-Components live under `src/components/ui/`. Add new primitives by following the shadcn/ui new-york pattern; the registry is configured in `components.json`.
+Components live under `components/ui/`. Add new primitives by following the shadcn/ui new-york pattern; the registry is configured in `components.json`.
