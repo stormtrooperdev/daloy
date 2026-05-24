@@ -40,7 +40,7 @@ on:
     # 06:13 UTC daily — offset from CodeQL (Mon 04:37), Scorecard (Tue 05:23),
     # and Zizmor (daily 07:00) so the four scheduled security workflows do
     # not all queue at once.
-    - cron: "13 6 * * *"
+    - cron: "13 6 * * *" # Daily at 06:13 UTC
   workflow_dispatch:
 
 permissions: {}

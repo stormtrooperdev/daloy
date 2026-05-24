@@ -44,7 +44,7 @@ on:
   schedule:
     # 08:21 UTC daily — offset from CodeQL (Mon 04:37), Scorecard (Tue 05:23),
     # Vuln scan (daily 06:13), Zizmor (daily 07:00), and DAST (Wed 07:42).
-    - cron: "21 8 * * *"
+    - cron: "21 8 * * *" # Daily at 08:21 UTC
   workflow_dispatch:
 
 permissions: {}

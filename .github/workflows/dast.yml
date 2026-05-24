@@ -62,7 +62,7 @@ on:
     # 07:42 UTC weekly (Wed) — offset from CodeQL (Mon 04:37), Scorecard
     # (Tue 05:23), Zizmor (daily 07:00), and Vuln scan (daily 06:13) so
     # the scheduled security workflows do not all queue at once.
-    - cron: "42 7 * * 3"
+    - cron: "42 7 * * 3" # Weekly on Wednesday at 07:42 UTC
   workflow_dispatch:
 
 permissions: {}

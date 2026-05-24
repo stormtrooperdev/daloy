@@ -5,7 +5,7 @@ name: Scorecard
 on:
   branch_protection_rule:
   schedule:
-    - cron: "23 5 * * 2"
+    - cron: "23 5 * * 2" # Weekly on Tuesday at 05:23 UTC
   push:
     branches: [main]
 

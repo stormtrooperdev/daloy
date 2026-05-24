@@ -86,8 +86,7 @@ A minimal Cloudflare Worker bootstrap using `@daloyjs/core/cloudflare` with:
 
 - `wrangler.toml` ready to deploy.
 - `secureHeaders` and `requestId` enabled by default, with smaller edge-friendly body and timeout limits.
-- Zod-validated route exposed as `fetch`.
-- A sample test that exercises `app.request(...)`.
+- A Zod-validated `/healthz` route and contract-first `/books/:id` route exposed via `toFetchHandler(app)`.
 
 ### `vercel-edge`
 
@@ -188,6 +187,17 @@ For Node-style templates, the bundle adds:
   for this scan. See Aikido's
   [Secrets Detection guide](https://www.aikido.dev/blog/secret-detection-application-security)
   for why history-aware scanning is the floor and not the ceiling.
+- `.github/workflows/opengrep.yml` — a second SAST source alongside CodeQL,
+  using [Opengrep](https://github.com/opengrep/opengrep) (an open-source
+  Semgrep fork) with the same pinned-binary + SHA-256-verified pattern as the
+  OSV and gitleaks scans.
+- `.github/workflows/container-scan.yml` — runs Trivy against the image
+  produced by the template's `_Dockerfile` (filesystem scan on PR, full image
+  scan on push to `main`) so a base-image CVE or a vulnerable layer is
+  surfaced before deploy.
+- `.github/workflows/dast.yml` — a manual-only dynamic-analysis workflow that
+  boots the scaffolded API and runs an OWASP ZAP baseline scan against it,
+  for teams that want a black-box check before promoting a release.
 - CodeQL, OpenSSF Scorecard, zizmor, Dependabot, CODEOWNERS, and `SECURITY.md`.
 - `scripts/verify-lockfile-sources.mjs` plus a `verify:lockfile` package script
   that rejects git dependencies and non-registry tarball URLs in text lockfiles.
@@ -211,12 +221,21 @@ If you omit `--code-owner`, the generated CODEOWNERS file uses
 protection. You should also enable GitHub secret scanning, push protection, and
 required status checks in the repository settings.
 
+## Container-first scaffolds
+
+Every template (Node, Bun, Vercel Edge, Cloudflare Worker, and Deno) ships a
+production-oriented `Dockerfile` and `.dockerignore` with the secure-by-default
+posture from `@daloyjs/core` `0.24.0`: a non-root user, `STOPSIGNAL SIGTERM`,
+`tini` as PID 1, and a `HEALTHCHECK` pointed at `/readyz`. Node-style templates
+also ship an `.env.example`. None of this is required — delete or replace
+whatever you do not need.
+
 ## What the CLI guarantees
 
 - Zero runtime dependencies (uses only Node built-ins) for a clean supply-chain footprint.
 - A modern terminal experience with Unicode/color capability detection and ASCII fallbacks.
 - Templates are copied verbatim from this package's `templates/` directory.
-- Files and folders prefixed with `_` are renamed on copy (`_gitignore` → `.gitignore`, `_npmrc` → `.npmrc`, `_github/` → `.github`, `_agents/` → `.agents/`) to survive npm packing.
+- Files and folders prefixed with `_` are renamed on copy (`_gitignore` → `.gitignore`, `_npmrc` → `.npmrc`, `_github/` → `.github`, `_agents/` → `.agents/`, `_Dockerfile` → `Dockerfile`, `_dockerignore` → `.dockerignore`, `_env.example` → `.env.example`) to survive npm packing.
 - pnpm-specific `.npmrc` hardening is kept only when you choose `pnpm`; other package managers get a clean project without unsupported config warnings.
 - pnpm projects ship with `ignore-scripts=true`, `minimum-release-age=1440`, `verify-store-integrity=true`, `prefer-frozen-lockfile=true`, and `strict-peer-dependencies=true` by default.
 - `--with-ci` projects ship with pinned GitHub Actions workflows, CODEOWNERS, Dependabot, SECURITY.md, and lockfile-source verification.

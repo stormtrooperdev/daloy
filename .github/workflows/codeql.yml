@@ -14,7 +14,7 @@ on:
       - "website/**"
   schedule:
     # Weekly re-scan even when nothing changes — catches new query rules.
-    - cron: "37 4 * * 1"
+    - cron: "37 4 * * 1" # Weekly on Monday at 04:37 UTC
 
 permissions: {}
 

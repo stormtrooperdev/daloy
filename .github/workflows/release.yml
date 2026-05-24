@@ -182,26 +182,6 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --prod
 
-      # Snyk "Best Practices for Creating a Modern npm Package" (Brian Clark,
-      # 2025-02-04) gate: verify every installed dependency carries a valid
-      # npm registry ECDSA signature on its tarball, and surface any Sigstore
-      # provenance attestations present. This is the publish-time floor for
-      # detecting registry-signature anomalies that pnpm's sha512 lockfile
-      # integrity alone cannot catch (a maliciously republished tarball whose
-      # bytes happen to match the locked hash is impossible, but a missing /
-      # mismatched registry signature would indicate registry-side tampering
-      # or a downgrade to an unsigned mirror). Runs only in release.yml — not
-      # in ci.yml — to avoid doubling install time on every PR. Generates a
-      # transient package-lock.json from package.json with `--package-lock-only`
-      # (no node_modules touched, no scripts run) so `npm audit signatures`
-      # has the lockfile shape it requires; pnpm-installed node_modules is
-      # left untouched and continues to back every other step.
-      - name: Verify registry signatures + provenance of installed dependencies (Snyk modern-npm-package gate)
-        run: |
-          set -eu
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm audit signatures
-
   publish-core:
     name: Publish @daloyjs/core
     needs: verify

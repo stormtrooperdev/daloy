@@ -67,7 +67,7 @@ on:
   schedule:
     # 06:47 UTC daily — offset from vuln-scan (06:13) and Zizmor (07:00)
     # so the two SCA jobs do not collide.
-    - cron: "47 6 * * *"
+    - cron: "47 6 * * *" # Daily at 06:47 UTC
   workflow_dispatch:
 
 permissions: {}
