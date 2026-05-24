@@ -5,6 +5,7 @@ import {
   ALLOWED_DEP_NAMES,
   SCANNED_PACKAGE_JSONS,
   findAliasedDependencySpecifiers,
+  findGitOrUrlDependencySpecifiers,
   findUnknownDependencyNames,
 } from "../scripts/verify-known-dep-names.ts";
 
@@ -151,6 +152,78 @@ test("ignores non-string specifier values (defensive)", () => {
       a: 42 as unknown as string,
       b: null as unknown as string,
       c: "npm:real@1",
+    },
+  });
+  assert.equal(out.length, 1);
+  assert.equal(out[0]!.name, "c");
+});
+
+test("every scanned package.json has zero git/url dep specifiers", async () => {
+  for (const rel of SCANNED_PACKAGE_JSONS) {
+    const text = await readFile(new URL(rel, REPO_ROOT), "utf8");
+    const pkg = JSON.parse(text);
+    const nonRegistry = findGitOrUrlDependencySpecifiers(rel, pkg);
+    assert.deepEqual(
+      nonRegistry,
+      [],
+      `unexpected non-registry dep specifiers in ${rel}: ${nonRegistry
+        .map((v) => `${v.block}["${v.name}"]="${v.specifier}"`)
+        .join(", ")}`,
+    );
+  }
+});
+
+test("flags every git-dependency shorthand (Socket gitDependency alert)", () => {
+  const out = findGitOrUrlDependencySpecifiers("fake.json", {
+    dependencies: {
+      a: "git+https://github.com/o/r.git#v1",
+      b: "git+ssh://git@github.com/o/r.git",
+      c: "git://github.com/o/r.git",
+      d: "github:o/r#v1",
+      e: "gitlab:o/r",
+      f: "bitbucket:o/r",
+      g: "gist:abc123",
+      h: "git@github.com:o/r.git",
+      i: "ssh://git@github.com/o/r.git",
+    },
+  });
+  assert.equal(out.length, 9);
+  assert.ok(out.every((v) => v.kind === "git"));
+});
+
+test("flags raw http(s) tarball specifiers (Socket httpDependency alert)", () => {
+  const out = findGitOrUrlDependencySpecifiers("fake.json", {
+    dependencies: {
+      a: "https://example.com/pkg.tgz",
+      b: "http://example.com/pkg.tgz",
+    },
+  });
+  assert.equal(out.length, 2);
+  assert.ok(out.every((v) => v.kind === "url"));
+});
+
+test("does not flag normal registry specifiers, workspace:, or file:", () => {
+  const out = findGitOrUrlDependencySpecifiers("fake.json", {
+    dependencies: {
+      a: "^1.2.3",
+      b: "1.2.3",
+      c: "*",
+      d: "latest",
+      e: "file:../local-pkg",
+      f: "workspace:*",
+      g: "npm:real@1",
+      h: "~2.0.0",
+    },
+  });
+  assert.deepEqual(out, []);
+});
+
+test("ignores non-string specifier values in git/url scan (defensive)", () => {
+  const out = findGitOrUrlDependencySpecifiers("fake.json", {
+    dependencies: {
+      a: 42 as unknown as string,
+      b: null as unknown as string,
+      c: "git+https://github.com/o/r.git",
     },
   });
   assert.equal(out.length, 1);

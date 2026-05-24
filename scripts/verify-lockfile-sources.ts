@@ -262,14 +262,19 @@ export function findForbiddenLockfileSources(lockfile: string): ForbiddenLockfil
 }
 
 async function main(): Promise<void> {
-  const lockfile = await readFile(new URL("../pnpm-lock.yaml", import.meta.url), "utf8");
-  const findings = findForbiddenLockfileSources(lockfile);
-  if (findings.length === 0) return;
-
-  for (const finding of findings) {
-    console.error(`${finding.reason} on line ${finding.line}: ${finding.text}`);
+  const lockfiles = ["../pnpm-lock.yaml", "../website/pnpm-lock.yaml"] as const;
+  let total = 0;
+  for (const rel of lockfiles) {
+    const lockfile = await readFile(new URL(rel, import.meta.url), "utf8");
+    const findings = findForbiddenLockfileSources(lockfile);
+    for (const finding of findings) {
+      console.error(
+        `${rel.replace(/^\.\.\//, "")} ${finding.reason} on line ${finding.line}: ${finding.text}`,
+      );
+    }
+    total += findings.length;
   }
-  process.exitCode = 1;
+  if (total > 0) process.exitCode = 1;
 }
 
 if (process.argv[1]?.endsWith("verify-lockfile-sources.ts")) {

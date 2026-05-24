@@ -228,10 +228,101 @@ export function findAliasedDependencySpecifiers(
   return out;
 }
 
+/**
+ * A `"foo": "git+https://github.com/x/y.git"` or
+ * `"foo": "https://example.com/pkg.tgz"` dependency-specifier entry.
+ * See {@link findGitOrUrlDependencySpecifiers} for why this is gated.
+ *
+ * @since 0.34.4
+ */
+export interface NonRegistryDependency {
+  readonly source: string;
+  readonly block:
+    | "dependencies"
+    | "devDependencies"
+    | "peerDependencies"
+    | "optionalDependencies";
+  readonly name: string;
+  readonly specifier: string;
+  readonly kind: "git" | "url";
+}
+
+/**
+ * Match any of npm's documented git-dependency shorthands plus raw
+ * `git@host:` SSH URLs. Mirrors `GIT_SOURCE_PATTERN` in
+ * `verify-lockfile-sources.ts` but is anchored to the *start* of the
+ * specifier (package.json specifiers are bare strings, not lockfile
+ * YAML lines, so a leading `specifier:` prefix doesn't apply).
+ */
+const GIT_SPECIFIER_PATTERN =
+  /^(?:github:|gitlab:|bitbucket:|gist:|git\+|git:\/\/|ssh:\/\/git@|git@[a-z0-9._-]+:)/i;
+
+/**
+ * Match a plain `http://` or `https://` URL specifier (npm "url" /
+ * remote-tarball dependency). These are NOT git shorthands but
+ * Socket's `httpDependency` critical alert flags them for the same
+ * supply-chain reason: the tarball is not immutable, not signed by
+ * the registry, and bypasses the registry's vetting pipeline.
+ *
+ * Bare `http(s)://…` strings used inside semver/tag specifiers (e.g.
+ * `^1.0.0 || https://…`) are not real npm specifiers, so this
+ * start-anchored match is safe.
+ */
+const URL_SPECIFIER_PATTERN = /^https?:\/\//i;
+
+/**
+ * Find every dependency entry in `pkg` whose specifier is sourced
+ * from a Git repository or a raw HTTP(S) URL instead of the
+ * configured npm registry.
+ *
+ * Why this is gated: Socket's [Git dependency](https://socket.dev/alerts/gitDependency)
+ * and [HTTP dependency](https://socket.dev/alerts/httpDependency)
+ * critical alerts capture the failure mode in one line — *"the
+ * dependency is not inherently immutable. This means the code can be
+ * tampered with after it's downloaded, potentially injecting
+ * malicious code into your project."* Git tags can be moved, branches
+ * change without notice, raw `.tgz` URLs can be silently swapped on
+ * the hosting origin, and none of those sources go through the
+ * registry's vetting / provenance / integrity-hash pipeline.
+ *
+ * `pnpm verify:lockfile` already enforces this for resolved entries
+ * in `pnpm-lock.yaml`, but template `package.json` files under
+ * `packages/create-daloy/templates/*` are never installed in this
+ * repo's lockfile — they ship verbatim into every user's scaffold.
+ * Scanning the package.json files directly therefore closes the gap
+ * between the lockfile gate and the templates we publish.
+ *
+ * Pure / no I/O — safe to call from tests.
+ *
+ * @since 0.34.4
+ */
+export function findGitOrUrlDependencySpecifiers(
+  source: string,
+  pkg: PackageJsonLike,
+): readonly NonRegistryDependency[] {
+  const out: NonRegistryDependency[] = [];
+  for (const block of DEP_BLOCKS) {
+    const map = pkg[block];
+    if (!map || typeof map !== "object") continue;
+    for (const [name, spec] of Object.entries(map)) {
+      if (typeof spec !== "string") continue;
+      if (GIT_SPECIFIER_PATTERN.test(spec)) {
+        out.push({ source, block, name, specifier: spec, kind: "git" });
+        continue;
+      }
+      if (URL_SPECIFIER_PATTERN.test(spec)) {
+        out.push({ source, block, name, specifier: spec, kind: "url" });
+      }
+    }
+  }
+  return out;
+}
+
 async function main(): Promise<void> {
   const repoRoot = new URL("../", import.meta.url);
   const offending: UnknownDependency[] = [];
   const aliased: AliasedDependency[] = [];
+  const nonRegistry: NonRegistryDependency[] = [];
   for (const rel of SCANNED_PACKAGE_JSONS) {
     const url = new URL(rel, repoRoot);
     let text: string;
@@ -256,8 +347,9 @@ async function main(): Promise<void> {
     }
     offending.push(...findUnknownDependencyNames(rel, pkg));
     aliased.push(...findAliasedDependencySpecifiers(rel, pkg));
+    nonRegistry.push(...findGitOrUrlDependencySpecifiers(rel, pkg));
   }
-  if (offending.length === 0 && aliased.length === 0) return;
+  if (offending.length === 0 && aliased.length === 0 && nonRegistry.length === 0) return;
   if (offending.length > 0) {
     console.error(
       `verify-known-dep-names: ${offending.length} dependency name${
@@ -295,6 +387,27 @@ async function main(): Promise<void> {
         "Inline the real package name instead. If a legitimate aliased dep is " +
         "truly required, add an explicit allowlist entry in " +
         "scripts/verify-known-dep-names.ts in the same PR.",
+    );
+  }
+  if (nonRegistry.length > 0) {
+    console.error(
+      `verify-known-dep-names: ${nonRegistry.length} non-registry dependency specifier${
+        nonRegistry.length === 1 ? "" : "s"
+      } found (Socket gitDependency / httpDependency vector):`,
+    );
+    for (const v of nonRegistry) {
+      console.error(
+        `  - ${v.source} → ${v.block}["${v.name}"] = "${v.specifier}" (${v.kind})`,
+      );
+    }
+    console.error(
+      "Git and raw-URL specifiers are not immutable: tags / branches can be " +
+        "moved, .tgz files can be silently swapped, and none of these sources " +
+        "go through the registry's vetting / provenance / integrity pipeline. " +
+        "See https://socket.dev/alerts/gitDependency and " +
+        "https://socket.dev/alerts/httpDependency. Replace with a versioned " +
+        "registry specifier; if a fork is genuinely required, publish it under " +
+        "a scoped name and add that name to ALLOWED_DEP_NAMES instead.",
     );
   }
   process.exitCode = 1;
