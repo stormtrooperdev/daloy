@@ -834,6 +834,35 @@ test("verify-no-registry-exfiltration flags Telegram-bot SSH-backdoor IOCs", asy
   assert.match(findings[7]!.reason, /checkip\.amazonaws\.com/);
 });
 
+test("verify-no-registry-exfiltration flags 60-package Discord-webhook recon IOCs", async () => {
+  // Socket 2025-05-23 campaign documented at
+  // https://socket.dev/blog/60-malicious-npm-packages-leak-network-and-host-data —
+  // sixty malicious npm packages published under three throwaway
+  // accounts ran a `postinstall` script that collected host
+  // fingerprint data via `os.networkInterfaces()`, `dns.getServers()`,
+  // and `https.get("https://ipinfo.io/json", ...)`, then POSTed the
+  // JSON blob to a `https://discord.com/api/webhooks/<id>/<token>`
+  // exfiltration channel.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: ipinfo.io/json external IP/org discovery (60-pkg variant)",
+    'const ext = "https://ipinfo.io/json";',
+    "",
+    "// unsafe: Discord webhook exfiltration channel",
+    'const wh = "https://discord.com/api/webhooks/1330015051482005555/5fll497pcjzKBiY3b_oa9YRh";',
+    "",
+    "// unsafe: discordapp.com legacy webhook host",
+    'const wh2 = "https://discordapp.com/api/webhooks/123/abc";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 3, JSON.stringify(findings, null, 2));
+  assert.match(findings[0]!.reason, /ipinfo\.io\/json/);
+  assert.match(findings[1]!.reason, /discord\.com\/api\/webhooks/i);
+  assert.match(findings[2]!.reason, /discord\.com\/api\/webhooks/i);
+});
+
 test("verify-no-registry-exfiltration flags Advcash reverse-shell IOCs", async () => {
   // Socket 2025-04-14 reverse-shell campaign documented at
   // https://socket.dev/blog/npm-package-advcash-integration-triggers-reverse-shell —

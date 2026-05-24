@@ -473,16 +473,24 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
     // mapping primitives malicious packages use to fingerprint a
     // victim's external IP without resolving the C2 host directly.
     // `ipinfo.io/ip` was the documented Telegram-bot variant; the
-    // peer hosts below (`icanhazip.com`, `ifconfig.me`, `api.ipify.org`,
+    // `ipinfo.io/json` peer is what the 60-package Discord-webhook
+    // reconnaissance campaign (Socket 2025-05-23,
+    // https://socket.dev/blog/60-malicious-npm-packages-leak-network-and-host-data)
+    // used to collect the victim's external IP/hostname/org before
+    // POSTing the full host fingerprint to a Discord webhook. The peer
+    // hosts below (`icanhazip.com`, `ifconfig.me`, `api.ipify.org`,
     // `checkip.amazonaws.com`) are the same tradecraft used by other
     // npm-malware campaigns. None of them have a legitimate use inside
     // a backend HTTP framework — a real Daloy app that needs the
     // client IP reads it from request headers, not a public lookup.
-    re: /\bipinfo\.io\/ip\b/i,
+    re: /\bipinfo\.io\/(?:ip|json)\b/i,
     reason:
       "`ipinfo.io/ip` is the public IP-discovery endpoint the Telegram-bot SSH-backdoor class " +
       "fingerprinted victims with before exfiltrating to its C2 host " +
-      "(https://socket.dev/blog/npm-malware-targets-telegram-bot-developers); a backend HTTP " +
+      "(https://socket.dev/blog/npm-malware-targets-telegram-bot-developers); the `ipinfo.io/json` " +
+      "peer is what the 60-package Discord-webhook reconnaissance campaign " +
+      "(https://socket.dev/blog/60-malicious-npm-packages-leak-network-and-host-data) used to " +
+      "collect external IP/hostname/org before exfiltrating the host fingerprint; a backend HTTP " +
       "framework reads the client IP from request headers, never a public lookup — any reference " +
       "in `src/**` is a hard IOC",
     keepStrings: true,
@@ -521,6 +529,32 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "fingerprint victims (Telegram-bot SSH-backdoor class, " +
       "https://socket.dev/blog/npm-malware-targets-telegram-bot-developers); a backend HTTP " +
       "framework reads the client IP from request headers, never a public lookup",
+    keepStrings: true,
+  },
+  {
+    // ---- 60-package Discord-webhook reconnaissance campaign
+    //      (Socket 2025-05-23,
+    //      https://socket.dev/blog/60-malicious-npm-packages-leak-network-and-host-data) ----
+    //
+    // Sixty malicious npm packages published under three throwaway
+    // accounts (`bbbb335656`, `sdsds656565`, `cdsfdfafd1232436437`) ran
+    // an install-time script that collected hostname, internal IP via
+    // `os.networkInterfaces()`, external IP/org via `ipinfo.io/json`,
+    // DNS servers via `dns.getServers()`, and `os.homedir()`, then
+    // POSTed the JSON blob to a Discord webhook of the form
+    // `https://discord.com/api/webhooks/<channel-id>/<token>` via
+    // `https.request(...)`. The exfiltration channel is the webhook URL
+    // itself — a backend HTTP framework has no reason to ever hard-code
+    // a `discord.com/api/webhooks/...` endpoint in its runtime source.
+    re: /\bdiscord(?:app)?\.com\/api\/webhooks\b/i,
+    reason:
+      "`discord.com/api/webhooks/<channel-id>/<token>` is the exfiltration channel for the " +
+      "60-package npm reconnaissance campaign (Socket 2025-05-23, " +
+      "https://socket.dev/blog/60-malicious-npm-packages-leak-network-and-host-data) that POSTed " +
+      "host fingerprints (hostname, internal/external IP, DNS servers, username, homedir) from a " +
+      "`postinstall` script under three throwaway npm accounts (`bbbb335656`, `sdsds656565`, " +
+      "`cdsfdfafd1232436437`); a backend HTTP framework never hard-codes a Discord webhook URL — " +
+      "any reference in `src/**` is a hard IOC",
     keepStrings: true,
   },
   // ---- Advcash `@naderabdi/merchant-advcash` reverse-shell campaign
