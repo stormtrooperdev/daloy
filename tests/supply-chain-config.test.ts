@@ -564,6 +564,8 @@ test("all workflows avoid unsafe pull_request_target and zizmor is enforced", as
 test("release workflow isolates npm publish permissions", async () => {
   const workflow = await readWorkspaceFile(".github/workflows/release.yml");
   const stagedPublishes = workflow.match(/npm stage publish \. --access public --provenance/g) ?? [];
+  const stagedPublishingCliInstalls =
+    workflow.match(/npm install -g npm@11\.15\.0 --ignore-scripts --no-audit --no-fund/g) ?? [];
 
   assert.doesNotMatch(workflow, /^\s*pull_request:/m);
   assert.doesNotMatch(workflow, /^\s*pull_request_target:/m);
@@ -571,6 +573,8 @@ test("release workflow isolates npm publish permissions", async () => {
   assert.match(workflow, /environment:\s*\n\s+name:\s+\$\{\{ vars\.NPM_PUBLISH_ENVIRONMENT \|\| 'npm-publish' \}\}/);
   assert.match(workflow, /id-token:\s*write/);
   assert.equal(stagedPublishes.length, 2);
+  assert.equal(stagedPublishingCliInstalls.length, 2);
+  assert.match(workflow, /npm stage --help >\/dev\/null/);
   assert.doesNotMatch(workflow, /pnpm publish --access public --no-git-checks --provenance/);
   assert.match(workflow, /egress-policy:\s*block/);
   assert.match(workflow, /step-security\/harden-runner@[0-9a-f]{40}\s+# v2/);

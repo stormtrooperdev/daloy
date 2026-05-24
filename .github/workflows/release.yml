@@ -16,6 +16,8 @@
 #   * Publish uses npm staged publishing + `--provenance` (npm trusted
 #     publishing via OIDC). CI can only stage a release; a separate npm
 #     MFA approval is required before the version becomes installable.
+#     `npm stage` requires npm CLI 11.15.0+, so the protected publish
+#     jobs pin that CLI before staging.
 #     No long-lived NPM_TOKEN is stored in repo secrets.
 #   * No GitHub Actions cache is read or written. Cold installs only.
 #   * `actions/checkout` uses `persist-credentials: false`.
@@ -236,6 +238,15 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
+      - name: Set up npm CLI with staged publishing
+        run: |
+          set -eu
+          npm install -g npm@11.15.0 --ignore-scripts --no-audit --no-fund
+          npm --version
+          npm stage --help >/dev/null
+        env:
+          npm_config_ignore_scripts: "true"
+
       - name: Install (no scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
         env:
@@ -339,6 +350,15 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
+
+      - name: Set up npm CLI with staged publishing
+        run: |
+          set -eu
+          npm install -g npm@11.15.0 --ignore-scripts --no-audit --no-fund
+          npm --version
+          npm stage --help >/dev/null
+        env:
+          npm_config_ignore_scripts: "true"
 
       - name: Install (no scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
