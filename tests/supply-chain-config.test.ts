@@ -177,6 +177,76 @@ test("lockfile scanner rejects every known-malicious Lazarus BeaverTail typosqua
   assert.match(findings[5]!.text, /auth-validator/);
 });
 
+test("lockfile scanner rejects every xuxingfeng destructive-payload May 2025 typosquat", () => {
+  // Socket 2025-05-21 — eight npm packages by the `xuxingfeng` alias that
+  // typosquat or mimic popular Vite/React/Vue/Quill plugins and ship
+  // time-delayed payloads that `process.execSync` `rimraf`/`rm -rf` against
+  // `node_modules`, force `shutdown -s -t 5`, monkey-patch
+  // `Array.prototype` / `String.prototype`, and corrupt browser storage.
+  // Documented at
+  // https://socket.dev/blog/malicious-npm-packages-target-react-vue-and-vite-ecosystems-with-destructive-payloads.
+  const lockfile = [
+    "packages:",
+    "  js-bomb@1.1.1:",
+    "    resolution: {integrity: sha512-aaaa}",
+    "  js-hood@1.0.1:",
+    "    resolution: {integrity: sha512-bbbb}",
+    "  vite-plugin-bomb@2.0.2:",
+    "    resolution: {integrity: sha512-cccc}",
+    "  vite-plugin-bomb-extend@2.0.2:",
+    "    resolution: {integrity: sha512-dddd}",
+    "  vite-plugin-react-extend@1.0.4:",
+    "    resolution: {integrity: sha512-eeee}",
+    "  vite-plugin-vue-extend@1.0.9:",
+    "    resolution: {integrity: sha512-ffff}",
+    "  vue-plugin-bomb@2.0.0:",
+    "    resolution: {integrity: sha512-gggg}",
+    "  quill-image-downloader@1.3.7:",
+    "    resolution: {integrity: sha512-hhhh}",
+  ].join("\n");
+
+  const findings = findForbiddenLockfileSources(lockfile);
+  assert.equal(findings.length, 8, JSON.stringify(findings, null, 2));
+  for (const finding of findings) {
+    assert.equal(
+      finding.reason,
+      "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)",
+    );
+  }
+  assert.match(findings[0]!.text, /js-bomb/);
+  assert.match(findings[1]!.text, /js-hood/);
+  assert.match(findings[2]!.text, /vite-plugin-bomb@/);
+  assert.match(findings[3]!.text, /vite-plugin-bomb-extend/);
+  assert.match(findings[4]!.text, /vite-plugin-react-extend/);
+  assert.match(findings[5]!.text, /vite-plugin-vue-extend/);
+  assert.match(findings[6]!.text, /vue-plugin-bomb/);
+  assert.match(findings[7]!.text, /quill-image-downloader/);
+});
+
+test("lockfile scanner allows the legitimate Vite/Quill plugins that xuxingfeng mimics", () => {
+  // Regression: the xuxingfeng blocklist must be exact-name only — the
+  // legitimate `@vitejs/plugin-react`, `@vitejs/plugin-vue`,
+  // `vite-plugin-html`, `quill-image-uploader`, `quill-image-drop-module`,
+  // and `quill-image-resize-module` packages must NOT be flagged.
+  const lockfile = [
+    "packages:",
+    "  '@vitejs/plugin-react@4.3.4':",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  '@vitejs/plugin-vue@5.2.1':",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  vite-plugin-html@3.2.2:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  quill-image-uploader@1.3.0:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  quill-image-drop-module@1.0.3:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  quill-image-resize-module@3.0.0:",
+    "    resolution: {integrity: sha512-real-hash}",
+  ].join("\n");
+
+  assert.deepEqual(findForbiddenLockfileSources(lockfile), []);
+});
+
 test("lockfile scanner allows the legitimate is-buffer package (exact-match blocklist)", () => {
   // Regression: `is-buffer-validator` is the Lazarus typosquat, NOT the
   // legitimate `is-buffer` package by Feross Aboukhadijeh (33M weekly

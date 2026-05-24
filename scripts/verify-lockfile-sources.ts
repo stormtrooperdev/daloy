@@ -6,6 +6,7 @@ export interface ForbiddenLockfileSource {
     | "git dependency source"
     | "non-registry tarball source"
     | "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"
+    | "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"
     | "known-compromised version (Qix / DuckDB crypto-clipper, Sep 2025)";
   text: string;
 }
@@ -35,15 +36,45 @@ const REGISTRY_TARBALL_PREFIX = "https://registry.npmjs.org/";
  * The package list is conservative and exact-match only: it does
  * NOT touch the legitimate `is-buffer` package, only the typosquat
  * `is-buffer-validator`.
+ *
+ * **xuxingfeng destructive-payload campaign (Socket 2025-05-21,
+ * https://socket.dev/blog/malicious-npm-packages-target-react-vue-and-vite-ecosystems-with-destructive-payloads):**
+ * eight npm packages published over two years by the alias
+ * `xuxingfeng` (`1634389031@qq.com`) that typosquat or mimic popular
+ * Vite / React / Vue / Quill plugins. The packages embed time-delayed
+ * payloads that (a) `process.execSync` `rimraf` / `rm -rf` against
+ * `node_modules/{vite,vue,react,vue-router,ant-design-vue,axios,less,
+ * typescript,...}`, (b) `shutdown -s -t 5` the host every second, (c)
+ * monkey-patch `Array.prototype.{filter,map,push,pop,splice,...}` and
+ * `String.prototype.{split,replaceAll,substr,trim,...}` to return random
+ * characters, and (d) corrupt `localStorage` / `sessionStorage` /
+ * `document.cookie` from a Vue `install(app)` plugin shim. The earliest
+ * activation date has passed, the final phase has no end date, and the
+ * packages remain live on npm pending removal — pinning the names here
+ * means that a future PR (or transitive update) that pulls one of them
+ * in is rejected at CI before merge.
  */
-const KNOWN_MALICIOUS_PACKAGES: ReadonlySet<string> = new Set([
+const KNOWN_MALICIOUS_PACKAGES: ReadonlyMap<string, ForbiddenLockfileSource["reason"]> = new Map([
   // Lazarus BeaverTail / InvisibleFerret (March 2025)
-  "is-buffer-validator",
-  "yoojae-validator",
-  "event-handle-package",
-  "array-empty-validator",
-  "react-event-dependency",
-  "auth-validator",
+  ["is-buffer-validator", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  ["yoojae-validator", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  ["event-handle-package", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  ["array-empty-validator", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  ["react-event-dependency", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  ["auth-validator", "known-malicious package (Lazarus BeaverTail / InvisibleFerret)"],
+  // xuxingfeng destructive-payload campaign (Socket 2025-05-21) — exact
+  // names of the eight Vite / Vue / React / Quill mimics. Does NOT touch
+  // any legitimate `@vitejs/plugin-react`, `@vitejs/plugin-vue`,
+  // `vite-plugin-html`, `quill-image-uploader`, `quill-image-drop-module`,
+  // or `quill-image-resize-module` package.
+  ["js-bomb", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["js-hood", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["vite-plugin-bomb", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["vite-plugin-bomb-extend", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["vite-plugin-react-extend", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["vite-plugin-vue-extend", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["vue-plugin-bomb", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
+  ["quill-image-downloader", "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"],
 ]);
 
 /**
@@ -123,7 +154,9 @@ function isCompromisedNameVersion(name: string, version: string): boolean {
  * `packages:` and `snapshots:`, and a `name:` field under each
  * package entry. We grep all three shapes.
  */
-function findMaliciousPackageOnLine(line: string): string | null {
+function findMaliciousPackageOnLine(
+  line: string,
+): { name: string; reason: ForbiddenLockfileSource["reason"] } | null {
   const trimmed = line.trim();
   // Pattern A: pnpm v9 lockfile key — `'name@version':` or `name@version:`
   //            with optional leading slash for v6 compatibility.
@@ -133,14 +166,16 @@ function findMaliciousPackageOnLine(line: string): string | null {
     );
   if (keyMatch) {
     const name = keyMatch[1]!;
-    if (KNOWN_MALICIOUS_PACKAGES.has(name)) return name;
+    const reason = KNOWN_MALICIOUS_PACKAGES.get(name);
+    if (reason !== undefined) return { name, reason };
   }
   // Pattern B: explicit `name: <name>` field inside a package entry.
   const nameField = /^name:\s*['"]?(@?[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)?)['"]?\s*$/i
     .exec(trimmed);
   if (nameField) {
     const name = nameField[1]!;
-    if (KNOWN_MALICIOUS_PACKAGES.has(name)) return name;
+    const reason = KNOWN_MALICIOUS_PACKAGES.get(name);
+    if (reason !== undefined) return { name, reason };
   }
   // Pattern C: a dependency-map entry like `is-buffer-validator: 1.0.0`
   //            under `dependencies:` / `devDependencies:` / `specifiers:`.
@@ -148,7 +183,8 @@ function findMaliciousPackageOnLine(line: string): string | null {
     /^(@?[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)?):\s*[\^~]?[\d.]+/i.exec(trimmed);
   if (depEntry) {
     const name = depEntry[1]!;
-    if (KNOWN_MALICIOUS_PACKAGES.has(name)) return name;
+    const reason = KNOWN_MALICIOUS_PACKAGES.get(name);
+    if (reason !== undefined) return { name, reason };
   }
   return null;
 }
@@ -207,7 +243,7 @@ export function findForbiddenLockfileSources(lockfile: string): ForbiddenLockfil
     if (malicious !== null) {
       findings.push({
         line: index + 1,
-        reason: "known-malicious package (Lazarus BeaverTail / InvisibleFerret)",
+        reason: malicious.reason,
         text,
       });
       continue;
