@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { App, bearerAuth, cors, rateLimit, requestId, secureHeaders, timing } from "../src/index.js";
+import { App, bearerAuth, cors, fetchMetadata, rateLimit, requestId, secureHeaders, timing } from "../src/index.js";
 
 test("requestId can trust a valid incoming id and rejects invalid incoming ids", async () => {
   const app = new App({ logger: false });
@@ -280,3 +280,132 @@ test("bearerAuth rejects invalid tokens with 403", async () => {
   const res = await app.request("/protected", { headers: { authorization: "Bearer bad" } });
   assert.equal(res.status, 403);
 });
+
+test("secureHeaders emits Cross-Origin-Embedder-Policy when opted in (XS-Leaks)", async () => {
+  const app = new App({ logger: false });
+  app.use(secureHeaders({ crossOriginEmbedderPolicy: "require-corp" }));
+  app.route({
+    method: "GET",
+    path: "/coep",
+    operationId: "coep",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  const res = await app.request("/coep");
+  assert.equal(res.headers.get("cross-origin-embedder-policy"), "require-corp");
+});
+
+test("secureHeaders omits Cross-Origin-Embedder-Policy by default", async () => {
+  const app = new App({ logger: false });
+  app.use(secureHeaders());
+  app.route({
+    method: "GET",
+    path: "/no-coep",
+    operationId: "noCoep",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  const res = await app.request("/no-coep");
+  assert.equal(res.headers.get("cross-origin-embedder-policy"), null);
+});
+
+test("fetchMetadata allows same-origin and rejects cross-site no-cors", async () => {
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(fetchMetadata());
+  app.route({
+    method: "GET",
+    path: "/api/data",
+    operationId: "apiData",
+    responses: { 200: { description: "ok" }, 403: { description: "forbidden" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  // No Sec-Fetch-* (non-browser) — allowed (other layers handle it).
+  const bare = await app.request("/api/data");
+  assert.equal(bare.status, 200);
+
+  // Same-origin browser request — allowed.
+  const same = await app.request("/api/data", {
+    headers: { "sec-fetch-site": "same-origin", "sec-fetch-mode": "cors", "sec-fetch-dest": "empty" },
+  });
+  assert.equal(same.status, 200);
+
+  // Cross-site no-cors fetch to a non-embed destination — rejected.
+  const cross = await app.request("/api/data", {
+    headers: { "sec-fetch-site": "cross-site", "sec-fetch-mode": "no-cors", "sec-fetch-dest": "empty" },
+  });
+  assert.equal(cross.status, 403);
+});
+
+test("fetchMetadata allows cross-site top-level GET navigation but rejects cross-site POST navigation", async () => {
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(fetchMetadata());
+  app.route({
+    method: "GET",
+    path: "/page",
+    operationId: "page",
+    responses: { 200: { description: "ok" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+  app.route({
+    method: "POST",
+    path: "/page",
+    operationId: "pagePost",
+    responses: { 200: { description: "ok" }, 403: { description: "forbidden" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  const nav = await app.request("/page", {
+    headers: {
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-dest": "document",
+    },
+  });
+  assert.equal(nav.status, 200);
+
+  const formPost = await app.request("/page", {
+    method: "POST",
+    headers: {
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-dest": "document",
+    },
+  });
+  assert.equal(formPost.status, 403);
+});
+
+test("fetchMetadata honors allowedOrigins for cross-site requests", async () => {
+  const app = new App({ logger: false, secureDefaults: false });
+  app.use(fetchMetadata({ allowedOrigins: ["https://trusted.example"] }));
+  app.route({
+    method: "GET",
+    path: "/api/data",
+    operationId: "apiData",
+    responses: { 200: { description: "ok" }, 403: { description: "forbidden" } },
+    handler: async () => ({ status: 200 as const, body: undefined }),
+  });
+
+  const allowed = await app.request("/api/data", {
+    headers: {
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      origin: "https://trusted.example",
+    },
+  });
+  assert.equal(allowed.status, 200);
+
+  const blocked = await app.request("/api/data", {
+    headers: {
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      origin: "https://evil.example",
+    },
+  });
+  assert.equal(blocked.status, 403);
+});
+

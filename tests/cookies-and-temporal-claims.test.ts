@@ -1602,8 +1602,8 @@ test("verify-no-vulnerable-sandboxes flags every forbidden sandbox package acros
   // All forbidden names appear in at least one bucket, plus
   // `bundledDependencies` (array form) to exercise that branch.
   const pkg = {
-    dependencies: { vm2: "3.10.4", left_pad: "1.3.0" },
-    devDependencies: { "safe-eval": "0.4.1" },
+    dependencies: { vm2: "3.10.4", left_pad: "1.3.0", "node-serialize": "0.0.4" },
+    devDependencies: { "safe-eval": "0.4.1", "serialize-to-js": "3.1.1" },
     peerDependencies: { notevil: "1.0.0" },
     optionalDependencies: { "static-eval": "2.1.0", "vm2-sandbox-escape": "1.0.0" },
     bundledDependencies: ["eval-sandbox", "lodash"],
@@ -1735,6 +1735,153 @@ test("verify-no-vulnerable-sandboxes accepts the live tracked package.json + loc
     0,
     "Daloy repo must not depend on `vm2` or related in-process JS sandboxes; see " +
       "https://socket.dev/blog/free-certified-patches-for-critical-vm2-sandbox-escape",
+  );
+});
+
+// ---------- verify-no-native-addons (Snyk NodeJS add-on extensions gate) ----------
+
+test("verify-no-native-addons flags every forbidden toolchain package across every dep bucket", async () => {
+  const { findNativeAddonsInPackageJson, FORBIDDEN_NATIVE_ADDON_PACKAGES } =
+    await import("../scripts/verify-no-native-addons.js");
+  const pkg = {
+    dependencies: { "node-gyp": "10.0.0", lodash: "4.17.21", bindings: "1.5.0" },
+    devDependencies: { "node-addon-api": "8.0.0", nan: "2.18.0" },
+    peerDependencies: { "node-pre-gyp": "0.17.0" },
+    optionalDependencies: {
+      "@mapbox/node-pre-gyp": "1.0.11",
+      "node-gyp-build": "4.8.0",
+      prebuild: "13.0.0",
+      prebuildify: "6.0.0",
+      "prebuild-install": "7.1.2",
+    },
+    bundledDependencies: ["bindings", "lodash"],
+    gypfile: true,
+    binary: { module_name: "addon", module_path: "./build" },
+  };
+  const findings = findNativeAddonsInPackageJson("fake/package.json", pkg);
+  // Every forbidden toolchain package should be flagged at least once.
+  for (const name of FORBIDDEN_NATIVE_ADDON_PACKAGES) {
+    assert.ok(
+      findings.some((f) => f.reason.includes(`\`${name}\``)),
+      `expected finding for ${name}`,
+    );
+  }
+  assert.ok(findings.some((f) => /gypfile/.test(f.reason)));
+  assert.ok(findings.some((f) => /binary/.test(f.reason)));
+  assert.ok(findings.some((f) => /bundledDependencies/.test(f.reason)));
+  assert.ok(findings.every((f) => f.file === "fake/package.json"));
+});
+
+test("verify-no-native-addons ignores benign package.json content", async () => {
+  const { findNativeAddonsInPackageJson } = await import(
+    "../scripts/verify-no-native-addons.js"
+  );
+  const pkg = {
+    name: "ok",
+    dependencies: { zod: "^4.0.0" },
+    devDependencies: { typescript: "^6.0.0", tsx: "^4.0.0" },
+    peerDependencies: { "@daloyjs/core": "^0.46.0" },
+    // Coincidental name overlaps with the toolchain are not the toolchain.
+    optionalDependencies: { "bindings-foo": "1.0.0", "nan-utils": "2.0.0" },
+  };
+  const findings = findNativeAddonsInPackageJson("ok/package.json", pkg);
+  assert.deepEqual(findings, []);
+});
+
+test("verify-no-native-addons flags pnpm-9 lockfile snapshots of toolchain packages", async () => {
+  const { findNativeAddonsInLockfile } = await import(
+    "../scripts/verify-no-native-addons.js"
+  );
+  const lock = [
+    "lockfileVersion: '9.0'",
+    "snapshots:",
+    "  node-gyp@10.0.0:",
+    "    resolution: {integrity: sha512-xxx}",
+    "  'node-addon-api@8.0.0':",
+    "    resolution: {integrity: sha512-yyy}",
+    "  bindings@1.5.0:",
+    "    resolution: {integrity: sha512-zzz}",
+    "  lodash@4.17.21:",
+    "    resolution: {integrity: sha512-aaa}",
+  ].join("\n");
+  const findings = findNativeAddonsInLockfile("pnpm-lock.yaml", lock);
+  const names = findings.map((f) => f.reason.match(/`([^`]+)`/)?.[1]).sort();
+  assert.deepEqual(names, ["bindings", "node-addon-api", "node-gyp"]);
+  assert.ok(findings.every((f) => /pnpm-lock\.yaml:\d+/.test(f.file)));
+});
+
+test("verify-no-native-addons does not false-positive on substrings in the lockfile", async () => {
+  const { findNativeAddonsInLockfile } = await import(
+    "../scripts/verify-no-native-addons.js"
+  );
+  const lock = [
+    "  bindings-foo@1.0.0:",
+    "    resolution: {integrity: sha512-aaa}",
+    "  nan-utils@2.0.0:",
+    "    resolution: {integrity: sha512-bbb}",
+    "  # node-gyp mentioned only in a comment, never resolved",
+    "  zod@4.4.3:",
+    "    resolution: {integrity: sha512-ccc}",
+  ].join("\n");
+  const findings = findNativeAddonsInLockfile("pnpm-lock.yaml", lock);
+  assert.deepEqual(findings, []);
+});
+
+test("verify-no-native-addons accepts the live tracked package.json + lockfile set", async () => {
+  const { findNativeAddonsInPackageJson, findNativeAddonsInLockfile } =
+    await import("../scripts/verify-no-native-addons.js");
+  const { readFile, readdir, stat } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const root = process.cwd();
+  const SKIP = new Set([
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "dist-coverage",
+    "coverage",
+    "temp_tarball",
+    "generated",
+  ]);
+  async function* walk(dir: string): AsyncGenerator<string> {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".") && entry.name !== ".github") continue;
+      if (SKIP.has(entry.name)) continue;
+      const child = path.join(dir, entry.name);
+      if (entry.isDirectory()) yield* walk(child);
+      else if (entry.isFile() && entry.name === "package.json") yield child;
+    }
+  }
+  let total = 0;
+  for await (const absolute of walk(root)) {
+    const text = await readFile(absolute, "utf8");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      continue;
+    }
+    const rel = path.relative(root, absolute);
+    total += findNativeAddonsInPackageJson(
+      rel,
+      parsed as Parameters<typeof findNativeAddonsInPackageJson>[1],
+    ).length;
+  }
+  const lockPath = path.join(root, "pnpm-lock.yaml");
+  try {
+    const stats = await stat(lockPath);
+    if (stats.isFile()) {
+      const lock = await readFile(lockPath, "utf8");
+      total += findNativeAddonsInLockfile("pnpm-lock.yaml", lock).length;
+    }
+  } catch {
+    /* no lockfile present */
+  }
+  assert.equal(
+    total,
+    0,
+    "Daloy repo must not depend on Node.js native-addon toolchain packages; see " +
+      "https://snyk.io/blog/nodejs-add-on-extensions/",
   );
 });
 
@@ -2050,6 +2197,93 @@ test("verify-no-encoded-payloads accepts the live src/ and scripts/ trees", asyn
     0,
     "publishable source roots must remain free of `\\xXX` / `\\u00XX` escape runs and " +
       "opaque base64 blobs; see https://socket.dev/blog/obfuscation-101-the-tricks-behind-malicious-code",
+  );
+});
+
+// ---------- verify-no-redos-patterns (Snyk "Timing out synchronous functions
+// with regex" gate, https://snyk.io/blog/timing-out-synchronous-functions-with-regex/) ----------
+
+test("verify-no-redos-patterns flags nested unbounded quantifiers", async () => {
+  const { findReDosPatterns } = await import(
+    "../scripts/verify-no-redos-patterns.js"
+  );
+  const sample = [
+    "// classic catastrophic-backtracking shape from the Snyk write-up",
+    "const evil = /(a+)+$/;",
+    "// `.*` nested under `+`",
+    "const evil2 = /(.*)+x/;",
+    "// new RegExp() form must also trip",
+    'const evil3 = new RegExp("(\\\\d+)+abc");',
+  ].join("\n");
+  const findings = findReDosPatterns("sample.ts", sample);
+  assert.equal(findings.length, 3);
+  for (const f of findings) {
+    assert.match(f.reason, /nested unbounded quantifier/);
+  }
+});
+
+test("verify-no-redos-patterns flags overlapping alternation under unbounded quantifier", async () => {
+  const { findReDosPatterns } = await import(
+    "../scripts/verify-no-redos-patterns.js"
+  );
+  const sample = [
+    "const evil = /(a|aa)*/;",
+    "const evil2 = /(ab|abc|abcd)+/;",
+  ].join("\n");
+  const findings = findReDosPatterns("sample.ts", sample);
+  assert.equal(findings.length, 2);
+  for (const f of findings) {
+    assert.match(f.reason, /overlapping alternation/);
+  }
+});
+
+test("verify-no-redos-patterns ignores safe regexes and allow-marked lines", async () => {
+  const { findReDosPatterns } = await import(
+    "../scripts/verify-no-redos-patterns.js"
+  );
+  const sample = [
+    "// anchored, single quantifier — safe",
+    "const ok1 = /^[A-Za-z0-9_-]+$/;",
+    "// bounded class — safe",
+    "const ok2 = /^Bearer\\s+(.+)$/i;",
+    "// alternation where alternatives are disjoint — not ambiguous",
+    "const ok3 = /(foo|bar|baz)+/;",
+    "// explicitly opted-in",
+    "const fine = /(a+)+$/; // daloy-allow-redos: only run against a 16-byte fixed prefix",
+    "// inside a comment — must not trip",
+    "// example from blog: /(a+)+$/ should be ignored when in a comment",
+    '// inside a string literal — must not trip',
+    'const msg = "the regex /(a+)+$/ is bad";',
+  ].join("\n");
+  const findings = findReDosPatterns("sample.ts", sample);
+  assert.equal(findings.length, 0);
+});
+
+test("verify-no-redos-patterns accepts the live src/ tree", async () => {
+  const { findReDosPatterns } = await import(
+    "../scripts/verify-no-redos-patterns.js"
+  );
+  const { readFile, readdir } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const srcRoot = path.resolve(process.cwd(), "src");
+  async function* walk(dir: string): AsyncGenerator<string> {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const child = path.join(dir, entry.name);
+      if (entry.isDirectory()) yield* walk(child);
+      else if (entry.isFile() && /\.(?:m?ts|m?js)$/.test(entry.name)) yield child;
+    }
+  }
+  let total = 0;
+  for await (const absolute of walk(srcRoot)) {
+    const rel = path.relative(process.cwd(), absolute);
+    const text = await readFile(absolute, "utf8");
+    total += findReDosPatterns(rel, text).length;
+  }
+  assert.equal(
+    total,
+    0,
+    "src/ must remain free of ReDoS-prone regex shapes; see " +
+      "https://snyk.io/blog/timing-out-synchronous-functions-with-regex/",
   );
 });
 

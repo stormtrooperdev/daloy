@@ -75,6 +75,59 @@ test("buildCycloneDx emits CycloneDX 1.5 with zero components for zero-runtime-d
   assert.match(metadataComponent.swid.tagId, /^swidtag-[a-z0-9-]+-0\.33\.0$/);
 });
 
+test("buildCycloneDx emits distribution externalReference for publishable npm names", () => {
+  // Mirrors the enriched-SBOM shape consumed by tools like Snyk Parlay,
+  // bomber, and Dependency-Track: a `distribution` link to the npm
+  // tarball page so downstream SCA/procurement scanners don't have to
+  // re-resolve the purl.
+  const pkg = {
+    name: "@daloyjs/core",
+    version: "0.33.0",
+    license: "MIT",
+    homepage: "https://daloyjs.dev",
+    repository: { url: "https://github.com/daloyjs/daloy.git" },
+    dependencies: {},
+  };
+  const meta = deriveMetadata(pkg, { now: FIXED_DATE });
+  const cdx = buildCycloneDx(pkg, meta) as unknown as {
+    metadata: {
+      component: {
+        externalReferences: ReadonlyArray<{ type: string; url: string }>;
+      };
+    };
+  };
+  const refs = cdx.metadata.component.externalReferences;
+  const distribution = refs.find((r) => r.type === "distribution");
+  assert.ok(distribution, "expected a distribution externalReference");
+  assert.equal(distribution?.url, "https://www.npmjs.com/package/@daloyjs/core");
+  assert.ok(refs.some((r) => r.type === "vcs"));
+  assert.ok(refs.some((r) => r.type === "website"));
+});
+
+test("buildCycloneDx omits distribution externalReference for non-publishable package names", () => {
+  // Defensive: workspace-private names like `my app` or `internal pkg`
+  // (containing spaces or other invalid npm-name chars) should not
+  // produce a bogus npmjs.com URL.
+  const pkg = {
+    name: "internal workspace pkg",
+    version: "1.0.0",
+    license: "MIT",
+    dependencies: {},
+  };
+  const meta = deriveMetadata(pkg, { now: FIXED_DATE });
+  const cdx = buildCycloneDx(pkg, meta) as unknown as {
+    metadata: {
+      component: {
+        externalReferences: ReadonlyArray<{ type: string; url: string }>;
+      };
+    };
+  };
+  assert.equal(
+    cdx.metadata.component.externalReferences.find((r) => r.type === "distribution"),
+    undefined,
+  );
+});
+
 test("buildCycloneDx lists runtime dependencies sorted by name", () => {
   const pkg = {
     name: "demo",

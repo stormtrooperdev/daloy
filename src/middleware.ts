@@ -110,6 +110,18 @@ export interface SecureHeadersOptions {
   permissionsPolicy?: string | false;
   crossOriginOpenerPolicy?: string | false;
   crossOriginResourcePolicy?: string | false;
+  /**
+   * `Cross-Origin-Embedder-Policy` (COEP). Off by default because
+   * `require-corp` breaks any cross-origin embed that has not opted in via
+   * CORP or CORS — opt in explicitly when you want a
+   * `crossOriginIsolated` document (enables `SharedArrayBuffer`,
+   * high-resolution timers, and closes additional XS-Leaks side
+   * channels). Recommended values: `"require-corp"` or
+   * `"credentialless"`. See https://xsleaks.dev/docs/defenses/isolation-policies/coep/.
+   *
+   * @since 0.37.0
+   */
+  crossOriginEmbedderPolicy?: "require-corp" | "credentialless" | "unsafe-none" | false;
   noSniff?: boolean;
   xssProtection?: boolean;
   /**
@@ -335,6 +347,11 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   const corp = opts.crossOriginResourcePolicy ?? "same-origin";
   if (corp !== false) headers["cross-origin-resource-policy"] = corp;
 
+  // COEP is opt-in: `require-corp` would block any cross-origin embed that
+  // has not opted in via CORP / CORS, which is too aggressive as a default.
+  const coep = opts.crossOriginEmbedderPolicy;
+  if (coep) headers["cross-origin-embedder-policy"] = coep;
+
   if (opts.noSniff !== false) headers["x-content-type-options"] = "nosniff";
   if (opts.xssProtection ?? false) headers["x-xss-protection"] = "0"; // modern guidance
 
@@ -383,6 +400,124 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   };
   (hooks as Record<PropertyKey, unknown>)[SECURE_HEADERS_MARKER] = true;
   return hooks;
+}
+
+// ---------- Fetch Metadata Resource Isolation Policy (XS-Leaks defense) ----------
+
+/** Options for {@link fetchMetadata}. */
+export interface FetchMetadataOptions {
+  /**
+   * `Sec-Fetch-Dest` values that are always allowed even from cross-site
+   * contexts. Defaults to the destinations a browser uses for top-level
+   * navigation and embeds you typically *want* to be cross-site loadable
+   * (`document`, `embed`, `object`, `audio`, `video`, `font`, `style`,
+   * `image`). Override to tighten (e.g. `["document"]`) or extend.
+   */
+  allowedDestinations?: readonly string[];
+  /**
+   * Request methods that are always allowed when `Sec-Fetch-Mode` is
+   * `navigate` (so users can submit forms cross-site to your endpoints
+   * when you want that). Defaults to `["GET", "HEAD"]` — state-changing
+   * top-level navigations are still rejected, matching the
+   * Resource Isolation Policy from
+   * https://xsleaks.dev/docs/defenses/isolation-policies/resource-isolation/.
+   */
+  allowedNavigationMethods?: readonly string[];
+  /**
+   * Origins permitted as cross-site callers (full origin strings like
+   * `https://trusted.example`). Compared against the request `Origin`
+   * header. Empty by default.
+   */
+  allowedOrigins?: readonly string[];
+  /**
+   * Custom predicate run before any built-in check. Return `true` to allow
+   * the request unconditionally (e.g. for a public CDN-style endpoint).
+   */
+  allow?: (req: Request) => boolean;
+}
+
+const FETCH_METADATA_DEFAULT_DESTS = Object.freeze([
+  // Embed-only destinations that browsers use for legitimate cross-site
+  // resource loads (`<img>`, `<audio>`, `<video>`, `<link rel=stylesheet>`,
+  // `<embed>`, `<object>`, `@font-face`). `document` is intentionally
+  // excluded — that destination is for top-level navigation, which is
+  // handled separately via `Sec-Fetch-Mode: navigate` + safe method.
+  "embed",
+  "object",
+  "audio",
+  "video",
+  "font",
+  "style",
+  "image",
+]);
+
+const FETCH_METADATA_DEFAULT_NAV_METHODS = Object.freeze(["GET", "HEAD"]);
+
+/**
+ * Resource Isolation Policy middleware that uses the browser-set
+ * `Sec-Fetch-Site` / `Sec-Fetch-Mode` / `Sec-Fetch-Dest` request headers
+ * to reject cross-site requests that have no legitimate reason to reach
+ * your origin. This is the modern, tokenless defense against the
+ * XS-Leaks class of attacks documented at https://xsleaks.dev/ and
+ * complements {@link secureHeaders} (which sets COOP / CORP / CSP
+ * response-side) and {@link csrf} (which protects state-changing
+ * endpoints from forged submissions).
+ *
+ * Default policy (matches https://web.dev/articles/fetch-metadata):
+ *  - Allow when `Sec-Fetch-Site` is missing (non-browser client / legacy
+ *    browser — covered by other defenses) or one of `same-origin`,
+ *    `same-site`, `none`.
+ *  - Allow cross-site top-level navigations (`Sec-Fetch-Mode: navigate`)
+ *    using a safe method (`GET` / `HEAD`).
+ *  - Allow cross-site requests whose `Sec-Fetch-Dest` is in a small
+ *    allowlist of embed-friendly destinations.
+ *  - Reject everything else with `403 problem+json`.
+ *
+ * Browsers send `Sec-Fetch-*` since Chrome 76 / Firefox 90 / Safari 16.4,
+ * so for modern user agents this guard blocks the typical XS-Leak
+ * vectors (`<img>`, `<script>`, `<iframe>`, `fetch` no-cors, ...).
+ *
+ * @example
+ * ```ts
+ * import { fetchMetadata } from "@daloyjs/core";
+ * app.use(fetchMetadata());
+ * ```
+ *
+ * @param opts - Policy overrides.
+ * @returns A {@link Hooks} bundle ready for `app.use(...)`.
+ * @since 0.37.0
+ */
+export function fetchMetadata(opts: FetchMetadataOptions = {}): Hooks {
+  const allowedDests = new Set(opts.allowedDestinations ?? FETCH_METADATA_DEFAULT_DESTS);
+  const allowedNavMethods = new Set(
+    (opts.allowedNavigationMethods ?? FETCH_METADATA_DEFAULT_NAV_METHODS).map((m) =>
+      m.toUpperCase(),
+    ),
+  );
+  const allowedOrigins = new Set(opts.allowedOrigins ?? []);
+  const customAllow = opts.allow;
+  return {
+    beforeHandle(ctx) {
+      const req = ctx.request;
+      if (customAllow && customAllow(req)) return;
+      const site = req.headers.get("sec-fetch-site");
+      // Browser did not send Sec-Fetch-* (legacy UA, server-to-server,
+      // curl, ...). Other layers (CORS, CSRF, auth) cover those callers.
+      if (!site) return;
+      if (site === "same-origin" || site === "same-site" || site === "none") return;
+      // Cross-site from here on (`cross-site` or any future value).
+      const origin = req.headers.get("origin");
+      if (origin && allowedOrigins.has(origin)) return;
+      const mode = req.headers.get("sec-fetch-mode");
+      const method = req.method.toUpperCase();
+      if (mode === "navigate" && allowedNavMethods.has(method)) return;
+      const dest = req.headers.get("sec-fetch-dest");
+      if (dest && allowedDests.has(dest)) return;
+      throw new ForbiddenError(
+        "Cross-site request rejected by fetch-metadata Resource Isolation Policy.",
+      );
+    },
+  };
 }
 
 // `cors()` default `allowMethods` narrowed to the read-only set.

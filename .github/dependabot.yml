@@ -41,7 +41,7 @@ updates:
       prefix: "chore(create-daloy)"
 
   - package-ecosystem: npm
-    directory: "/daloyjs.dev"
+    directory: "/website"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

@@ -200,6 +200,17 @@ export function buildCycloneDx(
         externalReferences: [
           meta.repository && { type: "vcs", url: meta.repository },
           meta.homepage && { type: "website", url: meta.homepage },
+          // `distribution` is the npm tarball page. Matches the
+          // enriched-SBOM shape consumed by tools like Snyk Parlay,
+          // bomber, and Dependency-Track so downstream license /
+          // supplier lookups don't have to re-resolve the purl.
+          // Only emitted for npm-published packages (scoped or
+          // unscoped) — local-only packages (no publishable name)
+          // are skipped.
+          /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(meta.name) && {
+            type: "distribution",
+            url: `https://www.npmjs.com/package/${meta.name}`,
+          },
         ].filter(Boolean),
         // SWID interop per CycloneDX 1.5 §components.swid. ISO/IEC 19770-2
         // identifier so SBOM consumers that key off SWID tags (asset-mgmt

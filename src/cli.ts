@@ -180,6 +180,55 @@ export function detectRuntime(): DevRuntime {
 }
 
 /**
+ * Validate a CLI-supplied entry path before it is handed to `import()` or
+ * forwarded as a child-process argv element. Rejects NUL bytes, CR/LF, and
+ * leading `-` characters so a hostile caller (or a misparsed positional)
+ * cannot smuggle a `--eval=...`, `--inspect-brk=...`, or similar
+ * argv-injection payload past `spawn({ shell: false })` into Node, Bun, or
+ * Deno's own argv parser.
+ *
+ * This is defense-in-depth alongside {@link parseArgs}, which already
+ * rejects `-`-prefixed positionals. The check also runs in programmatic
+ * `runCli()` callers and tests so the invariant holds regardless of how the
+ * entry value was produced.
+ *
+ * @internal
+ */
+export function assertSafeEntryPath(entry: string, context: string): void {
+  if (typeof entry !== "string" || entry.length === 0) {
+    throw new Error(`${context}: entry path must be a non-empty string.`);
+  }
+  if (entry.includes("\0") || /[\r\n]/.test(entry)) {
+    throw new Error(
+      `${context}: entry path must not contain NUL bytes or newlines (got: ${JSON.stringify(entry)}).`,
+    );
+  }
+  if (entry.startsWith("-")) {
+    throw new Error(
+      `${context}: entry path must not start with "-" — runtimes parse leading dashes as flags ` +
+        `(got: ${JSON.stringify(entry)}). Prefix the path with "./" to disambiguate.`,
+    );
+  }
+}
+
+/**
+ * Normalize a relative entry path so the host runtime always sees an
+ * unambiguous file path, never a possible flag. Absolute paths and paths
+ * already anchored with `./` or `../` are returned unchanged; bare relative
+ * paths like `src/server.ts` are rewritten to `./src/server.ts`. This is
+ * the second half of the {@link assertSafeEntryPath} defense.
+ *
+ * @internal
+ */
+export function normalizeEntryArg(entry: string): string {
+  if (entry.startsWith("./") || entry.startsWith("../")) return entry;
+  if (entry.startsWith("/")) return entry;
+  // Windows drive letter (C:\, D:/, ...).
+  if (/^[A-Za-z]:[\\/]/.test(entry)) return entry;
+  return `./${entry}`;
+}
+
+/**
  * Build the `(command, args)` pair `daloy dev` should spawn for the given
  * runtime and entry file. Pure function so tests can assert exact argv
  * without spawning a child process.
@@ -192,20 +241,28 @@ export function detectRuntime(): DevRuntime {
  *   reading the source tree; users who need more should run `deno run`
  *   directly).
  *
+ * The entry is validated via {@link assertSafeEntryPath} and anchored with
+ * {@link normalizeEntryArg} so a future caller cannot smuggle a flag past
+ * `spawn({ shell: false })` into the runtime's argv parser. See
+ * `SECURITY.md` § "CLI threat model" for the full rationale (and why we
+ * are not vulnerable to the class of bug Snyk reported as CVE-2022-22984).
+ *
  * @since 0.3.0
  */
 export function buildDevCommand(runtime: DevRuntime, entry: string): { command: string; args: string[] } {
+  assertSafeEntryPath(entry, "daloy dev");
+  const safe = normalizeEntryArg(entry);
   switch (runtime) {
     case "bun":
-      return { command: "bun", args: ["--hot", entry] };
+      return { command: "bun", args: ["--hot", safe] };
     case "deno":
       return {
         command: "deno",
-        args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", entry],
+        args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", safe],
       };
     case "node":
     default:
-      return { command: "node", args: ["--import", "tsx", "--watch", entry] };
+      return { command: "node", args: ["--import", "tsx", "--watch", safe] };
   }
 }
 
@@ -216,7 +273,10 @@ export function buildDevCommand(runtime: DevRuntime, entry: string): { command: 
  * first candidate.
  */
 async function resolveDevEntry(entry: string | undefined): Promise<string> {
-  if (entry) return entry;
+  if (entry) {
+    assertSafeEntryPath(entry, "daloy dev");
+    return entry;
+  }
   try {
     const fs = await import("node:fs");
     const path = await import("node:path");
@@ -817,6 +877,7 @@ function aiSchema(schema: unknown): unknown {
 }
 
 async function loadApp(entry: string | undefined, io: CliIO): Promise<App> {
+  if (entry !== undefined) assertSafeEntryPath(entry, "daloy inspect");
   const candidates = entry ? [entry] : DEFAULT_ENTRIES.slice();
   let lastErr: unknown;
   for (const candidate of candidates) {

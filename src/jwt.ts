@@ -65,6 +65,20 @@ const ALL_ALGS: ReadonlySet<string> = new Set([...SYMMETRIC, ...ASYMMETRIC]);
  */
 const MIN_HS_KEY_BYTES = 32;
 
+/**
+ * Minimum RSA modulus length (in bits) accepted for `RS*` / `PS*` JWT
+ * algorithms. NIST SP 800-131A has disallowed RSA moduli shorter than
+ * 2048 bits for signature generation/verification since 2014; the same
+ * floor is called out in
+ * [Snyk's encryption guidance](https://snyk.io/blog/symmetric-vs-asymmetric-encryption-python/)
+ * ("undersized keys (fewer than 2048 bits) — which hackers can crack").
+ * WebCrypto happily imports 1024-bit or smaller keys, so the framework
+ * enforces the floor itself and refuses to import a weak key for either
+ * signing or verification — issuing or accepting a JWT signed with a
+ * 1024-bit RSA key is effectively a weak-signature footgun.
+ */
+const MIN_RSA_KEY_BITS = 2048;
+
 /** Default lifetime cap when none is declared in development (`30d`). */
 export const DEFAULT_JWT_MAX_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 
@@ -129,6 +143,21 @@ export interface JwtVerifierOptions {
    * RS256 + JWK silently accepts an HS256 token signed with the public key.
    */
   refuseSymmetricWithJwk?: boolean;
+  /**
+   * Optional revocation / blocklist hook. Invoked after signature and
+   * temporal/issuer/audience checks have passed, receiving the verified
+   * `{ header, payload }`. Return `true` (or a promise resolving to `true`)
+   * to reject the token with `JwtError("token_revoked", …)` — typically by
+   * looking up the token's `jti` (or `sub` for global logout) in a Redis
+   * blocklist or database. Closes the well-documented "Fastify does not
+   * offer JWT blocklisting" gap called out in
+   * [Snyk's framework comparison](https://snyk.io/blog/comparing-node-js-web-frameworks/),
+   * without forcing `@daloyjs/core` to ship a runtime dependency — the
+   * caller owns the storage layer. The hook runs last so a revoked token
+   * with a tampered signature is still rejected as `invalid_signature`,
+   * never `token_revoked` (which would leak the existence of the `jti`).
+   */
+  isRevoked?: (verified: JwtVerified) => boolean | Promise<boolean>;
   /** Optional injectable clock for tests. */
   now?: () => number;
 }
@@ -147,6 +176,7 @@ interface ResolvedVerifier {
   issuers: ReadonlySet<string> | null;
   audiences: ReadonlySet<string> | null;
   clockSkewSeconds: number;
+  isRevoked: ((verified: JwtVerified) => boolean | Promise<boolean>) | null;
   now: () => number;
 }
 
@@ -259,7 +289,10 @@ async function importKey(
 ): Promise<CryptoKey> {
   const params = algParams(alg);
   const c = getCrypto();
-  if (isCryptoKey(material)) return material;
+  if (isCryptoKey(material)) {
+    assertRsaModulusFloor(alg, material);
+    return material;
+  }
   if (material instanceof Uint8Array) {
     if (!SYMMETRIC.has(alg)) {
       throw new JwtError(
@@ -296,9 +329,32 @@ async function importKey(
         : params.name === "RSASSA-PKCS1-v1_5"
         ? { name: "RSASSA-PKCS1-v1_5", hash: params.hash! }
         : { name: "Ed25519" };
-    return c.subtle.importKey("jwk", material, importAlgorithm, false, [usage]);
+    const imported = await c.subtle.importKey("jwk", material, importAlgorithm, false, [usage]);
+    assertRsaModulusFloor(alg, imported);
+    return imported;
   }
   throw new JwtError("invalid_key", "jwt(): unsupported key material.");
+}
+
+/**
+ * Refuse RSA keys whose modulus is shorter than {@link MIN_RSA_KEY_BITS}.
+ * Only applies to `RS*` / `PS*` algorithms — non-RSA keys are ignored. The
+ * imported `CryptoKey.algorithm` for any RSA key carries a numeric
+ * `modulusLength`; when WebCrypto reports a length below the floor we
+ * refuse the key for both signing and verification.
+ */
+function assertRsaModulusFloor(alg: JwtAlgorithm, key: CryptoKey): void {
+  const params = algParams(alg);
+  if (params.name !== "RSASSA-PKCS1-v1_5" && params.name !== "RSA-PSS") return;
+  const algorithm = key.algorithm as { modulusLength?: unknown };
+  const modulusLength = algorithm?.modulusLength;
+  if (typeof modulusLength !== "number" || !Number.isFinite(modulusLength)) return;
+  if (modulusLength < MIN_RSA_KEY_BITS) {
+    throw new JwtError(
+      "weak_rsa_key",
+      `jwt(): ${alg} key modulus must be at least ${MIN_RSA_KEY_BITS} bits (NIST SP 800-131A); got ${modulusLength}.`,
+    );
+  }
 }
 
 function buildSignAlgorithm(alg: JwtAlgorithm): AlgorithmIdentifier | RsaPssParams | EcdsaParams {
@@ -497,6 +553,12 @@ export function createJwtVerifier(opts: JwtVerifierOptions): { verify(token: str
       );
     }
   }
+  if (opts.isRevoked !== undefined && typeof opts.isRevoked !== "function") {
+    throw new JwtError(
+      "invalid_is_revoked",
+      "jwt(): isRevoked must be a function (verified) => boolean | Promise<boolean>.",
+    );
+  }
   const issuers = normalizeStringSet(opts.issuer);
   const audiences = normalizeStringSet(opts.audience);
 
@@ -529,6 +591,7 @@ export function createJwtVerifier(opts: JwtVerifierOptions): { verify(token: str
     issuers,
     audiences,
     clockSkewSeconds: opts.clockSkewSeconds ?? 0,
+    isRevoked: opts.isRevoked ?? null,
     now: opts.now ?? (() => Math.floor(Date.now() / 1000)),
   };
 
@@ -620,6 +683,19 @@ async function verifyInternal(token: string, r: ResolvedVerifier): Promise<JwtVe
       }
     } else {
       throw new JwtError("invalid_audience", "jwt(): payload.aud is missing or not a string / string[].");
+    }
+  }
+  if (r.isRevoked) {
+    const verified: JwtVerified = { header, payload };
+    let revoked: boolean;
+    try {
+      revoked = await r.isRevoked(verified);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new JwtError("revocation_check_failed", `jwt(): isRevoked threw: ${detail}`);
+    }
+    if (revoked === true) {
+      throw new JwtError("token_revoked", "jwt(): token has been revoked.");
     }
   }
   return { header, payload };

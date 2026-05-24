@@ -370,6 +370,53 @@ test("jwt: round-trip with RS256 (asymmetric)", async () => {
   assert.equal(payload.sub, "u");
 });
 
+test("jwt: refuses RS256 signer with sub-2048-bit RSA key", async () => {
+  const weakPair = (await subtle.generateKey(
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 1024,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true,
+    ["sign", "verify"],
+  )) as CryptoKeyPair;
+  await assert.rejects(
+    async () => {
+      const s = createJwtSigner({ alg: "RS256", key: weakPair.privateKey, maxLifetimeSeconds: 60 });
+      await s.sign({ exp: Math.floor(Date.now() / 1000) + 30 });
+    },
+    /weak_rsa_key|at least 2048 bits/,
+  );
+});
+
+test("jwt: refuses PS256 verifier with sub-2048-bit RSA JWK", async () => {
+  const weakPair = (await subtle.generateKey(
+    {
+      name: "RSA-PSS",
+      modulusLength: 1024,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true,
+    ["sign", "verify"],
+  )) as CryptoKeyPair;
+  const jwk = await subtle.exportKey("jwk", weakPair.publicKey);
+  const v = createJwtVerifier({ algorithms: ["PS256"], key: jwk });
+  const h = Buffer.from(JSON.stringify({ alg: "PS256" })).toString("base64url");
+  const p = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 30 })).toString("base64url");
+  await assert.rejects(() => v.verify(`${h}.${p}.AAAA`), /weak_rsa_key|at least 2048 bits/);
+});
+
+test("jwt: 2048-bit RSA key meets the floor", async () => {
+  // The existing genRs256Pair() uses 2048-bit keys — confirm the floor does
+  // not regress that minimum.
+  const pair = await genRs256Pair();
+  const signer = createJwtSigner({ alg: "RS256", key: pair.privateKey, maxLifetimeSeconds: 60 });
+  const tok = await signer.sign({ exp: Math.floor(Date.now() / 1000) + 30 });
+  assert.ok(tok.split(".").length === 3);
+});
+
 test("jwt: round-trip with ES256 and JWK resolver", async () => {
   const pair = await genEs256Pair();
   const jwk = await subtle.exportKey("jwk", pair.publicKey);
@@ -596,6 +643,88 @@ test("jwt verify: clockSkewSeconds tolerates small drift", async () => {
   await verifier.verify(expPast);
   // nbf slightly in the future but within skew
   await verifier.verify(nbfNear);
+});
+
+// ---------- isRevoked (blocklist hook) ----------
+
+test("createJwtVerifier: refuses non-function isRevoked", () => {
+  assert.throws(
+    () =>
+      createJwtVerifier({
+        algorithms: ["HS256"],
+        key: new Uint8Array(32),
+        isRevoked: "yes" as unknown as () => boolean,
+      }),
+    /invalid_is_revoked/,
+  );
+});
+
+test("jwt verify: isRevoked=true rejects with token_revoked after sig/claim checks", async () => {
+  const key = await genHs256Key();
+  const signer = createJwtSigner({ alg: "HS256", key, maxLifetimeSeconds: 60 });
+  const now = Math.floor(Date.now() / 1000);
+  const tok = await signer.sign({ sub: "u", jti: "abc-1", exp: now + 30 });
+
+  const seen: string[] = [];
+  const verifier = createJwtVerifier({
+    algorithms: ["HS256"],
+    key,
+    isRevoked: async ({ payload }) => {
+      seen.push(String(payload.jti));
+      return payload.jti === "abc-1";
+    },
+  });
+  await assert.rejects(() => verifier.verify(tok), /token_revoked/);
+  assert.deepEqual(seen, ["abc-1"]);
+});
+
+test("jwt verify: isRevoked=false allows the token through", async () => {
+  const key = await genHs256Key();
+  const signer = createJwtSigner({ alg: "HS256", key, maxLifetimeSeconds: 60 });
+  const now = Math.floor(Date.now() / 1000);
+  const tok = await signer.sign({ sub: "u", jti: "fresh", exp: now + 30 });
+  const verifier = createJwtVerifier({
+    algorithms: ["HS256"],
+    key,
+    isRevoked: () => false,
+  });
+  const v = await verifier.verify(tok);
+  assert.equal(v.payload.jti, "fresh");
+});
+
+test("jwt verify: isRevoked is not consulted when signature is invalid (no jti enumeration)", async () => {
+  const key = await genHs256Key();
+  const otherKey = await genHs256Key();
+  const signer = createJwtSigner({ alg: "HS256", key: otherKey, maxLifetimeSeconds: 60 });
+  const now = Math.floor(Date.now() / 1000);
+  const forged = await signer.sign({ sub: "u", jti: "leak-me", exp: now + 30 });
+
+  let called = false;
+  const verifier = createJwtVerifier({
+    algorithms: ["HS256"],
+    key,
+    isRevoked: () => {
+      called = true;
+      return true;
+    },
+  });
+  await assert.rejects(() => verifier.verify(forged), /invalid_signature/);
+  assert.equal(called, false, "isRevoked must not run on signature-failed tokens");
+});
+
+test("jwt verify: isRevoked thrown error surfaces as revocation_check_failed", async () => {
+  const key = await genHs256Key();
+  const signer = createJwtSigner({ alg: "HS256", key, maxLifetimeSeconds: 60 });
+  const now = Math.floor(Date.now() / 1000);
+  const tok = await signer.sign({ sub: "u", jti: "boom", exp: now + 30 });
+  const verifier = createJwtVerifier({
+    algorithms: ["HS256"],
+    key,
+    isRevoked: () => {
+      throw new Error("redis down");
+    },
+  });
+  await assert.rejects(() => verifier.verify(tok), /revocation_check_failed.*redis down/);
 });
 
 // ============================================================

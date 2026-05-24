@@ -132,6 +132,55 @@ test("DEFAULT_REDACT_KEYS includes the documented set", () => {
   }
 });
 
+// Log-injection regression: an attacker who controls a string that ends
+// up inside a log record (User-Agent, header, body field, error message)
+// must NOT be able to forge a fake log line or smuggle ANSI escape /
+// NUL control bytes into the underlying log sink. The default logger
+// pipes every record through `JSON.stringify`, and the JSON spec (ECMA
+// 404 / RFC 8259) requires every control code unit U+0000..U+001F to
+// be escaped as `\uXXXX` (or one of `\b\f\n\r\t`). That means a
+// payload like `"x\r\nINFO: User deleted"` shows up on the wire as the
+// 26-byte literal sequence `x\r\nINFO: User deleted` (with a backslash-n,
+// not a real newline), and an ANSI escape (0x1b) or NUL (0x00) is
+// escaped to `\u001b` / `\u0000` — no terminal-control sequence reaches
+// a log viewer, and the record stays one JSON object per physical line.
+// See the Snyk "prevent log injection" write-up
+// (https://snyk.io/blog/prevent-log-injection-vulnerability-javascript-node-js/).
+test("createLogger neutralizes CRLF / NUL / ANSI escape log-injection payloads", () => {
+  const lines: string[] = [];
+  const log = createLogger({ level: "info", write: (l) => lines.push(l) });
+  const payloads = [
+    "charlie\nINFO: User deleted",
+    "charlie\r\nFATAL: db wiped",
+    "charlie\rERROR: secret leaked",
+    "charlie\u0000INFO: NUL smuggled",
+    "\u001b[31mfake-red-error\u001b[0m",
+    "\u001b]8;;https://attacker.example\u0007clickme\u001b]8;;\u0007",
+  ];
+  for (const p of payloads) {
+    log.info({ user: p, nested: { name: p } }, p);
+  }
+  assert.equal(lines.length, payloads.length);
+  for (let i = 0; i < payloads.length; i++) {
+    const raw = lines[i]!;
+    // 1. Exactly one physical line per record — no embedded raw CR/LF
+    //    that a tail/journald viewer would treat as a new event.
+    assert.ok(!raw.includes("\n"), `line ${i} must not contain a raw LF`);
+    assert.ok(!raw.includes("\r"), `line ${i} must not contain a raw CR`);
+    // 2. No raw NUL byte (some log aggregators truncate at NUL).
+    assert.ok(!raw.includes("\u0000"), `line ${i} must not contain a raw NUL`);
+    // 3. No raw ESC byte (0x1b) that a terminal would interpret as an
+    //    ANSI control / OSC-8 hyperlink sequence.
+    assert.ok(!raw.includes("\u001b"), `line ${i} must not contain a raw ESC`);
+    // 4. Round-trips through JSON.parse and preserves the original
+    //    bytes in every position the attacker can reach.
+    const obj = JSON.parse(raw);
+    assert.equal(obj.msg, payloads[i]);
+    assert.equal(obj.user, payloads[i]);
+    assert.equal(obj.nested.name, payloads[i]);
+  }
+});
+
 // ---------- Credential-shape value redaction (Composer/Packagist 2026) ----------
 //
 // In May 2026 Composer printed rejected GitHub Actions tokens into stderr

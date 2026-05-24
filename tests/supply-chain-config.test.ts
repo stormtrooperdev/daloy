@@ -403,6 +403,110 @@ test("lockfile scanner flags compromised versions even with pnpm peer-dep suffix
   );
 });
 
+test("lockfile scanner rejects every Snyk string-width-cjs lookalike (Oct 2024 Tea-token campaign)", () => {
+  // Snyk 2024-10-03 — three anonymous npm packages whose names mimic the
+  // legitimate string-width / strip-ansi / wrap-ansi packages by appending
+  // a `-cjs` suffix, plus the `clazz-transformer` typosquat of
+  // `class-transformer`. Documented at
+  // https://snyk.io/blog/supply-chain-string-width-cjs-npm/.
+  const lockfile = [
+    "packages:",
+    "  string-width-cjs@4.2.3:",
+    "    resolution: {integrity: sha512-aaaa}",
+    "  strip-ansi-cjs@6.0.1:",
+    "    resolution: {integrity: sha512-bbbb}",
+    "  wrap-ansi-cjs@7.0.0:",
+    "    resolution: {integrity: sha512-cccc}",
+    "  clazz-transformer@1.0.0:",
+    "    resolution: {integrity: sha512-dddd}",
+  ].join("\n");
+
+  const findings = findForbiddenLockfileSources(lockfile);
+  assert.equal(findings.length, 4, JSON.stringify(findings, null, 2));
+  for (const finding of findings) {
+    assert.equal(
+      finding.reason,
+      "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)",
+    );
+  }
+  assert.match(findings[0]!.text, /string-width-cjs/);
+  assert.match(findings[1]!.text, /strip-ansi-cjs/);
+  assert.match(findings[2]!.text, /wrap-ansi-cjs/);
+  assert.match(findings[3]!.text, /clazz-transformer/);
+});
+
+test("lockfile scanner allows the legitimate string-width / strip-ansi / wrap-ansi / class-transformer packages", () => {
+  // Regression: the *-cjs blocklist must be exact-name only — the real
+  // `string-width`, `strip-ansi`, `wrap-ansi`, and `class-transformer`
+  // packages (combined: hundreds of millions of weekly downloads) must
+  // NOT be flagged.
+  const lockfile = [
+    "packages:",
+    "  string-width@4.2.3:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  strip-ansi@6.0.1:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  wrap-ansi@7.0.0:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  class-transformer@0.5.1:",
+    "    resolution: {integrity: sha512-real-hash}",
+  ].join("\n");
+
+  assert.deepEqual(findForbiddenLockfileSources(lockfile), []);
+});
+
+test("lockfile scanner rejects npm package-aliasing specifiers (Snyk string-width-cjs laundering vector)", () => {
+  // Snyk 2024-10-03 (https://snyk.io/blog/supply-chain-string-width-cjs-npm/):
+  // the `npm:<real-pkg>@<range>` aliasing syntax is the laundering vector
+  // that lets an attacker dress a fake `string-width-cjs` package as the
+  // legitimate `string-width@^4.2.0`. Daloy uses zero aliases — every
+  // `npm:` specifier in `pnpm-lock.yaml` must be reviewed in the PR diff
+  // before merge.
+  const lockfile = [
+    "importers:",
+    "  .:",
+    "    dependencies:",
+    "      string-width-cjs:",
+    "        specifier: npm:string-width@^4.2.0",
+    "        version: string-width@4.2.3",
+    "      lodash-aliased:",
+    "        specifier: 'npm:lodash@^4.17.21'",
+    "        version: lodash@4.17.21",
+  ].join("\n");
+
+  const findings = findForbiddenLockfileSources(lockfile);
+  const aliasFindings = findings.filter(
+    (f) => f.reason === "npm package aliasing (lockfile-lint pattern)",
+  );
+  assert.equal(aliasFindings.length, 2, JSON.stringify(findings, null, 2));
+  assert.match(aliasFindings[0]!.text, /npm:string-width/);
+  assert.match(aliasFindings[1]!.text, /npm:lodash/);
+});
+
+test("lockfile scanner does not confuse `npm` package names with `npm:` alias prefixes", () => {
+  // Regression: a legitimate package literally named `npm` (or a
+  // dependency on `@npmcli/*`, `npm-run-all`, etc.) must not trip the
+  // alias detector. Only the `specifier: npm:<...>` / `version: npm:<...>`
+  // shape is forbidden.
+  const lockfile = [
+    "packages:",
+    "  npm@10.9.0:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  '@npmcli/fs@4.0.0':",
+    "    resolution: {integrity: sha512-real-hash}",
+    "  npm-run-all@4.1.5:",
+    "    resolution: {integrity: sha512-real-hash}",
+    "importers:",
+    "  .:",
+    "    dependencies:",
+    "      npm:",
+    "        specifier: ^10.9.0",
+    "        version: 10.9.0",
+  ].join("\n");
+
+  assert.deepEqual(findForbiddenLockfileSources(lockfile), []);
+});
+
 test("ci workflow avoids privileged fork-pr and cache-poisoning patterns", async () => {
   const workflow = await readWorkspaceFile(".github/workflows/ci.yml");
 

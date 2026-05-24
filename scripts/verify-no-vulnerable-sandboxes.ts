@@ -14,13 +14,24 @@
  * `vm2` has a long history of sandbox escapes and has been deprecated
  * by its author. The lesson is broader than one CVE: every in-process
  * "sandbox" library that tries to wall off untrusted JS using the same
- * V8 isolate as the host has eventually been broken. Daloy treats this
- * class — `vm2`, `vm2-sandbox-escape`, `safe-eval`, `notevil`,
- * `static-eval`, `eval-sandbox` — as forbidden direct dependencies, in
- * any `package.json` shipped from this repo (core, `create-daloy`, and
- * every scaffolded template), and additionally refuses to resolve them
- * at the root lockfile level so they cannot slip in transitively under
- * a renamed alias.
+ * V8 isolate as the host has eventually been broken. The same class
+ * includes eval-wrapping *deserializers* that revive functions from a
+ * string format — most famously `node-serialize` (CVE-2017-5941: a
+ * payload tagged `_$$ND_FUNC$$_` is fed straight into `eval`, turning
+ * any reachable `unserialize()` call on user input into RCE) and the
+ * historically vulnerable `serialize-to-js`. See
+ * https://snyk.io/blog/preventing-insecure-deserialization-node-js/.
+ *
+ * Daloy treats this combined class — `vm2`, `vm2-sandbox-escape`,
+ * `safe-eval`, `notevil`, `static-eval`, `eval-sandbox`,
+ * `node-serialize`, `serialize-to-js` — as forbidden direct
+ * dependencies, in any `package.json` shipped from this repo (core,
+ * `create-daloy`, and every scaffolded template), and additionally
+ * refuses to resolve them at the root lockfile level so they cannot
+ * slip in transitively under a renamed alias. Daloy core itself
+ * deserializes user input with `safeJsonParse` (which strips
+ * `__proto__` / `constructor` / `prototype`) and never deserializes
+ * functions; see `src/security.ts`.
  *
  * Daloy core already declares zero runtime dependencies
  * (`scripts/verify-no-runtime-deps.ts`), so the only realistic ways one
@@ -48,9 +59,10 @@ const REPO_ROOT = new URL("../", import.meta.url);
 
 /**
  * Packages this gate refuses to allow anywhere in the repo. Keep the
- * list short and well-justified: every entry must be a JS sandbox /
- * eval-wrapper library with a documented history of sandbox escapes
- * or arbitrary-code-execution CVEs.
+ * list short and well-justified: every entry must be a JS sandbox,
+ * eval-wrapper, or eval-wrapping deserializer library with a
+ * documented history of sandbox escapes or arbitrary-code-execution
+ * CVEs.
  */
 export const FORBIDDEN_SANDBOX_PACKAGES: readonly string[] = [
   "vm2",
@@ -59,6 +71,10 @@ export const FORBIDDEN_SANDBOX_PACKAGES: readonly string[] = [
   "notevil",
   "static-eval",
   "eval-sandbox",
+  // Eval-wrapping deserializers: `unserialize()` evals function payloads.
+  // See https://snyk.io/blog/preventing-insecure-deserialization-node-js/
+  "node-serialize",
+  "serialize-to-js",
 ];
 
 export interface SandboxFinding {
@@ -102,7 +118,7 @@ export function findForbiddenSandboxesInPackageJson(
         out.push({
           file,
           packageName: name,
-          reason: `\`${name}\` listed in \`${bucket}\` (known vulnerable JS sandbox)`,
+          reason: `\`${name}\` listed in \`${bucket}\` (known vulnerable JS sandbox or eval-wrapping deserializer)`,
         });
       }
     }
@@ -114,7 +130,7 @@ export function findForbiddenSandboxesInPackageJson(
         out.push({
           file,
           packageName: name,
-          reason: `\`${name}\` listed in \`bundledDependencies\` (known vulnerable JS sandbox)`,
+          reason: `\`${name}\` listed in \`bundledDependencies\` (known vulnerable JS sandbox or eval-wrapping deserializer)`,
         });
       }
     }
@@ -149,7 +165,7 @@ export function findForbiddenSandboxesInLockfile(
         out.push({
           file: `${file}:${i + 1}`,
           packageName: name,
-          reason: `\`${name}\` resolved in lockfile (known vulnerable JS sandbox)`,
+          reason: `\`${name}\` resolved in lockfile (known vulnerable JS sandbox or eval-wrapping deserializer)`,
         });
         break;
       }
@@ -229,9 +245,12 @@ async function main(): Promise<void> {
   }
   console.error(
     "These packages have documented sandbox-escape / arbitrary-code-execution " +
-      "CVEs (see https://socket.dev/blog/free-certified-patches-for-critical-vm2-sandbox-escape). " +
+      "CVEs (see https://socket.dev/blog/free-certified-patches-for-critical-vm2-sandbox-escape " +
+      "and https://snyk.io/blog/preventing-insecure-deserialization-node-js/). " +
       "For untrusted code execution use real isolation (separate process, container, " +
-      "or a fresh `isolated-vm` isolate) instead of an in-process JS sandbox.",
+      "or a fresh `isolated-vm` isolate) instead of an in-process JS sandbox. " +
+      "For deserialization, use `JSON.parse` (or Daloy's `safeJsonParse`) — never " +
+      "a library that revives functions from strings.",
   );
   process.exitCode = 1;
 }

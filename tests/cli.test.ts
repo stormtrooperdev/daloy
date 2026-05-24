@@ -2,7 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import { App } from "../src/index.js";
-import { runCli, parseArgs, type CliIO, detectRuntime, buildDevCommand } from "../src/cli.js";
+import {
+  runCli,
+  parseArgs,
+  type CliIO,
+  detectRuntime,
+  buildDevCommand,
+  assertSafeEntryPath,
+  normalizeEntryArg,
+} from "../src/cli.js";
 
 function buildIO(
   app: App | undefined,
@@ -390,22 +398,76 @@ test("detectRuntime: returns 'node' under standard test env", () => {
 test("buildDevCommand: node uses --import tsx --watch", () => {
   assert.deepEqual(buildDevCommand("node", "src/server.ts"), {
     command: "node",
-    args: ["--import", "tsx", "--watch", "src/server.ts"],
+    args: ["--import", "tsx", "--watch", "./src/server.ts"],
   });
 });
 
 test("buildDevCommand: bun uses --hot", () => {
   assert.deepEqual(buildDevCommand("bun", "src/server.ts"), {
     command: "bun",
-    args: ["--hot", "src/server.ts"],
+    args: ["--hot", "./src/server.ts"],
   });
 });
 
 test("buildDevCommand: deno uses run --watch with safe permissions", () => {
   assert.deepEqual(buildDevCommand("deno", "src/server.ts"), {
     command: "deno",
-    args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"],
+    args: ["run", "--watch", "--allow-net", "--allow-env", "--allow-read", "./src/server.ts"],
   });
+});
+
+test("buildDevCommand: preserves already-anchored relative paths", () => {
+  assert.deepEqual(buildDevCommand("node", "./src/server.ts").args, [
+    "--import",
+    "tsx",
+    "--watch",
+    "./src/server.ts",
+  ]);
+  assert.deepEqual(buildDevCommand("node", "../sibling/server.ts").args, [
+    "--import",
+    "tsx",
+    "--watch",
+    "../sibling/server.ts",
+  ]);
+});
+
+test("buildDevCommand: preserves absolute paths", () => {
+  assert.deepEqual(buildDevCommand("bun", "/abs/server.ts").args, ["--hot", "/abs/server.ts"]);
+});
+
+test("buildDevCommand: rejects flag-like entry paths (argv injection guard)", () => {
+  // Defense-in-depth against the class of bug Snyk reported as CVE-2022-22984
+  // (command-injection via CLI flags constructing argv for spawned children).
+  // Even though spawn() runs with shell:false, the *runtime's* own argv
+  // parser would happily interpret a leading dash as a flag — so we refuse
+  // it before it reaches Node/Bun/Deno.
+  for (const bad of ["--eval=1+1", "-e", "--inspect-brk=0.0.0.0", "--watch=evil"]) {
+    assert.throws(() => buildDevCommand("node", bad), /must not start with "-"/);
+  }
+});
+
+test("buildDevCommand: rejects NUL bytes and newlines in entry paths", () => {
+  assert.throws(() => buildDevCommand("node", "src/server.ts\0evil"), /NUL bytes or newlines/);
+  assert.throws(() => buildDevCommand("node", "src/server.ts\nrm -rf /"), /NUL bytes or newlines/);
+  assert.throws(() => buildDevCommand("node", "src/server.ts\r\nfoo"), /NUL bytes or newlines/);
+});
+
+test("buildDevCommand: rejects empty entry", () => {
+  assert.throws(() => buildDevCommand("node", ""), /non-empty string/);
+});
+
+test("assertSafeEntryPath / normalizeEntryArg: behave as documented", () => {
+  assert.doesNotThrow(() => assertSafeEntryPath("src/app.ts", "ctx"));
+  assert.doesNotThrow(() => assertSafeEntryPath("./src/app.ts", "ctx"));
+  assert.doesNotThrow(() => assertSafeEntryPath("/abs/app.ts", "ctx"));
+  assert.throws(() => assertSafeEntryPath("-eval", "ctx"), /must not start with "-"/);
+  assert.throws(() => assertSafeEntryPath("", "ctx"), /non-empty/);
+  assert.equal(normalizeEntryArg("src/app.ts"), "./src/app.ts");
+  assert.equal(normalizeEntryArg("./src/app.ts"), "./src/app.ts");
+  assert.equal(normalizeEntryArg("../sibling/app.ts"), "../sibling/app.ts");
+  assert.equal(normalizeEntryArg("/abs/app.ts"), "/abs/app.ts");
+  assert.equal(normalizeEntryArg("C:\\Users\\x\\app.ts"), "C:\\Users\\x\\app.ts");
+  assert.equal(normalizeEntryArg("D:/x/app.ts"), "D:/x/app.ts");
 });
 
 test("runCli dev: errors when spawn helper is not provided", async () => {
@@ -440,8 +502,8 @@ test("runCli dev: invokes spawn with the runtime-specific command", async () => 
   assert.equal(r.exitCode, 0);
   assert.equal(calls.length, 1);
   assert.equal(calls[0]!.command, "bun");
-  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "src/server.ts"]);
-  assert.match(out.join(""), /bun → bun --hot src\/server\.ts/);
+  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "./src/server.ts"]);
+  assert.match(out.join(""), /bun → bun --hot \.\/src\/server\.ts/);
 });
 
 test("runCli dev: propagates child exit code", async () => {
@@ -511,7 +573,7 @@ test("runCli dev: --runtime flag overrides detection", async () => {
   const r = await runCli(["dev", "--runtime", "bun", "src/server.ts"], io);
   assert.equal(r.exitCode, 0);
   assert.equal(calls[0]!.command, "bun");
-  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "src/server.ts"]);
+  assert.deepEqual(Array.from(calls[0]!.args), ["--hot", "./src/server.ts"]);
 });
 
 test("parseArgs: rejects --runtime with an unknown value", () => {

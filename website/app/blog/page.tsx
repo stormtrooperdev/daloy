@@ -13,6 +13,16 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "litellm-teampcp-poisoned-scanner-mapped-to-daloyjs",
+    title:
+      "When the Security Scanner Is the Attacker: The LiteLLM / TeamPCP Compromise, Mapped to DaloyJS",
+    description:
+      "On March 24, 2026 the litellm Python package was backdoored after a poisoned Trivy GitHub Action stole the maintainer's PyPI token. The same attack pattern \u2014 compromised scanner action \u2192 exfiltrated publish token \u2192 malicious release with a startup-time payload \u2014 would have to clear nine of DaloyJS's existing CI gates before it could ship. Here's the stage-by-stage mapping.",
+    date: "2026-05-24",
+    readingTime: "9 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "aikido-top-10-app-security-problems-mapped-to-daloyjs",
     title:
       "Aikido's Top 10 App Security Problems, Mapped to DaloyJS (and the One Gap We Just Closed)",

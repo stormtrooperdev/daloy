@@ -9,7 +9,9 @@ export interface ForbiddenLockfileSource {
     | "known-malicious package (xuxingfeng destructive-payload campaign, May 2025)"
     | "known-malicious package (naya-flore WhatsApp remote-kill-switch campaign, August 2025)"
     | "known-malicious package (Beamglea phishing-CDN campaign, October 2025)"
-    | "known-compromised version (Qix / DuckDB crypto-clipper, Sep 2025)";
+    | "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)"
+    | "known-compromised version (Qix / DuckDB crypto-clipper, Sep 2025)"
+    | "npm package aliasing (lockfile-lint pattern)";
   text: string;
 }
 
@@ -101,6 +103,25 @@ const KNOWN_MALICIOUS_PACKAGES: ReadonlyMap<string, ForbiddenLockfileSource["rea
   ["naya-clone", "known-malicious package (naya-flore WhatsApp remote-kill-switch campaign, August 2025)"],
   ["node-smsk", "known-malicious package (naya-flore WhatsApp remote-kill-switch campaign, August 2025)"],
   ["@veryflore/disc", "known-malicious package (naya-flore WhatsApp remote-kill-switch campaign, August 2025)"],
+  // string-width-cjs / strip-ansi-cjs / wrap-ansi-cjs lookalike campaign
+  // (Snyk 2024-10-03,
+  // https://snyk.io/blog/supply-chain-string-width-cjs-npm/) — three
+  // anonymous npm packages whose names mimic the legitimate `string-width`,
+  // `strip-ansi`, and `wrap-ansi` packages by appending a `-cjs` suffix
+  // (a common ESM/CJS dual-publish convention). The packages contain no
+  // real code but are pulled in via `npm:` package-aliasing specifiers
+  // (e.g. `"string-width-cjs": "npm:string-width@^4.2.0"`) inside
+  // boilerplate `package.json` files of low-quality React Native / Next.js
+  // starter packages whose only purpose appears to be inflating
+  // dependency counts for Tea-token farming. The packages remain live
+  // on the public npm registry — pin them by exact name so a future
+  // PR (direct or transitive) that pulls one in is rejected at CI before
+  // merge. The related `clazz-transformer` (typosquat of
+  // `class-transformer`) is included for the same reason.
+  ["string-width-cjs", "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)"],
+  ["strip-ansi-cjs", "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)"],
+  ["wrap-ansi-cjs", "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)"],
+  ["clazz-transformer", "known-malicious package (string-width-cjs lookalike / Tea-token farming campaign, October 2024)"],
   // Beamglea phishing-CDN campaign (Socket 2025-10-09,
   // https://socket.dev/blog/175-malicious-npm-packages-host-phishing-infrastructure)
   // — one outlier name that does NOT match the campaign's
@@ -290,6 +311,27 @@ function findCompromisedVersionOnLine(line: string): string | null {
   return null;
 }
 
+/**
+ * Detect npm package-aliasing specifiers of the form
+ * `npm:<real-package>@<range>` inside a `pnpm-lock.yaml` line.
+ *
+ * Package aliasing is a legitimate npm feature (https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies)
+ * — most commonly used to run two major versions of the same package
+ * side-by-side, or to expose a CJS build under a `-cjs` suffix. It is
+ * also the laundering vector at the centre of the Snyk *string-width-cjs*
+ * write-up (https://snyk.io/blog/supply-chain-string-width-cjs-npm/):
+ * an attacker registers a fake `string-width-cjs` package on npm, then
+ * persuades downstream maintainers to depend on it via
+ * `"string-width-cjs": "npm:string-width@^4.2.0"` so the alias appears
+ * benign in a PR diff while the underlying name is anything the
+ * attacker controls. The lockfile-lint tool flags every alias for human
+ * review; we adopt the same posture — Daloy uses zero aliases today, so
+ * any alias appearing in `pnpm-lock.yaml` is a deliberate decision that
+ * must be reviewed in the PR diff before merge. Add allowlist entries
+ * here only with an explicit security note.
+ */
+const NPM_ALIAS_SPECIFIER_PATTERN = /(?:specifier|version):\s*['"]?npm:/i;
+
 export function findForbiddenLockfileSources(lockfile: string): ForbiddenLockfileSource[] {
   const findings: ForbiddenLockfileSource[] = [];
   const lines = lockfile.split(/\r?\n/);
@@ -297,6 +339,15 @@ export function findForbiddenLockfileSources(lockfile: string): ForbiddenLockfil
     const text = rawLine.trim();
     if (GIT_SOURCE_PATTERN.test(text)) {
       findings.push({ line: index + 1, reason: "git dependency source", text });
+      continue;
+    }
+
+    if (NPM_ALIAS_SPECIFIER_PATTERN.test(text)) {
+      findings.push({
+        line: index + 1,
+        reason: "npm package aliasing (lockfile-lint pattern)",
+        text,
+      });
       continue;
     }
 

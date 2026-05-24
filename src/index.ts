@@ -124,6 +124,7 @@ export {
   basicAuth,
   csrf,
   CSRF_HOOK_MARKER,
+  fetchMetadata,
   requireScopes,
   REQUIRE_SCOPES_AGGREGATE_KEY,
   REQUIRE_SCOPES_HOOK_MARKER,
@@ -210,6 +211,7 @@ export type {
   LoginThrottleOptions,
   CsrfOptions,
   CsrfCookieOptions,
+  FetchMetadataOptions,
   BasicAuthOptions,
 } from "./middleware.js";
 export type { BearerAuthOptions, BearerAuthVerifyHook } from "./middleware.js";
