@@ -980,6 +980,75 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "this call",
     keepStrings: false,
   },
+  // ---- Surveillance-malware campaign: `dpsdatahub`, `nodejs-backpack`,
+  //      `m0m0x01d` (npm) + `vfunctions` (PyPI). Socket 2025-07-23,
+  //      https://socket.dev/blog/surveillance-malware-hidden-in-npm-and-pypi-packages.
+  //
+  // Four packages totalling ~56k downloads ship keyloggers,
+  // screen/webcam capture, and credential harvesting. The three npm
+  // packages exfiltrate to:
+  //   * `https://dpsiframe.s3.eu-central-1.amazonaws.com/index.html`
+  //     — the invisible-iframe keylogger host loaded by `dpsdatahub`.
+  //   * `https://hooks.slack.com/services/<team>/<channel>/<token>`
+  //     — Slack-webhook host-fingerprint exfil used by
+  //     `nodejs-backpack` (URL fragmented at runtime to evade naive
+  //     scanners).
+  //   * `https://<random>.burpcollaborator.net/...` — Burp
+  //     Collaborator C2 used by `m0m0x01d` to blend keystroke exfil
+  //     into legitimate pentest infrastructure.
+  //
+  // None of these have a legitimate use inside a backend HTTP
+  // framework's runtime source.
+  {
+    re: /\bdpsiframe\.s3\.eu-central-1\.amazonaws\.com\b/i,
+    reason:
+      "`dpsiframe.s3.eu-central-1.amazonaws.com` is the documented invisible-iframe " +
+      "keylogger host loaded by the `dpsdatahub` surveillance-malware npm package — the " +
+      "iframe captures every `keyup` event in the page and exfiltrates batches to a " +
+      "threat-actor AWS Lambda endpoint every 5 seconds " +
+      "(https://socket.dev/blog/surveillance-malware-hidden-in-npm-and-pypi-packages); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
+  {
+    // Slack incoming-webhook URL. A backend HTTP framework never POSTs
+    // to a Slack channel from its own runtime code; the only reason
+    // for a `hooks.slack.com/services/...` literal to appear in
+    // `src/**` is a host-fingerprint / credential exfil channel like
+    // the one the `nodejs-backpack` surveillance-malware npm package
+    // builds at runtime (URL fragmented across six string constants
+    // to evade naive scanners). Requires the `/services/` path so the
+    // bare `hooks.slack.com` documentation host does not trip the
+    // gate.
+    re: /\bhooks\.slack\.com\/services\b/i,
+    reason:
+      "Slack incoming-webhook URL (`hooks.slack.com/services/<team>/<channel>/<token>`) — " +
+      "a backend HTTP framework's runtime source never POSTs to a Slack channel from " +
+      "itself, and this is the host-fingerprint exfiltration channel the " +
+      "`nodejs-backpack` surveillance-malware npm package fragments across runtime " +
+      "string constants to slip keylogger + system-profile data past static scanners " +
+      "(https://socket.dev/blog/surveillance-malware-hidden-in-npm-and-pypi-packages); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
+  {
+    // Burp Collaborator subdomains. The Collaborator is a legitimate
+    // pentest out-of-band service, but a hardcoded `*.burpcollaborator.net`
+    // host inside a published framework's runtime source has no
+    // legitimate use — it is precisely the C2 channel the `m0m0x01d`
+    // surveillance-malware npm package uses to blend keystroke
+    // exfiltration into pentest traffic and evade detection.
+    re: /\b[a-z0-9-]+\.burpcollaborator\.net\b/i,
+    reason:
+      "Burp Collaborator subdomain (`<random>.burpcollaborator.net`) — Burp Collaborator " +
+      "is a legitimate out-of-band pentest service, but a hardcoded subdomain inside a " +
+      "published framework's runtime source has no legitimate use and is the C2 channel " +
+      "the `m0m0x01d` surveillance-malware npm package uses to blend keystroke-logger " +
+      "exfiltration into pentest traffic and evade detection " +
+      "(https://socket.dev/blog/surveillance-malware-hidden-in-npm-and-pypi-packages); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;

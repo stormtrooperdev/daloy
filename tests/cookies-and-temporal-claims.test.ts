@@ -1118,6 +1118,73 @@ test("verify-no-registry-exfiltration ignores benign wallet-drainer-shaped token
   assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
 });
 
+test("verify-no-registry-exfiltration flags surveillance-malware (dpsdatahub / nodejs-backpack / m0m0x01d) IOCs", async () => {
+  // Socket 2025-07-23 surveillance-malware campaign documented at
+  // https://socket.dev/blog/surveillance-malware-hidden-in-npm-and-pypi-packages —
+  // three npm packages (`dpsdatahub`, `nodejs-backpack`, `m0m0x01d`,
+  // ~56k combined downloads with `vfunctions` on PyPI) install
+  // keyloggers, screen / webcam capture, and credential harvesting,
+  // exfiltrating to a fragmented Slack incoming-webhook, an AWS S3
+  // invisible-iframe keylogger host, and Burp Collaborator subdomains
+  // dynamically constructed at runtime. None of the upstream
+  // child_process / TLS / postinstall gates catch these in-process
+  // primitives on their own.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: dpsdatahub invisible-iframe keylogger S3 host",
+    'const iframeSrc = "https://dpsiframe.s3.eu-central-1.amazonaws.com/index.html";',
+    "",
+    "// unsafe: nodejs-backpack-shaped Slack-webhook URL (placeholders, not a",
+    "// real webhook secret — push-protection-safe; only the path prefix matters)",
+    'const slack = "https://hooks.slack.com/services/PLACEHOLDER/PLACEHOLDER/PLACEHOLDER";',
+    "",
+    "// unsafe: m0m0x01d Burp Collaborator C2 endpoint",
+    'const c2 = "https://es.t-mobile.com.mmcyrtl8tknr87hk8d9j6upi69c10q.burpcollaborator.net/xxxxxxxxx";',
+    "",
+    "// unsafe: secondary Burp Collaborator relay used by m0m0x01d",
+    'const relay = "https://bm1nrilxt9ng8wh982986jp76yco0d.burpcollaborator.net/keystrokes";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 4, JSON.stringify(findings, null, 2));
+  assert.match(findings[0]!.reason, /dpsiframe\.s3\.eu-central-1\.amazonaws\.com/);
+  assert.match(findings[1]!.reason, /hooks\.slack\.com\/services/);
+  assert.match(findings[2]!.reason, /burpcollaborator\.net/);
+  assert.match(findings[3]!.reason, /burpcollaborator\.net/);
+  for (const finding of findings) {
+    assert.match(finding.reason, /surveillance-malware|dpsdatahub|nodejs-backpack|m0m0x01d/);
+  }
+});
+
+test("verify-no-registry-exfiltration ignores benign surveillance-malware-shaped tokens", async () => {
+  // Negative: doc-comment mentions of the IOC hosts, the bare
+  // `hooks.slack.com` documentation host (no `/services/` path), and
+  // unrelated `*.amazonaws.com` / `*.net` literals must NOT trip the
+  // surveillance-malware gate.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// safe: doc-comment mention of the dpsdatahub IOC host",
+    "// IOC: dpsiframe.s3.eu-central-1.amazonaws.com is the keylogger iframe host",
+    "",
+    "// safe: doc-comment mention of the Burp Collaborator C2 channel",
+    "// IOC: <random>.burpcollaborator.net was used by m0m0x01d",
+    "",
+    "// safe: doc-comment mention of the Slack webhook host",
+    "// note: hooks.slack.com/services/<...> is the nodejs-backpack exfil channel",
+    "",
+    "// safe: bare Slack API host (no /services/ webhook path)",
+    'const slackApi = "https://slack.com/api/chat.postMessage";',
+    "",
+    "// safe: unrelated AWS S3 host (different bucket and region)",
+    'const bucket = "https://my-app-assets.s3.us-east-1.amazonaws.com/logo.png";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+});
+
 test("verify-no-registry-exfiltration ignores benign deletion-shaped tokens", async () => {
   // Negative: doc-comment mentions of the wiper IOCs, property
   // comparisons against `.rm`, non-destructive fs APIs, and mkdir
