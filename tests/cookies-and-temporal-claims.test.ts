@@ -996,6 +996,64 @@ test("verify-no-registry-exfiltration flags xlsx-to-json-lh codebase-wiper IOCs"
   }
 });
 
+test("verify-no-registry-exfiltration flags Vietnam-Telegram-ban Fastlane-typosquat IOCs", async () => {
+  // Socket 2025-06-03 RubyGems campaign documented at
+  // https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban —
+  // two malicious Fastlane plugin gems replaced
+  // `https://api.telegram.org/bot{token}/sendMessage` with a hardcoded
+  // Cloudflare Worker C2 at
+  // `https://rough-breeze-0c37.buidanhnam95.workers.dev/bot{token}/sendMessage`
+  // to silently exfiltrate Telegram bot tokens, chat IDs, messages,
+  // and attached files. The endpoint-substitution + opaque-Worker-relay
+  // tradecraft translates verbatim to npm.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: documented exact-host C2 IOC",
+    'const c2 = "rough-breeze-0c37.buidanhnam95.workers.dev";',
+    "",
+    "// unsafe: URL-shaped exact-host C2 IOC (also matches generic Worker rule)",
+    'const base = "https://rough-breeze-0c37.buidanhnam95.workers.dev/bot" + token + "/sendMessage";',
+    "",
+    "// unsafe: arbitrary Cloudflare Worker URL literal",
+    'const relay = "https://some-other-worker.example.workers.dev/relay";',
+    "",
+    "// unsafe: http (not https) Worker URL",
+    'const relay2 = "http://attacker.workers.dev/exfil";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 4, JSON.stringify(findings, null, 2));
+  assert.match(findings[0]!.reason, /rough-breeze-0c37\.buidanhnam95\.workers\.dev/);
+  // Lines 1 and 2 both contain the exact-host IOC, which matches first
+  // in the FORBIDDEN_PATTERNS order; only the third sample (different
+  // Worker subdomain) and fourth (http) hit the generic Worker rule.
+  assert.match(findings[1]!.reason, /rough-breeze-0c37\.buidanhnam95\.workers\.dev/);
+  assert.match(findings[2]!.reason, /URL-shaped Cloudflare Worker/);
+  assert.match(findings[3]!.reason, /URL-shaped Cloudflare Worker/);
+});
+
+test("verify-no-registry-exfiltration ignores benign workers.dev mentions", async () => {
+  // Negative: the bare PSL suffix `workers.dev` (legitimately listed
+  // in `src/subdomains.ts`) and doc-comment mentions of the IOC
+  // hostname must NOT trip the Vietnam-Telegram-ban gate.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// safe: doc-comment mention of `*.workers.dev` as a PSL entry",
+    "// safe: doc-comment mention of the IOC host rough-breeze-0c37.buidanhnam95.workers.dev",
+    "",
+    "// safe: bare PSL suffix string (no `://` prefix, no subdomain)",
+    'const psl = "workers.dev";',
+    "",
+    "// safe: list with bare suffix",
+    'const suffixes = ["workers.dev", "pages.dev"];',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+});
+
 test("verify-no-registry-exfiltration ignores benign deletion-shaped tokens", async () => {
   // Negative: doc-comment mentions of the wiper IOCs, property
   // comparisons against `.rm`, non-destructive fs APIs, and mkdir

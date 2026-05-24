@@ -235,6 +235,47 @@
  *     in-process channel left for a wiper to land in
  *     `@daloyjs/core`.
  *
+ * ---
+ *
+ * **Vietnam-Telegram-ban Fastlane typosquat campaign (Socket
+ * 2025-06-03,
+ * https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban):**
+ *
+ * Two malicious RubyGems (`fastlane-plugin-telegram-proxy`,
+ * `fastlane-plugin-proxy_teleram`) cloned the legitimate
+ * `fastlane-plugin-telegram` plugin near-verbatim and changed a
+ * single line: the Telegram Bot API endpoint
+ * `https://api.telegram.org/bot{token}/sendMessage` was replaced
+ * with a hard-coded Cloudflare Worker C2 at
+ * `https://rough-breeze-0c37.buidanhnam95.workers.dev/bot{token}/sendMessage`.
+ * Every Telegram message, bot token, chat ID, and uploaded file
+ * routed through the relay was silently captured. The lure was
+ * timed to Vietnam's nationwide May 21 2025 Telegram block so
+ * developers searching for proxies would adopt the typosquats.
+ *
+ * The attack class is RubyGems / Fastlane and lands outside Daloy's
+ * ecosystem, but the **endpoint-substitution + opaque-Cloudflare-Worker-relay
+ * tradecraft** translates directly to npm: a malicious republish of
+ * `@daloyjs/core` could insert one hardcoded
+ * `https://<random>.workers.dev/...` URL as a proxy for any API call
+ * and exfiltrate request bodies through an attacker-controlled
+ * Worker. Cloudflare Worker source is not publicly visible, so the
+ * relay is opaque by design.
+ *
+ * Daloy core's runtime source never calls any third-party API, so
+ * any URL-shaped `https://<sub>.workers.dev/...` literal in `src/**`
+ * is presumptively a C2 relay. This gate refuses:
+ *
+ *   - The documented exact-host IOC
+ *     `rough-breeze-0c37.buidanhnam95.workers.dev` (kept as a
+ *     bare-literal IOC for grep parity with prior campaign blocks).
+ *   - Any URL-shaped Cloudflare Worker host literal
+ *     `https?://<at-least-one-sub>.workers.dev/...` — Daloy core
+ *     legitimately mentions the bare `workers.dev` PSL suffix in
+ *     `src/subdomains.ts` (a Public Suffix List entry, not a URL),
+ *     so the gate is scoped to URL-shaped occurrences only and the
+ *     existing PSL entry continues to pass.
+ *
  * @since 0.50.0
  */
 
@@ -797,6 +838,42 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "this call",
     keepStrings: false,
   },
+  // ---- Vietnam-Telegram-ban Fastlane typosquat (Socket 2025-06-03,
+  //      https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban)
+  //      — the malicious gems replaced `api.telegram.org` with an
+  //      opaque Cloudflare Worker C2. RubyGems-only campaign, but the
+  //      endpoint-substitution + Worker-relay tradecraft translates
+  //      verbatim to npm. ----
+  {
+    // Exact-host IOC for grep parity with the prior campaign blocks.
+    re: /\brough-breeze-0c37\.buidanhnam95\.workers\.dev\b/i,
+    reason:
+      "`rough-breeze-0c37.buidanhnam95.workers.dev` is the documented Cloudflare Worker C2 " +
+      "for the Vietnam-Telegram-ban Fastlane typosquat campaign — the malicious " +
+      "`fastlane-plugin-telegram-proxy` / `fastlane-plugin-proxy_teleram` RubyGems " +
+      "replaced `https://api.telegram.org/bot{token}/sendMessage` with this hardcoded " +
+      "Worker endpoint to silently exfiltrate bot tokens, chat IDs, messages, and " +
+      "attached files " +
+      "(https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
+  {
+    // URL-shaped Cloudflare Worker literal. The bare PSL suffix
+    // `workers.dev` (legitimately listed in `src/subdomains.ts`) does
+    // NOT match because we require `://<sub>.workers.dev`.
+    re: /\bhttps?:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.workers\.dev\b/i,
+    reason:
+      "URL-shaped Cloudflare Worker literal in `src/**` — Daloy core never proxies " +
+      "outbound traffic through a Cloudflare Worker from runtime code. Cloudflare " +
+      "Worker source is not publicly visible, so a hardcoded `https://<sub>.workers.dev/...` " +
+      "URL is an opaque-relay primitive the Vietnam-Telegram-ban Fastlane typosquat " +
+      "campaign used to silently exfiltrate Telegram bot tokens and messages " +
+      "(https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban) — " +
+      "remove this URL or, if intentional, justify it in the PR description and add a " +
+      "narrower allowlist",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
@@ -940,16 +1017,20 @@ async function main(): Promise<void> {
         "macOS keychain path), or reference `xlsx-to-json-lh` codebase-wiper IOCs " +
         "(`informer-server.herokuapp.com` C2 host, `remise à zéro` French destruction-trigger " +
         "phrase, or any destructive filesystem-deletion API call — `rmSync` / `rmdirSync` / " +
-        "`unlinkSync` / `fs.rm(` / `fs.rmdir(` / `fs.unlink(`). These are the runtime primitives the GemStuffer, Lazarus / Jade " +
+        "`unlinkSync` / `fs.rm(` / `fs.rmdir(` / `fs.unlink(`), or reference Vietnam-Telegram-ban " +
+        "Fastlane-typosquat IOCs (`rough-breeze-0c37.buidanhnam95.workers.dev` C2 host, or any " +
+        "URL-shaped `https://<sub>.workers.dev/...` Cloudflare Worker relay literal). These are the runtime primitives the GemStuffer, Lazarus / Jade " +
         "Sleet, RATatouille / rand-user-agent, xrpl.js / Ripple-SDK, Telegram-bot SSH-backdoor, " +
-        "Lazarus BeaverTail / InvisibleFerret, and `xlsx-to-json-lh` codebase-wiper classes of " +
+        "Lazarus BeaverTail / InvisibleFerret, `xlsx-to-json-lh` codebase-wiper, and " +
+        "Vietnam-Telegram-ban Fastlane-typosquat classes of " +
         "supply-chain attack use to scrape, exfiltrate, or destroy data. See https://socket.dev/blog/gemstuffer, " +
         "https://socket.dev/blog/social-engineering-campaign-npm-malware, " +
         "https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise, " +
         "https://www.aikido.dev/blog/xrp-supplychain-attack-official-npm-package-infected-with-crypto-stealing-backdoor, " +
         "https://socket.dev/blog/npm-malware-targets-telegram-bot-developers, " +
         "https://socket.dev/blog/lazarus-strikes-npm-again-with-a-new-wave-of-malicious-packages, " +
-        "and https://socket.dev/blog/npm-package-wipes-codebases-with-remote-trigger.",
+        "https://socket.dev/blog/npm-package-wipes-codebases-with-remote-trigger, " +
+        "and https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban.",
     );
     process.exitCode = 1;
   }
