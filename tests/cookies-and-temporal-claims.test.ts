@@ -1233,6 +1233,76 @@ test("verify-no-registry-exfiltration ignores benign IP-shaped tokens", async ()
   assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
 });
 
+test("verify-no-registry-exfiltration flags Toptal GitHub-org hijack IOCs", async () => {
+  // Socket 2025-07-23 Toptal GitHub-org hijack documented at
+  // https://socket.dev/blog/toptal-s-github-organization-hijacked-10-malicious-packages-published —
+  // 10 `@toptal/picasso-*` packages were republished on 2025-07-20
+  // with destructive `preinstall` + `postinstall` lifecycle hooks
+  // embedded directly in `package.json` that POSTed the victim's
+  // `gh auth token` to a `webhook.site` drop and then attempted
+  // `sudo rm -rf --no-preserve-root /`. The install-time channel is
+  // already closed by `ignore-scripts=true` + `verify-no-lifecycle-scripts`
+  // + the 24h release cooldown — this regression net catches a
+  // separate vector where a malicious PR copies the payload as
+  // string literals into `src/**` runtime code.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: generic webhook.site exfiltration drop",
+    'const drop = "https://webhook.site/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";',
+    "",
+    "// unsafe: the documented Toptal IOC channel UUID",
+    'const ioc = "fb5b4647-aff8-418c-99e7-ec830cc2024b";',
+    "",
+    "// unsafe: GitHub-CLI token-harvest command literal",
+    'const cmd = "gh auth token";',
+    "",
+    "// unsafe: destructive rm flag that overrides root safety",
+    'const flag = "--no-preserve-root";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 4, JSON.stringify(findings, null, 2));
+  assert.match(findings[0]!.reason, /webhook\.site/);
+  assert.match(findings[1]!.reason, /fb5b4647-aff8-418c-99e7-ec830cc2024b/);
+  assert.match(findings[2]!.reason, /gh auth token/);
+  assert.match(findings[3]!.reason, /--no-preserve-root/);
+  for (const finding of findings) {
+    assert.match(finding.reason, /Toptal/);
+  }
+});
+
+test("verify-no-registry-exfiltration ignores benign Toptal-shaped tokens", async () => {
+  // Negative: doc-comment mentions of the Toptal IOCs, an unrelated
+  // host that merely *contains* the substring `webhook` (e.g.
+  // `webhooks.example.com` without `.site/`), and the bare word
+  // `gh` / `rm` outside their attack-shape must NOT trip the gate.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// safe: doc-comment mention of the IOC drop",
+    "// the Toptal payload POSTed to https://webhook.site/fb5b4647-aff8-418c-99e7-ec830cc2024b",
+    "",
+    "// safe: doc-comment mention of the IOC UUID",
+    "// IOC: fb5b4647-aff8-418c-99e7-ec830cc2024b is the Toptal webhook channel",
+    "",
+    "// safe: doc-comment mention of the harvest command",
+    "// the payload ran `gh auth token` to dump the GitHub token",
+    "",
+    "// safe: doc-comment mention of the destructive flag",
+    "// `--no-preserve-root` overrides the rm root safety check",
+    "",
+    "// safe: unrelated host that contains the substring `webhook`",
+    'const url = "https://webhooks.example.com/incoming";',
+    "",
+    "// safe: bare ghost-prefixed identifier (not `gh auth token`)",
+    "const ghostUser = await loadGhostUser();",
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+});
+
 test("verify-no-registry-exfiltration accepts the live src/ tree", async () => {
   const { findForbiddenRegistryExfilCalls } = await import(
     "../scripts/verify-no-registry-exfiltration.js"
