@@ -44,6 +44,43 @@
  * `non-http(s)` protocols (`file:`, `ftp:`, `gopher:`, `data:`) are
  * rejected before any network call.
  *
+ * ## Residual DNS-rebinding (TOCTOU) caveat
+ *
+ * `fetchGuard()` resolves the hostname, validates every returned address
+ * against the deny / allow set, and only then hands the original
+ * `Request` to the underlying `fetch`. The underlying `fetch` performs
+ * its **own** DNS lookup when it opens the socket. An attacker that
+ * controls a TTL=0 record can return a public IP at validation time and
+ * a `127.0.0.1` / `169.254.169.254` at connect time, slipping past the
+ * library-level check. This residual TOCTOU window cannot be closed at
+ * the `fetch()` boundary without injecting a custom HTTP dispatcher
+ * (e.g. `undici.Agent({ connect: { lookup } })`) — and Daloy
+ * deliberately ships **zero** runtime dependencies, so we do not bundle
+ * `undici`. To fully close the window:
+ *
+ *  1. **Operator-side** (recommended): block egress to RFC1918 /
+ *     loopback / link-local at the VPC / firewall layer. This neutralises
+ *     the rebinding even if the application is naïve.
+ *  2. **Caller-side, Node only**: install `undici` and pass a custom
+ *     `fetch` that wires a dispatcher with a pinned-IP `connect.lookup`,
+ *     e.g.
+ *     ```ts
+ *     import { Agent, fetch as undiciFetch } from "undici";
+ *     import * as dns from "node:dns/promises";
+ *     const safeFetch = fetchGuard({
+ *       fetch: async (input, init) => {
+ *         const url = new URL(typeof input === "string" ? input : input.url);
+ *         const { address, family } = await dns.lookup(url.hostname, { verbatim: true });
+ *         const dispatcher = new Agent({
+ *           connect: { lookup: (_h, _o, cb) => cb(null, address, family) },
+ *         });
+ *         return undiciFetch(input, { ...init, dispatcher });
+ *       },
+ *     });
+ *     ```
+ *     The pre-resolved IP is what the socket connects to; TLS SNI /
+ *     cert validation still uses the original hostname.
+ *
  * @since 0.34.0
  * @module
  */

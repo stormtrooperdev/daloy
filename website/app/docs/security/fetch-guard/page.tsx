@@ -167,16 +167,51 @@ app.route({
 });`}
       />
 
-      <h2>Residual risk: DNS rebinding</h2>
+      <h2>Residual risk: DNS rebinding (TOCTOU)</h2>
       <p>
         The guard resolves the hostname once and validates every returned
         address, but between that resolution and the underlying TCP connect, an
-        attacker who controls the authoritative DNS could change the answer. For
-        maximum-assurance deployments, run behind a network policy that already
-        blocks egress to RFC1918 / metadata IPs (Kubernetes{" "}
-        <code>NetworkPolicy</code>, <code>step-security/harden-runner</code> in
-        CI, <code>iptables -A OUTPUT -d 169.254.169.254 -j DROP</code> on the
-        host). <code>fetchGuard()</code> is defense-in-depth on top of those
+        attacker who controls the authoritative DNS (TTL=0) could change the
+        answer. We close this at two layers, both opt-in:
+      </p>
+      <ol>
+        <li>
+          <strong>Operator-side (recommended).</strong> Run behind a network
+          policy that already blocks egress to RFC1918 / metadata IPs &mdash;
+          Kubernetes <code>NetworkPolicy</code>,{" "}
+          <code>step-security/harden-runner</code> in CI,{" "}
+          <code>iptables -A OUTPUT -d 169.254.169.254 -j DROP</code> on the
+          host. This neutralises rebinding even if the app is naive.
+        </li>
+        <li>
+          <strong>Caller-side, Node-only.</strong> Daloy ships zero runtime
+          dependencies, so we do not bundle <code>undici</code>. If you install
+          it yourself, you can pin the socket to the IP you validated by
+          plumbing a custom dispatcher through the existing <code>fetch</code>{" "}
+          option:
+          <CodeBlock
+            language="ts"
+            code={`import { fetchGuard } from "@daloyjs/core";
+import { Agent, fetch as undiciFetch } from "undici";
+import * as dns from "node:dns/promises";
+
+const safeFetch = fetchGuard({
+  fetch: async (input, init) => {
+    const url = new URL(typeof input === "string" ? input : input.url);
+    const { address, family } = await dns.lookup(url.hostname, { verbatim: true });
+    const dispatcher = new Agent({
+      connect: { lookup: (_h, _o, cb) => cb(null, address, family) },
+    });
+    return undiciFetch(input, { ...init, dispatcher });
+  },
+});`}
+          />
+          The socket connects to the pre-resolved IP; TLS SNI and certificate
+          validation still use the original hostname.
+        </li>
+      </ol>
+      <p>
+        <code>fetchGuard()</code> remains defense-in-depth on top of these
         controls.
       </p>
 
