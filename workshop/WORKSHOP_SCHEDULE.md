@@ -80,11 +80,13 @@ The 8-hour track lives under [`src/challenges/8-hour/`](./src/challenges/8-hour)
 
 ## How to Use
 
-1. `pnpm install`
+1. `pnpm install` - installs the same `@daloyjs/core@^0.35.0` range used by `create-daloy@0.35.0` templates.
 2. `pnpm dev:4:0` — run 4-hour exercise 0.
 3. Open `http://localhost:3000/docs` (Scalar UI).
 4. Edit `src/challenges/4-hour/exercise-0.ts`. Hot reload reflects your changes immediately.
 5. Compare against `src/challenges/4-hour/solutions/exercise-0-end.ts` when stuck.
 6. Move on to exercise 1, 2, … in order.
+
+To compare the tutorials against a fresh scaffold, run `pnpm create daloy@latest my-api --template node-basic --yes` from a scratch directory.
 
 Every exercise links back to the matching topic on <https://daloyjs.dev/docs> for deeper reading.

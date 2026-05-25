@@ -20,18 +20,20 @@ Do not collapse these layers into a single file when adding new exercises. Senio
 
 | Category    | Technology         | Version    |
 | ----------- | ------------------ | ---------- |
-| Framework   | @daloyjs/core      | latest     |
-| Runtime     | Node.js            | ≥ 20.10    |
-| Language    | TypeScript         | 5.x / 6.x  |
+| Scaffolder  | create-daloy       | 0.35.0     |
+| Framework   | @daloyjs/core      | ^0.35.0    |
+| Runtime     | Node.js            | >= 24.0.0  |
+| Language    | TypeScript         | ^6.0.3     |
 | Validator   | Zod                | ^4         |
-| Codegen     | @hey-api/openapi-ts | latest    |
-| Dev runner  | tsx                | latest     |
+| Codegen     | @hey-api/openapi-ts | ^0.97.1   |
+| Dev runner  | tsx                | ^4.22.3    |
 | Test runner | node:test (built-in) | n/a      |
 
 ## Setup Commands
 
 ```bash
 pnpm install              # install workshop deps
+pnpm create daloy@latest my-api --template node-basic --yes  # compare against the latest scaffold
 pnpm dev:4:N              # run 4-hour exercise N with tsx --watch
 pnpm dev:8:N              # run 8-hour exercise N with tsx --watch
 pnpm dev:sol:4:N          # run 4-hour reference solution N

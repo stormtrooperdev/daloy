@@ -4,6 +4,8 @@ A self-guided, hands-on workshop for **senior TypeScript/Node developers** who a
 
 Clone the repo and everything is here: starter exercises, ordered coding steps, reference solutions, and instructions.
 
+This workshop tracks the current published release train: `create-daloy@0.35.0` scaffolds templates with `@daloyjs/core@^0.35.0`, and this workshop uses that same npm range so the exercises match the latest generated projects.
+
 ## Quick Start
 
 ```bash
@@ -11,6 +13,12 @@ git clone <this-repo>
 cd workshop
 pnpm install
 pnpm dev:4:0     # run exercise 0 (4-hour track) — http://localhost:3000/docs
+```
+
+Want a fresh generated app beside the workshop for comparison? Use the same scaffolder release channel as the tutorials:
+
+```bash
+pnpm create daloy@latest my-api --template node-basic --yes
 ```
 
 Each exercise is a **self-contained TypeScript file** that boots its own DaloyJS app on `http://localhost:3000`. You run, edit, hit save, and `tsx --watch` hot-reloads.
@@ -90,7 +98,7 @@ The `coding-steps/` files include mental models, before → after snippets, a co
 
 | Command                 | Purpose                                                              |
 | ----------------------- | -------------------------------------------------------------------- |
-| `pnpm install`          | Install dependencies (`@daloyjs/core`, `zod`, `tsx`)                  |
+| `pnpm install`          | Install dependencies (`@daloyjs/core@^0.35.0`, `zod`, `tsx`)          |
 | `pnpm dev:4:N`          | Run 4-hour exercise N with `tsx --watch` on port 3000                |
 | `pnpm dev:8:N`          | Run 8-hour exercise N with `tsx --watch` on port 3000                |
 | `pnpm dev:sol:4:N`      | Run the 4-hour reference solution for exercise N                     |
