@@ -101,7 +101,7 @@ export class Router<T> {
     }
 
     // Static fast path.
-    const normalized = path.replace(/\/+$/, "") || "/";
+    const normalized = normalizeLookupPath(path);
     const staticEntry = this.staticTable.get(normalized);
     if (staticEntry && staticEntry[method]) {
       return { handler: staticEntry[method]!, params: {} };
@@ -118,7 +118,7 @@ export class Router<T> {
 
   /** Returns the set of methods registered at this exact path (for 405 responses). */
   allowedMethods(path: string): HttpMethod[] {
-    const normalized = path.replace(/\/+$/, "") || "/";
+    const normalized = normalizeLookupPath(path);
     const fromStatic = this.staticTable.get(normalized);
     if (fromStatic) return Object.keys(fromStatic) as HttpMethod[];
     const segments = splitPath(path);
@@ -155,7 +155,13 @@ export class Router<T> {
 }
 
 function splitPath(path: string): string[] {
-  const clean = path.replace(/\/+$/, "") || "/";
+  const clean = normalizeLookupPath(path);
   if (clean === "/") return [];
-  return clean.replace(/^\//, "").split("/");
+  return clean.slice(clean.charCodeAt(0) === 47 ? 1 : 0).split("/");
+}
+
+function normalizeLookupPath(path: string): string {
+  let end = path.length;
+  while (end > 1 && path.charCodeAt(end - 1) === 47) end--;
+  return end === path.length ? path : path.slice(0, end) || "/";
 }

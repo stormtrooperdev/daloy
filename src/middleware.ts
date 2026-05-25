@@ -375,15 +375,18 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
         .join(", ");
     }
   }
+  const headerEntries = Object.entries(headers);
 
   const hooks: Hooks = {
-    beforeHandle(ctx) {
-      if (cspIsDynamic && (cspOpt as CspDirectivesOptions).nonce) {
-        (ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] = generateCspNonce();
+    onResponse(res) {
+      for (const [k, v] of headerEntries) {
+        if (!res.headers.has(k)) res.headers.set(k, v);
       }
     },
-    onSend(res, ctx) {
-      if (cspIsDynamic && !res.headers.has("content-security-policy")) {
+  };
+  if (cspIsDynamic) {
+    hooks.onSend = (res, ctx) => {
+      if (!res.headers.has("content-security-policy")) {
         const nonce = ctx
           ? ((ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] as string | undefined)
           : undefined;
@@ -391,13 +394,15 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
         if (header) res.headers.set("content-security-policy", header);
       }
       return undefined;
-    },
-    onResponse(res) {
-      for (const [k, v] of Object.entries(headers)) {
-        if (!res.headers.has(k)) res.headers.set(k, v);
-      }
-    },
-  };
+    };
+    if ((cspOpt as CspDirectivesOptions).nonce) {
+      hooks.beforeHandle = (ctx) => {
+        (ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] = generateCspNonce();
+      };
+    } else {
+      hooks.beforeHandle = () => {};
+    }
+  }
   (hooks as Record<PropertyKey, unknown>)[SECURE_HEADERS_MARKER] = true;
   return hooks;
 }

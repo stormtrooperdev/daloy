@@ -32,6 +32,8 @@ import {
   type WebSocketHandler,
 } from "../websocket.js";
 
+const DALOY_RESPONSE_BODY = Symbol.for("daloyjs.response.body");
+
 /** Options for the Node.js {@link serve} entry point. */
 export interface NodeServerOptions {
   port?: number;
@@ -61,7 +63,7 @@ export function serve(app: App, opts: NodeServerOptions = {}): NodeServerHandle 
   const trustProxy = opts.trustProxy === true;
   const server = createServer({ maxHeaderSize: opts.maxHeaderBytes ?? 16 * 1024 }, async (req, res) => {
     try {
-      const request = await toWebRequest(req, trustProxy);
+      const request = toWebRequest(req, res, trustProxy);
       const response = await app.fetch(request);
       await sendWebResponse(response, res);
     } catch (e) {
@@ -118,10 +120,11 @@ export function serve(app: App, opts: NodeServerOptions = {}): NodeServerHandle 
     process.once("SIGINT", () => onSignal("SIGINT"));
   }
   return { server, port, close }; }
-async function toWebRequest(
+function toWebRequest(
   req: IncomingMessage,
+  res: ServerResponse,
   trustProxy: boolean,
-): Promise<Request> {
+): Request {
   const forwardedHost = trustProxy
     ? firstHeader(req.headers["x-forwarded-host"])
     : undefined;
@@ -133,19 +136,181 @@ async function toWebRequest(
     forwardedProto ??
     ((req.socket as { encrypted?: boolean }).encrypted ? "https" : "http");
   const url = `${proto}://${host}${req.url ?? "/"}`;
-  const headers = new Headers();
-  for (const [k, v] of Object.entries(req.headers)) {
-    if (v === undefined) continue;
-    if (Array.isArray(v)) headers.set(k, v.join(", "));
-    else headers.set(k, String(v));
-  }
   const method = req.method ?? "GET";
-  const init: RequestInit = { method, headers };
   if (method !== "GET" && method !== "HEAD") {
-    (init as any).body = Readable.toWeb(req) as ReadableStream;
+    const request = createRealNodeRequest(req, url, method);
+    watchNodeRequestAbort(request, req, res);
+    return request;
+  }
+  const request = createLazyNodeRequest(req, url);
+  watchNodeRequestAbort(request, req, res);
+  return request;
+}
+
+function createRealNodeRequest(
+  req: IncomingMessage,
+  url: string,
+  method: string,
+): Request {
+  const abortController = new AbortController();
+  const init: RequestInit = {
+    method,
+    headers: headersFromIncoming(req),
+    signal: abortController.signal,
+  };
+  (init as any).body = Readable.toWeb(req) as ReadableStream;
+  (init as any).duplex = "half";
+  const request = new Request(url, init) as NodeAbortableRequest;
+  request[NODE_ABORT] = abortController;
+  return request;
+}
+
+const NODE_INCOMING = Symbol("daloy.node.incoming");
+const NODE_URL = Symbol("daloy.node.url");
+const NODE_HEADERS = Symbol("daloy.node.headers");
+const NODE_ABORT = Symbol("daloy.node.abort");
+const NODE_ABORTED = Symbol("daloy.node.aborted");
+const NODE_ABORT_REASON = Symbol("daloy.node.abortReason");
+const NODE_REQUEST = Symbol("daloy.node.request");
+
+type NodeAbortableRequest = Request & {
+  [NODE_ABORT]?: AbortController;
+  [NODE_ABORTED]?: boolean;
+  [NODE_ABORT_REASON]?: unknown;
+};
+
+type LazyNodeRequest = NodeAbortableRequest & {
+  [NODE_INCOMING]: IncomingMessage;
+  [NODE_URL]: string;
+  [NODE_HEADERS]?: Headers;
+  [NODE_REQUEST]?: Request;
+};
+
+const lazyNodeRequestPrototype: any = Object.create(Request.prototype);
+
+Object.defineProperties(lazyNodeRequestPrototype, {
+  method: {
+    get(this: LazyNodeRequest) {
+      return this[NODE_INCOMING].method ?? "GET";
+    },
+  },
+  url: {
+    get(this: LazyNodeRequest) {
+      return this[NODE_URL];
+    },
+  },
+  headers: {
+    get(this: LazyNodeRequest) {
+      return (this[NODE_HEADERS] ??= headersFromIncoming(this[NODE_INCOMING]));
+    },
+  },
+  signal: {
+    get(this: LazyNodeRequest) {
+      return getLazyAbortController(this).signal;
+    },
+  },
+  body: {
+    get(this: LazyNodeRequest) {
+      return getRealRequest(this).body;
+    },
+  },
+  bodyUsed: {
+    get(this: LazyNodeRequest) {
+      return getRealRequest(this).bodyUsed;
+    },
+  },
+  cache: { get(this: LazyNodeRequest) { return getRealRequest(this).cache; } },
+  credentials: { get(this: LazyNodeRequest) { return getRealRequest(this).credentials; } },
+  destination: { get(this: LazyNodeRequest) { return getRealRequest(this).destination; } },
+  integrity: { get(this: LazyNodeRequest) { return getRealRequest(this).integrity; } },
+  keepalive: { get(this: LazyNodeRequest) { return getRealRequest(this).keepalive; } },
+  mode: { get(this: LazyNodeRequest) { return getRealRequest(this).mode; } },
+  redirect: { get(this: LazyNodeRequest) { return getRealRequest(this).redirect; } },
+  referrer: { get(this: LazyNodeRequest) { return getRealRequest(this).referrer; } },
+  referrerPolicy: { get(this: LazyNodeRequest) { return getRealRequest(this).referrerPolicy; } },
+  duplex: { get(this: LazyNodeRequest) { return (getRealRequest(this) as any).duplex; } },
+  isHistoryNavigation: { get(this: LazyNodeRequest) { return (getRealRequest(this) as any).isHistoryNavigation; } },
+  isReloadNavigation: { get(this: LazyNodeRequest) { return (getRealRequest(this) as any).isReloadNavigation; } },
+});
+
+for (const methodName of ["arrayBuffer", "blob", "bytes", "clone", "formData", "json", "text"] as const) {
+  Object.defineProperty(lazyNodeRequestPrototype, methodName, {
+    value(this: LazyNodeRequest) {
+      return getRealRequest(this)[methodName]();
+    },
+  });
+}
+
+function createLazyNodeRequest(req: IncomingMessage, url: string): Request {
+  const request = Object.create(lazyNodeRequestPrototype) as LazyNodeRequest;
+  request[NODE_INCOMING] = req;
+  request[NODE_URL] = url;
+  return request;
+}
+
+function watchNodeRequestAbort(
+  request: NodeAbortableRequest,
+  req: IncomingMessage,
+  res: ServerResponse,
+): void {
+  res.once("close", () => {
+    if (res.writableFinished) return;
+    abortNodeRequest(
+      request,
+      req.errored
+        ? String(req.errored)
+        : "Client connection prematurely closed.",
+    );
+  });
+}
+
+function abortNodeRequest(
+  request: NodeAbortableRequest,
+  reason: unknown,
+): void {
+  if (request[NODE_ABORTED]) return;
+  request[NODE_ABORTED] = true;
+  request[NODE_ABORT_REASON] = reason;
+  request[NODE_ABORT]?.abort(reason);
+}
+
+function headersFromIncoming(req: IncomingMessage): Headers {
+  const raw = req.rawHeaders;
+  const pairs: Array<[string, string]> = [];
+  for (let index = 0; index < raw.length; index += 2) {
+    const name = raw[index];
+    const value = raw[index + 1];
+    if (name !== undefined && value !== undefined && name.charCodeAt(0) !== 58) {
+      pairs.push([name, value]);
+    }
+  }
+  return new Headers(pairs);
+}
+
+function getLazyAbortController(request: LazyNodeRequest): AbortController {
+  let controller = request[NODE_ABORT];
+  if (!controller) {
+    controller = new AbortController();
+    request[NODE_ABORT] = controller;
+    if (request[NODE_ABORTED]) controller.abort(request[NODE_ABORT_REASON]);
+  }
+  return controller;
+}
+
+function getRealRequest(request: LazyNodeRequest): Request {
+  if (request[NODE_REQUEST]) return request[NODE_REQUEST];
+  const method = request.method;
+  const init: RequestInit = {
+    method,
+    headers: request.headers,
+    signal: getLazyAbortController(request).signal,
+  };
+  if (method !== "GET" && method !== "HEAD") {
+    (init as any).body = Readable.toWeb(request[NODE_INCOMING]) as ReadableStream;
     (init as any).duplex = "half";
   }
-  return new Request(url, init);
+  request[NODE_REQUEST] = new Request(request.url, init);
+  return request[NODE_REQUEST];
 }
 
 function firstHeader(v: string | string[] | undefined): string | undefined {
@@ -162,6 +327,28 @@ async function sendWebResponse(
 ): Promise<void> {
   out.statusCode = res.status;
   res.headers.forEach((v, k) => out.setHeader(k, v));
+  const cachedBody = (res as Response & { [DALOY_RESPONSE_BODY]?: BodyInit | null })[
+    DALOY_RESPONSE_BODY
+  ];
+  if (!res.bodyUsed && cachedBody !== undefined && cachedBody !== null) {
+    if (!res.headers.has("content-length")) {
+      if (typeof cachedBody === "string") {
+        out.setHeader("content-length", Buffer.byteLength(cachedBody));
+      } else if (cachedBody instanceof Uint8Array) {
+        out.setHeader("content-length", cachedBody.byteLength);
+      } else if (cachedBody instanceof ArrayBuffer) {
+        out.setHeader("content-length", cachedBody.byteLength);
+      }
+    }
+    if (typeof cachedBody === "string" || cachedBody instanceof Uint8Array) {
+      out.end(cachedBody);
+      return;
+    }
+    if (cachedBody instanceof ArrayBuffer) {
+      out.end(new Uint8Array(cachedBody));
+      return;
+    }
+  }
   if (!res.body) {
     out.end();
     return;
