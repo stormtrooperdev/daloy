@@ -338,7 +338,7 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   const ref = opts.referrerPolicy ?? "no-referrer";
   if (ref !== false) headers["referrer-policy"] = ref;
 
-  const perm = opts.permissionsPolicy ?? "camera=(), microphone=(), geolocation=()";
+  const perm = opts.permissionsPolicy ?? "camera=(), microphone=(), geolocation=(), clipboard-write=()";
   if (perm !== false) headers["permissions-policy"] = perm;
 
   const coop = opts.crossOriginOpenerPolicy ?? "same-origin";
