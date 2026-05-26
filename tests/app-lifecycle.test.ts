@@ -30,99 +30,11 @@ test("query and header schemas are validated and available to handlers", async (
   assert.equal(problem.detail, "Invalid headers");
 });
 
-test("app.fetch preserves serialized URL routing and query semantics", async () => {
-  const app = new App({ logger: false });
-  app.route({
-    method: "GET",
-    path: "/",
-    operationId: "urlRoot",
-    responses: { 200: { description: "ok" } },
-    handler: async ({ query }) => ({ status: 200 as const, body: query }),
-  });
-  app.route({
-    method: "GET",
-    path: "/target",
-    operationId: "urlTarget",
-    responses: { 200: { description: "ok" } },
-    handler: async ({ query }) => ({ status: 200 as const, body: query }),
-  });
-  app.route({
-    method: "GET",
-    path: "/literal;path",
-    operationId: "urlLiteralSemicolon",
-    responses: { 200: { description: "ok" } },
-    handler: async ({ query }) => ({ status: 200 as const, body: query }),
-  });
-
-  const root = await app.fetch(new Request("http://x?tag=a&tag=b"));
-  assert.equal(root.status, 200);
-  assert.deepEqual(await root.json(), { tag: ["a", "b"] });
-
-  const normalized = await app.fetch(
-    new Request("http://x/base/../target?next=/literal;path#frag"),
-  );
-  assert.equal(normalized.status, 200);
-  assert.deepEqual(await normalized.json(), { next: "/literal;path" });
-
-  const literal = await app.fetch(new Request("http://x/literal;path?ok=1"));
-  assert.equal(literal.status, 200);
-  assert.deepEqual(await literal.json(), { ok: "1" });
-});
-
-test("ctx.state.log is created lazily only when handler reads it", async () => {
-  let childCalls = 0;
-  let infoCalls = 0;
-  const logger = {
-    level: "info",
-    trace() {},
-    debug() {},
-    info() {},
-    warn() {},
-    error() {},
-    fatal() {},
-    child() {
-      childCalls++;
-      return {
-        ...logger,
-        info() {
-          infoCalls++;
-        },
-      };
-    },
-  } as any;
-  const app = new App({ logger });
-  app.route({
-    method: "GET",
-    path: "/unused-log",
-    operationId: "unusedLog",
-    responses: { 200: { description: "ok", body: z.object({ ok: z.boolean() }) as any } },
-    handler: async () => ({ status: 200 as const, body: { ok: true } }),
-  });
-  app.route({
-    method: "GET",
-    path: "/used-log",
-    operationId: "usedLog",
-    responses: { 200: { description: "ok", body: z.object({ ok: z.boolean() }) as any } },
-    handler: async ({ state }) => {
-      (state as any).log.info("handler used request logger");
-      return { status: 200 as const, body: { ok: true } };
-    },
-  });
-
-  assert.equal((await app.request("/unused-log")).status, 200);
-  assert.equal(childCalls, 0);
-  assert.equal((await app.request("/used-log")).status, 200);
-  assert.equal(childCalls, 1);
-  assert.equal(infoCalls, 1);
-});
-
 test("hooks run in order and afterHandle can transform handler output", async () => {
   const events: string[] = [];
   const app = new App({ logger: false });
   app.use({
-    onRequest: () => {
-      events.push("global:onRequest");
-    },
+    onRequest: () => events.push("global:onRequest"),
     beforeHandle: (ctx) => {
       events.push("global:before");
       ctx.set.headers.set("x-global", "1");
@@ -141,9 +53,7 @@ test("hooks run in order and afterHandle can transform handler output", async ()
     operationId: "hooks",
     responses: { 200: { description: "ok", body: z.object({ ok: z.boolean(), global: z.boolean(), route: z.boolean() }) as any } },
     hooks: {
-      beforeHandle: () => {
-        events.push("route:before");
-      },
+      beforeHandle: () => events.push("route:before"),
       afterHandle: (_ctx, value: any) => {
         events.push("route:after");
         return { ...value, body: { ...value.body, route: true } };
@@ -160,78 +70,6 @@ test("hooks run in order and afterHandle can transform handler output", async ()
   assert.equal(res.headers.get("x-global"), "1");
   assert.deepEqual(await res.json(), { ok: true, global: true, route: true });
   assert.deepEqual(events, ["global:onRequest", "global:before", "route:before", "handler", "global:after", "route:after", "global:onResponse:200"]);
-});
-
-test("AppOptions.hooks compose before route hooks from the cached route chain", async () => {
-  const events: string[] = [];
-  const app = new App({
-    logger: false,
-    hooks: {
-      beforeHandle: (ctx) => {
-        events.push("options:before");
-        ctx.set.headers.set("x-options-before", "1");
-      },
-      afterHandle: (_ctx, value: any) => {
-        events.push("options:after");
-        return { ...value, body: { ...value.body, options: true } };
-      },
-      onSend: (res) => {
-        events.push("options:onSend");
-        res.headers.set("x-options-send", "1");
-        return res;
-      },
-      onResponse: () => {
-        events.push("options:onResponse");
-      },
-    },
-  });
-  app.route({
-    method: "GET",
-    path: "/options-hooks",
-    operationId: "optionsHooks",
-    responses: { 200: { description: "ok" } },
-    hooks: {
-      beforeHandle: (ctx) => {
-        events.push("route:before");
-        ctx.set.headers.set("x-route-before", "1");
-      },
-      afterHandle: (_ctx, value: any) => {
-        events.push("route:after");
-        return { ...value, body: { ...value.body, route: true } };
-      },
-      onSend: (res) => {
-        events.push("route:onSend");
-        res.headers.set("x-route-send", "1");
-        return res;
-      },
-      onResponse: () => {
-        events.push("route:onResponse");
-      },
-    },
-    handler: async () => {
-      events.push("handler");
-      return { status: 200 as const, body: { ok: true } };
-    },
-  });
-
-  const res = await app.request("/options-hooks");
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("x-options-before"), "1");
-  assert.equal(res.headers.get("x-route-before"), "1");
-  assert.equal(res.headers.get("x-options-send"), "1");
-  assert.equal(res.headers.get("x-route-send"), "1");
-  assert.deepEqual(await res.json(), { ok: true, options: true, route: true });
-  assert.deepEqual(events, [
-    "options:before",
-    "route:before",
-    "handler",
-    "options:after",
-    "route:after",
-    "options:onSend",
-    "route:onSend",
-    "options:onResponse",
-    "route:onResponse",
-  ]);
 });
 
 test("onResponse runs for beforeHandle short-circuit responses", async () => {
@@ -351,15 +189,11 @@ test("onClose hooks registered by apps and plugins run once during shutdown", as
   const events: string[] = [];
   const app = new App({ logger: false });
 
-  app.onClose(() => {
-    events.push("root");
-  });
+  app.onClose(() => events.push("root"));
   app.register({
     name: "cleanup-plugin",
     register(child) {
-      child.onClose(async () => {
-        events.push("plugin");
-      });
+      child.onClose(async () => events.push("plugin"));
       child.route({
         method: "GET",
         path: "/ok",

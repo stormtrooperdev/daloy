@@ -338,18 +338,7 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
   const ref = opts.referrerPolicy ?? "no-referrer";
   if (ref !== false) headers["referrer-policy"] = ref;
 
-  // Default denies camera/mic/geo (rarely needed by HTTP backends) plus
-  // `clipboard-write` to neutralise the "ClickFix" social-engineering
-  // pattern — injected JS silently calls `navigator.clipboard.writeText()`
-  // with an attacker payload (e.g. a PowerShell one-liner) so a victim
-  // who follows a fake "verify you are human" prompt pastes the command
-  // into Win+R / Terminal. The Ghost CMS / CVE-2026-26980 campaign
-  // (May 2026, 700+ domains incl. Harvard / Oxford / DuckDuckGo) used
-  // exactly this chain. Override via `permissionsPolicy:` if your HTML
-  // surface legitimately needs clipboard write (e.g. "Copy" buttons).
-  const perm =
-    opts.permissionsPolicy ??
-    "camera=(), microphone=(), geolocation=(), clipboard-write=()";
+  const perm = opts.permissionsPolicy ?? "camera=(), microphone=(), geolocation=()";
   if (perm !== false) headers["permissions-policy"] = perm;
 
   const coop = opts.crossOriginOpenerPolicy ?? "same-origin";
@@ -386,18 +375,15 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
         .join(", ");
     }
   }
-  const headerEntries = Object.entries(headers);
 
   const hooks: Hooks = {
-    onResponse(res) {
-      for (const [k, v] of headerEntries) {
-        if (!res.headers.has(k)) res.headers.set(k, v);
+    beforeHandle(ctx) {
+      if (cspIsDynamic && (cspOpt as CspDirectivesOptions).nonce) {
+        (ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] = generateCspNonce();
       }
     },
-  };
-  if (cspIsDynamic) {
-    hooks.onSend = (res, ctx) => {
-      if (!res.headers.has("content-security-policy")) {
+    onSend(res, ctx) {
+      if (cspIsDynamic && !res.headers.has("content-security-policy")) {
         const nonce = ctx
           ? ((ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] as string | undefined)
           : undefined;
@@ -405,15 +391,13 @@ export function secureHeaders(opts: SecureHeadersOptions = {}): Hooks {
         if (header) res.headers.set("content-security-policy", header);
       }
       return undefined;
-    };
-    if ((cspOpt as CspDirectivesOptions).nonce) {
-      hooks.beforeHandle = (ctx) => {
-        (ctx.state as Record<string, unknown>)[CSP_NONCE_STATE] = generateCspNonce();
-      };
-    } else {
-      hooks.beforeHandle = () => {};
-    }
-  }
+    },
+    onResponse(res) {
+      for (const [k, v] of Object.entries(headers)) {
+        if (!res.headers.has(k)) res.headers.set(k, v);
+      }
+    },
+  };
   (hooks as Record<PropertyKey, unknown>)[SECURE_HEADERS_MARKER] = true;
   return hooks;
 }

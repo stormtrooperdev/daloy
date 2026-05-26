@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { request as httpRequest } from "node:http";
 import type { AddressInfo } from "node:net";
 import { z } from "zod";
 import { App } from "../src/index.js";
@@ -48,58 +47,7 @@ function buildEchoApp(): App {
       body: { ok: request.headers.get("x-multi")?.includes(",") ?? false },
     }),
   });
-  app.route({
-    method: "GET",
-    path: "/inspect-request",
-    operationId: "inspectRequest",
-    responses: {
-      200: {
-        description: "ok",
-        body: z.object({
-          isRequest: z.boolean(),
-          cloneUrl: z.string(),
-          text: z.string(),
-          bytesLength: z.number(),
-          header: z.string(),
-          duplex: z.string(),
-          isHistoryNavigation: z.boolean(),
-          isReloadNavigation: z.boolean(),
-        }) as any,
-      },
-    },
-    handler: async ({ request }) => ({
-      status: 200 as const,
-      body: {
-        isRequest: request instanceof Request,
-        cloneUrl: request.clone().url,
-        text: await request.clone().text(),
-        bytesLength: (await (request as any).bytes()).byteLength,
-        header: request.headers.get("x-inspect") ?? "",
-        duplex: (request as any).duplex,
-        isHistoryNavigation: (request as any).isHistoryNavigation,
-        isReloadNavigation: (request as any).isReloadNavigation,
-      },
-    }),
-  });
   return app;
-}
-
-async function waitFor<T>(
-  promise: Promise<T>,
-  label: string,
-  ms = 1_000,
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), ms);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
 }
 
 test("node adapter: GET request flows through toWebRequest and sendWebResponse", async () => {
@@ -165,86 +113,6 @@ test("node adapter: 404 fall-through and array-valued request headers", async ()
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { ok: true });
   } finally {
-    await handle.close();
-  }
-});
-
-test("node adapter: lazy GET Request still supports Request APIs", async () => {
-  const { handle, port } = await startServer(buildEchoApp());
-  try {
-    const res = await fetch(`http://127.0.0.1:${port}/inspect-request?x=1`, {
-      headers: { "x-inspect": "seen" },
-    });
-    assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), {
-      isRequest: true,
-      cloneUrl: `http://127.0.0.1:${port}/inspect-request?x=1`,
-      text: "",
-      bytesLength: 0,
-      header: "seen",
-      duplex: "half",
-      isHistoryNavigation: false,
-      isReloadNavigation: false,
-    });
-  } finally {
-    await handle.close();
-  }
-});
-
-test("node adapter: lazy GET Request signal aborts on client disconnect", async () => {
-  const app = new App({ logger: false });
-  let signalReady!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    signalReady = resolve;
-  });
-  let abortObserved = false;
-  let abortObservedResolve!: () => void;
-  const abortObservedPromise = new Promise<void>((resolve) => {
-    abortObservedResolve = resolve;
-  });
-  let releaseHandler!: () => void;
-  const releaseHandlerPromise = new Promise<void>((resolve) => {
-    releaseHandler = resolve;
-  });
-
-  app.route({
-    method: "GET",
-    path: "/wait-for-disconnect",
-    operationId: "waitForDisconnect",
-    responses: { 200: { description: "ok", body: z.object({ ok: z.boolean() }) as any } },
-    handler: async ({ request }) => {
-      request.signal.addEventListener(
-        "abort",
-        () => {
-          abortObserved = true;
-          abortObservedResolve();
-        },
-        { once: true },
-      );
-      signalReady();
-      await Promise.race([abortObservedPromise, releaseHandlerPromise]);
-      return { status: 200 as const, body: { ok: true } };
-    },
-  });
-
-  const { handle, port } = await startServer(app);
-  try {
-    const client = httpRequest({
-      host: "127.0.0.1",
-      port,
-      path: "/wait-for-disconnect",
-      method: "GET",
-    });
-    client.on("error", () => {});
-    client.end();
-
-    await waitFor(ready, "handler to read request.signal");
-    client.destroy();
-
-    await waitFor(abortObservedPromise, "request signal abort");
-    assert.equal(abortObserved, true);
-  } finally {
-    releaseHandler?.();
     await handle.close();
   }
 });

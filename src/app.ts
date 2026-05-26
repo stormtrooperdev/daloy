@@ -621,8 +621,6 @@ export interface IntrospectedRoute {
 interface CompiledRoute {
   def: RouteDefinition<any, any, any, any>;
   hooks: Hooks;
-  /** Pre-merged constructor/group/route hook chain for matched-route dispatch. */
-  effectiveHooks: Hooks;
   /** CORS origin allowlist predicates captured from group and route-level hooks. */
   corsOriginAllows: CorsOriginAllow[];
 }
@@ -644,10 +642,6 @@ const DEFAULTS = {
   requestTimeoutMs: 30_000,
   validateResponses: true,
 };
-
-const DALOY_RESPONSE_BODY = Symbol.for(
-  "daloyjs.response.body",
-);
 
 /**
  * Contract-first HTTP application.
@@ -741,12 +735,6 @@ export class App {
   /** In-flight request count for graceful shutdown. */
   private inflight = 0;
   private draining = false;
-  /** AppOptions.hooks captured as a construction-time hook layer. */
-  private readonly optionsHooks: Hooks;
-  /** Pre-merged constructor hooks used by dispatch. */
-  private readonly optionsHooksMerged: Hooks;
-  /** Constructor-level CORS allowlist predicates used by the cross-origin guard. */
-  private readonly optionsHooksCorsAllows: CorsOriginAllow[];
   /**
     * CORS origin allowlist predicates from the currently active group-level
     * hooks. Used for unmatched routes; matched routes use the snapshot stored
@@ -790,10 +778,7 @@ export class App {
     this.warnOnEnvMismatch();
     this.assertDisconnectStatusCode();
     assertBehindProxy(this.options.behindProxy);
-    this.optionsHooks = this.options.hooks ?? {};
-    if (this.options.hooks) this.assertSecureHookConfig(this.optionsHooks);
-    this.optionsHooksMerged = mergeHooks([this.optionsHooks]);
-    this.optionsHooksCorsAllows = corsOriginAllowsFromHooks([this.optionsHooks]);
+    if (this.options.hooks) this.assertSecureHookConfig(this.options.hooks);
     this.assertInsecureDefaultsAcknowledged();
     this.installSecureDefaults();
     this.maybeInstallCrashHandlers();
@@ -993,6 +978,7 @@ export class App {
    */
   private assertCrossOriginAllowed(
     request: Request,
+    url: URL,
     method: HttpMethod,
     corsOriginAllows: CorsOriginAllow[],
   ): void {
@@ -1017,7 +1003,7 @@ export class App {
         "Cross-origin state-changing request rejected: malformed Origin header.",
       );
     }
-    if (originUrl.origin === new URL(request.url).origin) return;
+    if (originUrl.origin === url.origin) return;
     if (corsOriginAllows.some((allows) => allows(origin))) return;
     throw new ForbiddenError(
       `Cross-origin ${method} from "${originUrl.origin}" rejected: no registered cors() policy allows that origin. ` +
@@ -1371,16 +1357,15 @@ export class App {
     this.assertRouteAuthPayloadConfig(merged);
     const sources: Hooks[] = [...this.groupHooks, def.hooks ?? {}];
     const hooks = mergeHooks(sources);
-    const effectiveHooks = mergeHooks([this.optionsHooksMerged, hooks]);
     const corsOriginAllows = corsOriginAllowsFromHooks(sources);
     const securityMarkers = securityMarkersFromHooks([
-      this.optionsHooks,
+      this.options.hooks ?? {},
       ...sources,
     ]);
     this.router.add(
       def.method,
       fullPath,
-      { def: merged, hooks, effectiveHooks, corsOriginAllows },
+      { def: merged, hooks, corsOriginAllows },
       def.operationId,
     );
     this.routes.push(merged);
@@ -1460,7 +1445,7 @@ export class App {
     // developer explicitly acknowledges the configuration.
     if (handler.acknowledgeHeaderMutatingMiddleware !== true) {
       const conflicts = detectHeaderMutatingMiddleware([
-        this.optionsHooks,
+        this.options.hooks ?? {},
         ...this.groupHooks,
       ]);
       if (conflicts.length > 0) {
@@ -2198,16 +2183,14 @@ export class App {
     }
     this.inflight++;
     const requestId = randomId();
-    let requestLog: Logger | undefined;
-    const getRequestLog = () =>
-      (requestLog ??= this.log.child({
-        requestId,
-        method: request.method,
-        url: request.url,
-      }));
+    const log = this.log.child({
+      requestId,
+      method: request.method,
+      url: request.url,
+    });
     const stripFingerprint = this.options.stripServerHeaders !== false;
     let ctx: BaseContext<any, any> | undefined;
-    const globalHooks = this.optionsHooksMerged;
+    const globalHooks = mergeHooks([this.options.hooks ?? {}]);
     let activeErrorHook = globalHooks.onError;
     let activeResponseHook = globalHooks.onResponse;
     let activeSendHook = globalHooks.onSend;
@@ -2219,12 +2202,12 @@ export class App {
       this.assertBootGuards();
       await globalHooks.onRequest?.(request);
 
+      const url = new URL(request.url);
       const method = request.method as HttpMethod;
       const headFallback = method === "HEAD";
-      const path = pathFromRequestUrl(request.url);
       const match =
-        this.router.find(method, path) ??
-        (headFallback ? this.router.find("GET", path) : undefined);
+        this.router.find(method, url.pathname) ??
+        (headFallback ? this.router.find("GET", url.pathname) : undefined);
 
       // Hide internal routes from the public adapter surface. The router
       // still finds them so app.inject() can dispatch normally, but
@@ -2234,9 +2217,10 @@ export class App {
 
       this.assertCrossOriginAllowed(
         request,
+        url,
         method,
         [
-          ...this.optionsHooksCorsAllows,
+          ...corsOriginAllowsFromHooks([this.options.hooks ?? {}]),
           ...(match && !internalHidden ? match.handler.corsOriginAllows : this.corsOriginAllows),
         ],
       );
@@ -2245,10 +2229,10 @@ export class App {
         if (internalHidden) {
           // Don't leak existence via 405/Allow header. Always 404.
           throw new NotFoundError(
-            `No route for ${request.method} ${path}`,
+            `No route for ${request.method} ${url.pathname}`,
           );
         }
-        const rawAllowed = this.router.allowedMethods(path);
+        const rawAllowed = this.router.allowedMethods(url.pathname);
         // Filter out methods whose route definitions are marked
         // `internal: true` unless the caller explicitly opted in via
         // app.inject(). This prevents 405/Allow from leaking the
@@ -2256,21 +2240,18 @@ export class App {
         const allowed = opts.allowInternal
           ? rawAllowed
           : rawAllowed.filter((m) => {
-              const candidate = this.router.find(m, path);
+              const candidate = this.router.find(m, url.pathname);
               return candidate?.handler.def.internal !== true;
             });
         ctx = {
           request,
           params: {},
-          query: {},
-          headers: {},
+          query: Object.fromEntries(url.searchParams.entries()),
+          headers: headersToObject(request.headers),
           body: undefined,
-          state: {},
+          state: { ...this.decorations, requestId, log },
           set: { headers: new Headers() },
         };
-        assignRequestState(ctx.state, this.decorations, requestId, getRequestLog);
-        defineLazyContextValue(ctx, "query", () => queryToObjectFromUrl(request.url));
-        defineLazyContextValue(ctx, "headers", () => headersToObject(request.headers));
         ctx.set.headers.set("x-request-id", requestId);
         if (allowed.length > 0) {
           if (method === "OPTIONS") {
@@ -2280,15 +2261,13 @@ export class App {
               request,
               params: {},
               query: {},
-              headers: {},
+              headers: headersToObject(request.headers),
               body: undefined,
-              state: {},
+              state: { ...this.decorations, requestId, log },
               set: { headers: new Headers() },
             };
-            assignRequestState(synthCtx.state, this.decorations, requestId, getRequestLog);
-            defineLazyContextValue(synthCtx, "headers", () => headersToObject(request.headers));
             const preflightHooks = mergeHooks([
-              this.optionsHooks,
+              this.options.hooks ?? {},
               ...this.groupHooks,
             ]);
             const intercepted = await preflightHooks.beforeHandle?.(synthCtx);
@@ -2312,20 +2291,20 @@ export class App {
           throw new MethodNotAllowedError(allowed);
         }
         throw new NotFoundError(
-          `No route for ${request.method} ${path}`,
+          `No route for ${request.method} ${url.pathname}`,
         );
       }
 
       const { def, hooks } = match.handler;
-      const allHooks = match.handler.effectiveHooks;
+      const allHooks = mergeHooks([globalHooks, hooks]);
       activeErrorHook = allHooks.onError;
       activeResponseHook = allHooks.onResponse;
       activeSendHook = allHooks.onSend;
 
       await hooks.onRequest?.(request);
 
-      ctx = await buildContext(request, match.params, def, this.options);
-      assignRequestState(ctx.state, this.decorations, requestId, getRequestLog);
+      ctx = await buildContext(request, url, match.params, def, this.options);
+      Object.assign(ctx.state, this.decorations, { requestId, log });
       ctx.set.headers.set("x-request-id", requestId);
 
       const before = await allHooks.beforeHandle?.(ctx);
@@ -2376,7 +2355,7 @@ export class App {
         request.signal?.aborted === true &&
         !(err instanceof HttpError)
       ) {
-        getRequestLog().info(
+        log.info(
           { event: "request.disconnected", status: disconnectCode },
           "Client disconnected before response was sent",
         );
@@ -2400,9 +2379,9 @@ export class App {
               err instanceof Error ? err.message : "Unexpected error",
             );
       if (httpErr.status >= 500)
-        getRequestLog().error({ err: serializeErr(err) }, httpErr.problem.title);
+        log.error({ err: serializeErr(err) }, httpErr.problem.title);
       if (httpErr.status < 500)
-        getRequestLog().warn({ status: httpErr.status }, httpErr.problem.title);
+        log.warn({ status: httpErr.status }, httpErr.problem.title);
       const res = httpErr.toResponse({
         production: this.isProduction(),
         requestId,
@@ -2562,76 +2541,6 @@ function joinPath(a: string, b: string): string {
   const right = b.startsWith("/") ? b : `/${b}`;
   const joined = `${left}${right}`;
   return joined === "" ? "/" : joined;
-}
-
-function pathFromRequestUrl(rawUrl: string): string {
-  const start = rawUrl.charCodeAt(0) === 47
-    ? 0
-    : rawUrl.indexOf("/", rawUrl.indexOf(":") + 4);
-  if (start < 0) return "/";
-  let end = rawUrl.length;
-  for (let index = start; index < rawUrl.length; index++) {
-    const code = rawUrl.charCodeAt(index);
-    if (code === 63 || code === 35) {
-      end = index;
-      break;
-    }
-  }
-  return rawUrl.slice(start, end) || "/";
-}
-
-function queryToObjectFromUrl(rawUrl: string): Record<string, string | string[]> {
-  if (rawUrl.indexOf("?") === -1) return {};
-  return queryToObject(new URL(rawUrl).searchParams);
-}
-
-function defineLazyContextValue<
-  K extends "query" | "headers",
-  V extends BaseContext<any, any>[K],
->(ctx: BaseContext<any, any>, key: K, factory: () => V): void {
-  let initialized = false;
-  let value: V;
-  Object.defineProperty(ctx, key, {
-    configurable: true,
-    enumerable: true,
-    get() {
-      if (!initialized) {
-        value = factory();
-        initialized = true;
-      }
-      return value;
-    },
-    set(next: V) {
-      value = next;
-      initialized = true;
-    },
-  });
-}
-
-function assignRequestState(
-  state: Record<string, unknown>,
-  decorations: Record<string, unknown>,
-  requestId: string,
-  getLog: () => Logger,
-): void {
-  Object.assign(state, decorations, { requestId });
-  let initialized = false;
-  let log: Logger;
-  Object.defineProperty(state, "log", {
-    configurable: true,
-    enumerable: true,
-    get() {
-      if (!initialized) {
-        log = getLog();
-        initialized = true;
-      }
-      return log;
-    },
-    set(next: Logger) {
-      log = next;
-      initialized = true;
-    },
-  });
 }
 
 function healthRouteKey(request: Request): string {
@@ -2860,7 +2769,6 @@ function responsePipeline(
   fns: NonNullable<Hooks["onSend"]>[],
 ): NonNullable<Hooks["onSend"]> | undefined {
   if (fns.length === 0) return undefined;
-  if (fns.length === 1) return fns[0];
   return async (res, ctx) => {
     let current = res;
     for (const fn of fns) {
@@ -2889,7 +2797,6 @@ async function finalizeResponse(
 
 function chain<F extends (...args: any[]) => any>(fns: F[]): F | undefined {
   if (fns.length === 0) return undefined;
-  if (fns.length === 1) return fns[0];
   return (async (...args: any[]) => {
     for (const fn of fns) await fn(...args);
   }) as unknown as F;
@@ -2899,7 +2806,6 @@ function firstResponse<F extends (...args: any[]) => any>(
   fns: F[],
 ): F | undefined {
   if (fns.length === 0) return undefined;
-  if (fns.length === 1) return fns[0];
   return (async (...args: any[]) => {
     for (const fn of fns) {
       const r = await fn(...args);
@@ -2913,7 +2819,6 @@ function pipeline<F extends (ctx: any, value: any) => any>(
   fns: F[],
 ): F | undefined {
   if (fns.length === 0) return undefined;
-  if (fns.length === 1) return fns[0];
   return (async (ctx: any, value: any) => {
     let v = value;
     for (const fn of fns) {
@@ -2939,6 +2844,7 @@ function hasRequestSchema(
 
 async function buildContext(
   request: Request,
+  url: URL,
   rawParams: Record<string, string>,
   def: RouteDefinition<any, any, any, any>,
   opts: {
@@ -2948,9 +2854,12 @@ async function buildContext(
   },
 ): Promise<BaseContext<any, any>> {
   const set = { headers: new Headers() };
+  const headersObj = headersToObject(request.headers);
+  const queryObj = queryToObject(url.searchParams);
+
   let params: any = rawParams;
-  let query: any = undefined;
-  let headers: any = undefined;
+  let query: any = queryObj;
+  let headers: any = headersObj;
   let body: any = undefined;
 
   if (def.request?.params) {
@@ -2959,13 +2868,11 @@ async function buildContext(
     params = r.value;
   }
   if (def.request?.query) {
-    const queryObj = queryToObjectFromUrl(request.url);
     const r = await validate(def.request.query, queryObj);
     if (r.issues) throw new ValidationError("query", toIssues(r.issues));
     query = r.value;
   }
   if (def.request?.headers) {
-    const headersObj = headersToObject(request.headers);
     const r = await validate(def.request.headers, headersObj);
     if (r.issues) throw new ValidationError("headers", toIssues(r.issues));
     headers = r.value;
@@ -2991,22 +2898,7 @@ async function buildContext(
     body = r.value;
   }
 
-  const ctx = {
-    request,
-    params,
-    query: query ?? {},
-    headers: headers ?? {},
-    body,
-    state: {},
-    set,
-  } as BaseContext<any, any>;
-  if (query === undefined) {
-    defineLazyContextValue(ctx, "query", () => queryToObjectFromUrl(request.url));
-  }
-  if (headers === undefined) {
-    defineLazyContextValue(ctx, "headers", () => headersToObject(request.headers));
-  }
-  return ctx;
+  return { request, params, query, headers, body, state: {}, set };
 }
 
 function headersToObject(h: Headers): Record<string, string> {
@@ -3157,13 +3049,7 @@ async function serializeResult(
   } else {
     body = JSON.stringify(result.body);
   }
-  const response = new Response(body, { status: result.status, headers });
-  Object.defineProperty(response, DALOY_RESPONSE_BODY, {
-    configurable: false,
-    enumerable: false,
-    value: body,
-  });
-  return response;
+  return new Response(body, { status: result.status, headers });
 }
 
 function mockResponseFor(def: RouteDefinition<any, any, any, any>) {
@@ -3192,25 +3078,17 @@ function runHandler(
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    let done = false;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const finish = (fn: () => void) => {
-      if (done) return;
-      done = true;
-      if (t !== undefined) clearTimeout(t);
-      fn();
-    };
+    const t = setTimeout(() => reject(new RequestTimeoutError(ms)), ms);
     p.then(
-      (v) => finish(() => resolve(v)),
-      (e) => finish(() => reject(e)),
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
     );
-    queueMicrotask(() => {
-      if (done) return;
-      t = setTimeout(
-        () => finish(() => reject(new RequestTimeoutError(ms))),
-        ms,
-      );
-    });
   });
 }
 

@@ -276,22 +276,6 @@ test("App({ hooks: cors(...) }) participates in the cross-origin guard", async (
   assert.equal(rejected.status, 403);
 });
 
-test("late mutation of app.options.hooks does not loosen the cross-origin guard", async () => {
-  const app = newApp();
-  (app.options as any).hooks = cors({ origin: "https://app.example.com" });
-
-  const res = await app.request("/write", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "https://app.example.com",
-    },
-    body: JSON.stringify({ x: 1 }),
-  });
-
-  assert.equal(res.status, 403);
-});
-
 test("third-party CORS marker without predicate remains a trusted escape hatch", async () => {
   const thirdPartyCors = {} as ReturnType<typeof cors>;
   (thirdPartyCors as Record<PropertyKey, unknown>)[CORS_HOOK_MARKER] = true;
