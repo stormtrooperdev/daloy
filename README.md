@@ -342,6 +342,19 @@ miss                        4,763,878 ops/sec
 - Body parsing is lazy and only runs when a route declares a body schema.
 - No regex on the hot path.
 
+### Cold-start tip (serverless / edge)
+
+For deployments where every millisecond of startup matters (Lambda, Vercel Edge, Cloudflare Workers, Fastly Compute), import `App` from the deep entry point instead of the barrel:
+
+```ts
+import { App } from "@daloyjs/core/app";   // ~13 ms faster cold start than "@daloyjs/core"
+import { serve } from "@daloyjs/core/node";
+```
+
+`@daloyjs/core/app` resolves to the **same `App` class with the same secure-by-default constructor** — `secureHeaders`, `requestId`, body limits, request timeouts, `fetchGuard`, prototype-pollution guards, problem+json redaction, and every other guardrail are still wired automatically. The deep import only skips loading unrelated peripheral modules (`jwk`, `jwt`, `multipart`, `websocket`, `streaming`, `compression`, `subdomains`, etc.) that the barrel re-exports for convenience. If you use any of those, import them directly from their own subpaths (`@daloyjs/core/jwk`, `@daloyjs/core/multipart`, …) so each one is paid for only when used.
+
+Long-lived Node servers will not notice the difference. This is purely a cold-start optimization for serverless.
+
 ---
 
 ## Test client + contract tests

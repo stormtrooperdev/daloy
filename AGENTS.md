@@ -12,6 +12,22 @@
 
 ## Quality Gates
 
+### Pre-commit checklist (run before every commit)
+
+Both human developers and AI copilots **MUST** run the following commands locally and confirm they pass before staging a commit. Do not commit if any of these fail.
+
+```sh
+pnpm typecheck && pnpm test
+pnpm verify:no-runtime-deps
+pnpm verify:parity-audits
+pnpm verify:governance-audits
+pnpm verify:sbom
+```
+
+If a change touches `website/`, also run `cd website && pnpm typecheck && pnpm build` before committing.
+
+### General rules
+
 - After any new feature, bug fix, or refactor, always run `pnpm typecheck` and `pnpm test`
 - If a change touches `website`, also run `cd website && pnpm typecheck && pnpm build`
 - Do not consider the task complete until these checks pass, unless the user explicitly asks not to run them or the environment prevents it

@@ -1,5 +1,5 @@
-// DaloyJS — uses @daloyjs/core via the file:../.. devDep.
-import { z } from "zod";
+// DaloyJS without zod — for cold-start measurement only. This is a fair
+// like-for-like comparison with Hono, which also ships no validator.
 import { App } from "@daloyjs/core/app";
 import { serve } from "@daloyjs/core/node";
 
@@ -9,7 +9,7 @@ app.route({
   method: "GET",
   path: "/static",
   operationId: "getStatic",
-  responses: { 200: { description: "ok", body: z.object({ ok: z.boolean() }) } },
+  responses: { 200: { description: "ok" } },
   handler: async () => ({ status: 200, body: { ok: true } }),
 });
 
@@ -17,18 +17,18 @@ app.route({
   method: "GET",
   path: "/users/:id",
   operationId: "getUser",
-  request: { params: z.object({ id: z.string() }) },
-  responses: { 200: { description: "ok", body: z.object({ id: z.string() }) } },
-  handler: async ({ params }) => ({ status: 200, body: { id: params.id } }),
+  responses: { 200: { description: "ok" } },
+  handler: async ({ params }: { params: Record<string, string> }) =>
+    ({ status: 200, body: { id: params.id } }),
 });
 
 app.route({
   method: "POST",
   path: "/echo",
   operationId: "echo",
-  request: { body: z.object({ name: z.string() }) },
-  responses: { 200: { description: "ok", body: z.object({ name: z.string() }) } },
-  handler: async ({ body }) => ({ status: 200, body: { name: body.name } }),
+  responses: { 200: { description: "ok" } },
+  handler: async ({ body }: { body: { name: string } }) =>
+    ({ status: 200, body: { name: body.name } }),
 });
 
 const port = Number(process.env.PORT ?? 3000);

@@ -14,8 +14,9 @@ import {
 } from "./lib/common.mjs";
 
 const FRAMEWORKS = [
-  { name: "daloy",    file: "servers/daloy.ts" },
-  // { name: "hono",     file: "servers/hono.ts" },
+  { name: "daloy",        file: "servers/daloy.ts" },
+  { name: "daloy-nozod",  file: "servers/daloy-nozod.ts" },
+  { name: "hono",         file: "servers/hono.ts" },
   // { name: "fastify",  file: "servers/fastify.ts" },
   // { name: "express",  file: "servers/express.ts" },
   // { name: "koa",      file: "servers/koa.ts" },
