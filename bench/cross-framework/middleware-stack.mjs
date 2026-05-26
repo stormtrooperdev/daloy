@@ -22,6 +22,7 @@ import {
 
 const FRAMEWORKS = [
   { name: "daloy", file: "servers/daloy-secured.ts" },
+  { name: "hono",  file: "servers/hono-secured.ts" },
 ];
 
 const args = parseArgs(process.argv);

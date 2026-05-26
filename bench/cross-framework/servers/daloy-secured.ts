@@ -15,8 +15,10 @@ const app = new App();
 
 app.use(requestId());
 app.use(secureHeaders());
-app.use(cors({ origin: "*", credentials: false }));
-app.use(rateLimit({ max: 1_000_000, windowMs: 60_000 })); // effectively unlimited; we want the hook cost, not the deny path
+// Explicit allowlist — the secure-by-default guard refuses wildcard origins
+// in production. Use a realistic single-origin allowlist for the bench.
+app.use(cors({ origin: ["http://127.0.0.1"], credentials: false }));
+app.use(rateLimit({ max: Number.MAX_SAFE_INTEGER, windowMs: 60_000 })); // effectively unlimited; we want the hook cost, not the deny path
 
 const verifier = createJwtVerifier({
   algorithms: ["HS256"],

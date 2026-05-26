@@ -49,9 +49,12 @@ export function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTim
   return new Promise((resolve, reject) => {
     let resolved = false;
     let stderrBuf = "";
+    let stdoutBuf = "";
     const onStdout = (buf) => {
+      const s = buf.toString();
+      if (!resolved) stdoutBuf += s;
       if (resolved) return;
-      if (buf.toString().includes(`READY ${port}`)) {
+      if (s.includes(`READY ${port}`)) {
         resolved = true;
         resolve(child);
       }
@@ -60,13 +63,13 @@ export function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTim
     child.stderr.on("data", (buf) => { stderrBuf += buf.toString(); });
     child.once("exit", (code) => {
       if (!resolved) {
-        reject(new Error(`Server exited with code ${code} before READY.\nstderr: ${stderrBuf}`));
+        reject(new Error(`Server exited with code ${code} before READY.\nstdout: ${stdoutBuf}\nstderr: ${stderrBuf}`));
       }
     });
     setTimeout(() => {
       if (!resolved) {
         try { child.kill("SIGKILL"); } catch {}
-        reject(new Error(`Server did not emit READY within ${readyTimeoutMs}ms.\nstderr: ${stderrBuf}`));
+        reject(new Error(`Server did not emit READY within ${readyTimeoutMs}ms.\nstdout: ${stdoutBuf}\nstderr: ${stderrBuf}`));
       }
     }, readyTimeoutMs);
   });
