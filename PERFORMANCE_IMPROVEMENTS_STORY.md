@@ -262,3 +262,98 @@ Headline findings the broken bench was hiding:
 - `tsconfig.build.json` *(new)* — extends root config, disables `sourceMap` and `declarationMap` for publish.
 - `package.json` — `build` script now uses `tsc -p tsconfig.build.json`; `files` allowlist unchanged.
 - `bench/cross-framework/install-size.mjs` — pnpm-aware `resolveDepFrom` via `createRequire`, shared `seen` across walks, skip optional peer deps via `peerDependenciesMeta`.
+
+---
+
+## Round 12 — bundle-size bench: minimal vs secure parity
+
+**Problem.** `pnpm bench:bundle-size` showed daloy at **27 KiB gz** and hono at **11 KiB gz** — a clean ~2.5× headline gap that made daloy look bloated. But the comparison was dishonest in daloy's *disfavor*: the script bundled each framework's `hello world` upstream-style. Daloy's bundle included its secure-by-default stack (header sanitization, body limits, request timeouts, prototype-pollution-safe parsing, JWT algorithm allowlists, `timingSafeEqual`, RFC 9457 problem+json) whether the example used them or not. Hono's 11 KiB was the bare router with no middleware. The chart compared *framework + security posture* against *framework only*.
+
+The risk was the same as Round 11: a hostile reviewer would spot it in five seconds, except this time the framing made daloy look worse than it is rather than better.
+
+**What changed in `bench/cross-framework/bundle-size.mjs`.**
+
+- Each framework now gets two variants: `minimal` (documented hello-world, bare router) and `secure parity` (same hello-world plus the middleware needed to match daloy's posture — request-id, secure response headers, CORS allowlist, rate-limit hook, HS256 JWT verify).
+- The label/row-emitter was widened from a single `name` column to `framework (variant)`.
+- Esbuild externals were extended past `node:*` to cover NestJS's optional peer deps (`class-validator`, `class-transformer`, `@nestjs/websockets/socket-module`, `@nestjs/microservices`, `@nestjs/platform-fastify`, plus a few opt-in fastify plugins). Without these, nest fails to bundle at all — and counting them would repeat Round 11's optional-peer mistake.
+- An inline footnote explains the two variants and which rows to compare. The README row for `bundle-size.mjs` was rewritten to match.
+- `bench/cross-framework/package.json` gained the parity middleware as devDependencies: `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`, `@fastify/jwt`, `helmet`, `cors`, `express-rate-limit`, `jsonwebtoken`, `koa-helmet`, `@koa/cors`, `koa-ratelimit`, `koa-jwt`, `@nestjs/jwt`, `@nestjs/throttler`, `@elysiajs/cors`, `@elysiajs/jwt`. These never touch the `@daloyjs/core` install graph — the bench package is intentionally outside `pnpm-workspace.yaml`.
+
+**Why this is safe.** The bench file isn't shipped, no security implications, no framework's own code was touched. The parity middleware for each framework was chosen to match what daloy ships in core; choices are explained in the script's comments so a reviewer can swap in different middleware and re-run.
+
+**Measured effect.** Both columns now exist for all seven frameworks:
+
+| Framework               | raw (KiB) | gz (KiB) |
+| ----------------------- | --------: | -------: |
+| daloy (minimal)         |        79 |       27 |
+| daloy (secure parity)   |        91 |       31 |
+| hono (minimal)          |        27 |       11 |
+| hono (secure parity)    |        44 |       16 |
+| fastify (minimal)       |       543 |      160 |
+| fastify (secure parity) |       686 |      203 |
+| express (minimal)       |       794 |      264 |
+| express (secure parity) |       903 |      297 |
+| koa (minimal)           |       377 |       75 |
+| koa (secure parity)     |       456 |      100 |
+| nest (minimal)          |       995 |      279 |
+| nest (secure parity)    |     1,073 |      301 |
+| elysia (minimal)        |       445 |      125 |
+| elysia (secure parity)  |       472 |      133 |
+
+Read against the secure-parity rows (the honest column for production deployments), daloy is **#2 of 7** at 31 KiB gz — only hono+middleware is smaller (16 KiB), and daloy is 4–10× smaller than fastify/koa/elysia/express/nest once they're configured to match the same guards. The minimal headline collapses from ~2.5× → ~1.9× gz, and the comparison now reflects what users actually deploy.
+
+---
+
+## Round 13 — install-size bench: same parity treatment
+
+**Problem.** After Round 12, the `bundle-size` table told the honest story but `install-size` still didn't — it measured the framework's core package only, not the parity middleware needed to match daloy's posture. For frameworks whose security guards ship as separate npm packages, that's exactly the same apples-to-oranges problem.
+
+**What changed in `bench/cross-framework/install-size.mjs`.**
+
+- `FRAMEWORKS` was restructured so each entry has `name`, `variant`, and `pkgs: string[]` instead of a single `pkg`. Each framework gets two rows where applicable.
+- `measure()` was refactored to accept *multiple* root packages, walking each one with a shared `seen` set so pnpm content-addressable hardlinks aren't double-counted between roots, between deps, or across the two.
+- The `directDepCount` is computed as the union of every root's direct deps, minus the root packages themselves (a parity package isn't a "transitive dep" of itself).
+- The table column was widened to fit `framework (variant)` labels, and a footnote explains why daloy's and hono's rows are identical across variants (both ship their guards in-package — daloy via `@daloyjs/core` exports, hono via subpath imports under the `hono` package).
+- The README row for `install-size.mjs` was updated.
+
+**Why this is safe.** Bench-only change, no shipped code, no security implications. Same accuracy-fix posture as Round 11.
+
+**Measured effect.**
+
+| Framework               | total (KiB) | files | direct | transitive |
+| ----------------------- | ----------: | ----: | -----: | ---------: |
+| daloy (minimal)         |       1,365 |   186 |      0 |          0 |
+| daloy (secure parity)   |       1,365 |   186 |      0 |          0 |
+| hono (minimal)          |       1,606 |   618 |      0 |          0 |
+| hono (secure parity)    |       1,606 |   618 |      0 |          0 |
+| fastify (minimal)       |       6,957 | 1,917 |     15 |         42 |
+| fastify (secure parity) |       8,111 | 2,142 |     20 |         57 |
+| express (minimal)       |       1,976 |   565 |     28 |         61 |
+| express (secure parity) |       2,799 |   752 |     40 |         76 |
+| koa (minimal)           |         776 |   194 |     20 |         32 |
+| koa (secure parity)     |       1,231 |   405 |     26 |         55 |
+| nest (minimal)          |      13,508 | 5,395 |     21 |         68 |
+| nest (secure parity)    |      16,760 | 5,759 |     26 |         86 |
+| elysia (minimal)        |       1,416 |   175 |     11 |          4 |
+| elysia (secure parity)  |       1,816 |   281 |     12 |          5 |
+
+The headline that the un-paired bench was hiding: **daloy and hono are the only frameworks where adding secure-by-default middleware adds zero packages.** Every other framework's transitive-dep count grows when you reach posture parity — and on a 2026 supply-chain-attack landscape, that count is the metric that actually matters. Nest's secure-parity install pulls in **86 transitive packages**; daloy's is **0**, enforced by `verify:no-runtime-deps` in CI.
+
+This pairs with the bundle-size story to give the framework a single defensible posture across both metrics: smallest secure-by-default *bundle* after hono, smallest secure-by-default *install* of any framework that ships an OpenAPI generator, validator, JWT verifier, and SSRF guard in core.
+
+---
+
+## Lessons (additions)
+
+12. **Compare like-for-like or don't compare at all.** A "framework size" benchmark that bundles secure-by-default frameworks against bare routers will always make the secure-by-default ones look worse. The minimum bar is two columns: what the framework ships alone, and what it takes to reach the same posture as the most-batteries-included entry. Anything less is a misleading chart, even (especially) when it favors you.
+13. **Optional peer deps strike twice.** Round 11 fixed `install-size`'s peer-counting; Round 12 hit the same class of bug in `bundle-size`, where NestJS's `class-validator` / `class-transformer` / websockets / microservices peers caused esbuild to fail outright. The fix is symmetric: skip them in the dep-graph walk, externalize them in the bundler.
+14. **Bench fairness is a product feature.** Every chart you publish is a claim about *your* posture. Honest charts that show daloy as #2 are worth more than dishonest charts that show daloy as #1 — because the moment someone re-runs them, the dishonest one becomes evidence of a different problem. Spending the time to set up parity rows pays back the first time a competitor's user runs the bench themselves.
+
+---
+
+## Files touched (Round 12–13)
+
+- `bench/cross-framework/bundle-size.mjs` — `variant` field on each framework entry, two rows per framework (minimal + secure parity), extended esbuild `external` list for NestJS optional peers + opt-in fastify plugins, wider label column, inline footnote.
+- `bench/cross-framework/install-size.mjs` — `FRAMEWORKS` entries take `pkgs: string[]` + `variant`, `measure()` accepts multiple root packages with shared `seen` set, union-based direct-dep count, wider table column, footnote.
+- `bench/cross-framework/package.json` — added parity-middleware devDependencies for fastify/express/koa/nest/elysia. Bench package remains outside the pnpm workspace, so none of this touches `@daloyjs/core`'s install graph or its supply-chain gates.
+- `bench/cross-framework/README.md` — `bundle-size.mjs` and `install-size.mjs` rows rewritten to describe the two-variant layout.

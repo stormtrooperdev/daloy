@@ -7,6 +7,14 @@
 // package and its transitive deps (skipping symlinks-to-elsewhere and
 // duplicated content via pnpm's content-addressable store).
 //
+// Each framework is measured in two variants where applicable:
+//   - "minimal"       = just the framework's core packages (router/runtime).
+//   - "secure parity" = framework + the middleware needed to match Daloy's
+//                       secure-by-default posture (helmet/secure-headers,
+//                       CORS, rate-limit, HS256 JWT verify). Daloy ships
+//                       those guards in `@daloyjs/core`, so its two rows
+//                       are identical — that's the point.
+//
 // Usage:
 //   node install-size.mjs
 //   node install-size.mjs --only=daloy
@@ -17,18 +25,34 @@ import path from "node:path";
 import { __dirname, ROOT, machineInfo, parseArgs, fmt } from "./lib/common.mjs";
 
 const FRAMEWORKS = [
-  { name: "daloy",    pkg: "@daloyjs/core" },
-  { name: "hono",     pkg: "hono" },
-  { name: "fastify",  pkg: "fastify" },
-  { name: "express",  pkg: "express" },
-  { name: "koa",      pkg: "koa" },
-  { name: "nest",     pkg: "@nestjs/core" },
-  { name: "elysia",   pkg: "elysia" },
-  { name: "feathers", pkg: "@feathersjs/feathers" },
+  { name: "daloy",    variant: "minimal",       pkgs: ["@daloyjs/core"] },
+  { name: "daloy",    variant: "secure parity", pkgs: ["@daloyjs/core"] },
+  { name: "hono",     variant: "minimal",       pkgs: ["hono", "@hono/node-server"] },
+  // hono's secure-headers / cors / jwt middleware live inside the `hono`
+  // package itself (subpath imports), so the install footprint is the same.
+  { name: "hono",     variant: "secure parity", pkgs: ["hono", "@hono/node-server"] },
+  { name: "fastify",  variant: "minimal",       pkgs: ["fastify"] },
+  { name: "fastify",  variant: "secure parity", pkgs: ["fastify", "@fastify/helmet", "@fastify/cors", "@fastify/rate-limit", "@fastify/jwt"] },
+  { name: "express",  variant: "minimal",       pkgs: ["express"] },
+  { name: "express",  variant: "secure parity", pkgs: ["express", "helmet", "cors", "express-rate-limit", "jsonwebtoken"] },
+  { name: "koa",      variant: "minimal",       pkgs: ["koa", "@koa/router"] },
+  { name: "koa",      variant: "secure parity", pkgs: ["koa", "@koa/router", "koa-helmet", "@koa/cors", "koa-ratelimit", "koa-jwt"] },
+  { name: "nest",     variant: "minimal",       pkgs: ["@nestjs/core", "@nestjs/common", "@nestjs/platform-fastify"] },
+  { name: "nest",     variant: "secure parity", pkgs: ["@nestjs/core", "@nestjs/common", "@nestjs/platform-fastify", "@fastify/helmet", "@fastify/cors", "@fastify/rate-limit", "@nestjs/jwt", "@nestjs/throttler"] },
+  { name: "elysia",   variant: "minimal",       pkgs: ["elysia", "@elysiajs/node"] },
+  { name: "elysia",   variant: "secure parity", pkgs: ["elysia", "@elysiajs/node", "@elysiajs/cors", "@elysiajs/jwt"] },
+  // Feathers measured minimal-only — parity middleware (helmet/jwt/etc.)
+  // for the koa transport wasn't installed in this folder; add a secure
+  // variant when those deps land if you want it on the chart.
+  { name: "feathers", variant: "minimal",       pkgs: ["@feathersjs/feathers", "@feathersjs/koa"] },
 ];
 
 const args = parseArgs(process.argv);
 const ONLY = args.only ? new Set(args.only.split(",")) : null;
+
+function label(fw) {
+  return fw.variant ? `${fw.name} (${fw.variant})` : fw.name;
+}
 
 function findPackageRoot(pkgName) {
   // Look in this folder's node_modules.
@@ -101,34 +125,53 @@ function collectDeps(pkgRoot, allDeps = new Map(), depth = 0) {
   return allDeps;
 }
 
-function measure(pkgName) {
-  const root = findPackageRoot(pkgName);
-  if (!root) throw new Error(`package ${pkgName} not found under ${ROOT}/node_modules`);
-  const direct = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-  const directDeps = Object.keys({ ...(direct.dependencies ?? {}), ...(direct.peerDependencies ?? {}) });
-  const transitive = collectDeps(root);
-  // Total bytes = own bytes + every transitive dep's bytes.
-  // Use a single shared `seen` across all walks so packages hardlinked by
-  // pnpm's content-addressable store aren't double-counted.
+function measure(pkgNames) {
+  // Resolve every root package and union their transitive dep sets.
+  const roots = [];
+  for (const name of pkgNames) {
+    const root = findPackageRoot(name);
+    if (!root) throw new Error(`package ${name} not found under ${ROOT}/node_modules`);
+    const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+    roots.push({ name, root, version: pkg.version, directDeps: Object.keys({ ...(pkg.dependencies ?? {}), ...(pkg.peerDependencies ?? {}) }) });
+  }
+  const transitive = new Map();
+  for (const r of roots) collectDeps(r.root, transitive);
+  // The root packages themselves are not "transitive" — remove them if a
+  // root happens to also appear as another root's dep.
+  for (const r of roots) transitive.delete(r.name);
+
+  // Single shared `seen` across all walks so pnpm-hardlinked content isn't
+  // double-counted between roots, between deps, or between the two.
   const seen = new Set();
-  let totalBytes = 0;
-  let totalFiles = 0;
-  const own = walkSize(root, seen);
-  totalBytes += own.bytes;
-  totalFiles += own.files;
+  let ownBytes = 0;
+  let ownFiles = 0;
+  for (const r of roots) {
+    const w = walkSize(r.root, seen);
+    ownBytes += w.bytes;
+    ownFiles += w.files;
+  }
+  let totalBytes = ownBytes;
+  let totalFiles = ownFiles;
   for (const depRoot of transitive.values()) {
     const w = walkSize(depRoot, seen);
     totalBytes += w.bytes;
     totalFiles += w.files;
   }
+
+  // Direct deps reported = union of every root's direct deps, minus the
+  // roots themselves (a parity package isn't a "transitive dep" of itself).
+  const rootNames = new Set(roots.map((r) => r.name));
+  const directDeps = new Set();
+  for (const r of roots) for (const d of r.directDeps) if (!rootNames.has(d)) directDeps.add(d);
+
   return {
-    pkg: pkgName,
-    version: direct.version,
-    ownBytes: own.bytes,
-    ownFiles: own.files,
+    pkgs: pkgNames,
+    version: roots[0].version, // primary package's version
+    ownBytes,
+    ownFiles,
     totalBytes,
     totalFiles,
-    directDepCount: directDeps.length,
+    directDepCount: directDeps.size,
     transitiveDepCount: transitive.size,
   };
 }
@@ -138,26 +181,27 @@ async function main() {
   const rows = [];
   for (const fw of targets) {
     try {
-      const r = measure(fw.pkg);
-      rows.push({ framework: fw.name, ...r });
-      console.error(`${fw.name.padEnd(10)} v${r.version}  ` +
+      const r = measure(fw.pkgs);
+      rows.push({ framework: fw.name, variant: fw.variant ?? null, ...r });
+      console.error(`${label(fw).padEnd(24)} v${r.version}  ` +
         `own=${(r.ownBytes / 1024).toFixed(1)} KiB / ${r.ownFiles} files  ` +
         `total=${(r.totalBytes / 1024).toFixed(1)} KiB / ${r.totalFiles} files  ` +
         `deps=${r.directDepCount} direct / ${r.transitiveDepCount} transitive`);
     } catch (err) {
-      console.error(`✗ ${fw.name}: ${err.message}`);
-      rows.push({ framework: fw.name, error: err.message });
+      console.error(`✗ ${label(fw)}: ${err.message}`);
+      rows.push({ framework: fw.name, variant: fw.variant ?? null, error: err.message });
     }
   }
 
   const lines = [
-    "| Framework  | own (KiB) | own files | total (KiB) | total files | direct deps | transitive deps |",
-    "| ---------- | --------: | --------: | ----------: | ----------: | ----------: | --------------: |",
+    "| Framework               | own (KiB) | own files | total (KiB) | total files | direct deps | transitive deps |",
+    "| ----------------------- | --------: | --------: | ----------: | ----------: | ----------: | --------------: |",
   ];
   for (const r of rows) {
     if (!r.totalBytes) continue;
+    const name = r.variant ? `${r.framework} (${r.variant})` : r.framework;
     lines.push(
-      `| ${r.framework.padEnd(10)} `
+      `| ${name.padEnd(23)} `
       + `| ${fmt(r.ownBytes / 1024).padStart(9)} `
       + `| ${fmt(r.ownFiles).padStart(9)} `
       + `| ${fmt(r.totalBytes / 1024).padStart(11)} `
@@ -166,6 +210,20 @@ async function main() {
       + `| ${fmt(r.transitiveDepCount).padStart(15)} |`,
     );
   }
+  lines.push("");
+  lines.push("Notes:");
+  lines.push("  - \"minimal\"       = framework's core packages only (router/runtime).");
+  lines.push("  - \"secure parity\" = framework + middleware needed to match Daloy's");
+  lines.push("                       secure-by-default posture (helmet/secure-headers,");
+  lines.push("                       CORS, rate-limit, HS256 JWT verify).");
+  lines.push("    Daloy's two rows are identical because those guards ship in");
+  lines.push("    `@daloyjs/core` — zero extra packages. Hono's two rows are also");
+  lines.push("    identical because its middleware lives inside the `hono` package");
+  lines.push("    via subpath imports. Every other framework's footprint grows.");
+  lines.push("    Compare the secure-parity rows for an apples-to-apples number.");
+  lines.push("  - Optional peer deps (e.g. NestJS's class-validator, class-transformer,");
+  lines.push("    websockets, microservices) are skipped — pnpm/npm don't install them");
+  lines.push("    automatically and a minimal app doesn't pull them in.");
   console.log("\n" + lines.join("\n") + "\n");
 
   writeFileSync(
