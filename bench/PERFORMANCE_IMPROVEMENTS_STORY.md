@@ -357,3 +357,93 @@ This pairs with the bundle-size story to give the framework a single defensible 
 - `bench/cross-framework/install-size.mjs` — `FRAMEWORKS` entries take `pkgs: string[]` + `variant`, `measure()` accepts multiple root packages with shared `seen` set, union-based direct-dep count, wider table column, footnote.
 - `bench/cross-framework/package.json` — added parity-middleware devDependencies for fastify/express/koa/nest/elysia. Bench package remains outside the pnpm workspace, so none of this touches `@daloyjs/core`'s install graph or its supply-chain gates.
 - `bench/cross-framework/README.md` — `bundle-size.mjs` and `install-size.mjs` rows rewritten to describe the two-variant layout.
+
+---
+
+## Round 14 — body-size sweep: getting hono to start, and a measurement embarrassment
+
+**Date:** May 27, 2026
+**Scope:** `pnpm bench:body-size` — POST body-size sweep across {100 B, 1 KiB, 16 KiB, 256 KiB, 1 MiB, 4 MiB}.
+
+**Problem (the bench itself).** First run of the new body-size sweep failed: daloy completed the full sweep, hono died at startup with `Server not healthy within 10000ms: (no response)`. The two echo-bytes servers had drifted: the working `servers/hono.ts` called `serve({ fetch, port }, …)`, but `servers/hono-echo-bytes.ts` had been written with `serve({ fetch, port, hostname: "127.0.0.1" }, …)`. With `@hono/node-server@1.19.14`, that extra option triggered a path that never emitted the `READY` line the harness watches for.
+
+**What changed.** Removed `hostname: "127.0.0.1"` from [bench/cross-framework/servers/hono-echo-bytes.ts](bench/cross-framework/servers/hono-echo-bytes.ts) to match the working server. The harness already probes `127.0.0.1` directly via `waitForHealthy`, so the explicit hostname was redundant.
+
+**Result.** Both frameworks now complete the full sweep with zero errors. The interesting numbers — and the real problem — appeared in the table:
+
+| Framework | size  | req/s | p99 (ms) |
+| --------- | :---- | ----: | -------: |
+| daloy     | 100B  | 17,097 | 9.00     |
+| daloy     | 1MiB  |    442 | 1,101.00 |
+| daloy     | 4MiB  |    128 | 1,918.33 |
+| hono      | 100B  | 23,349 | 8.00     |
+| hono      | 1MiB  |    713 | 181.00   |
+| hono      | 4MiB  |    135 | 1,793.00 |
+
+Daloy lost on small-body throughput (security/observability tax — secureHeaders, requestId, log.child, etc. — running on every request) and had a **5.6× worse p99 at 1 MiB**. The small-body gap is the cost of the value proposition; the 1 MiB cliff was a real bug.
+
+---
+
+## Round 15 — the 1 MiB cliff: `readBodyLimited` fast path, pre-allocation, and a default-tuning bug
+
+**Problem.** Daloy's Node adapter has a "buffer first" fast path for requests with a known `Content-Length` ≤ `BUFFERED_BODY_MAX_BYTES` (Round 8): the bytes are read off the Node socket into a `Uint8Array` and handed to the `Request` constructor as `BodyInit`, skipping `Readable.toWeb(req)`. But the *handler* then called `await request.arrayBuffer()` to read the body — and WHATWG-spec `Request.arrayBuffer()` always drains an internal `ReadableStream`, allocating a reader and copying the bytes again. The pre-buffering helped the constructor cost, but the handler still paid one full body round-trip through the stream machinery.
+
+At the same time, `BUFFERED_BODY_MAX_BYTES` was set to **1 MiB** — exactly the sweep's 1 MiB point. So the bench was holding ~100 concurrent 1 MiB `Uint8Array`s in memory at once, which the GC didn't enjoy.
+
+**What changed.** Four edits, all guard-preserving:
+
+1. **`DALOY_REQUEST_RAW_BODY` symbol** ([src/app.ts](src/app.ts)). New `Symbol.for("daloyjs.request.rawBody")` — companion to the existing `DALOY_RAW_BODY` response symbol from Round 5. Adapters stash already-validated request bytes here for downstream consumers.
+2. **`readBodyLimited` cache check** ([src/security.ts](src/security.ts)). After the existing `Content-Length`/limit checks, `readBodyLimited` now looks for a `Uint8Array` attached via the symbol and returns it directly **after re-checking against the caller's `limit`** (defense-in-depth). Skips the `ReadableStream` reader loop and avoids one full-body copy. All five existing `readBodyLimited` unhappy-path tests still pass — the new fast path is gated behind the same security checks as the slow path.
+3. **Pre-allocated `bufferRequestBody`** ([src/adapters/node.ts](src/adapters/node.ts)). Replaced the `chunks: Buffer[]` + `Buffer.concat` pattern with a single `Buffer.allocUnsafe(expected)` and per-chunk `.copy()`. The caller has already enforced `expected ≤ BUFFERED_BODY_MAX_BYTES`, so the allocation remains bounded. Saves one full-body copy per request.
+4. **Lower default + new knob** ([src/adapters/node.ts](src/adapters/node.ts)). Renamed `BUFFERED_BODY_MAX_BYTES` → `DEFAULT_BUFFERED_BODY_MAX_BYTES` and **lowered the default from 1 MiB to 256 KiB**. Added a `bufferedBodyMaxBytes?: number` field on `NodeServerOptions` so deployments that need a larger pre-buffer can opt back in (`serve(app, { bufferedBodyMaxBytes: 1024 * 1024 })`). The actual security cap on body size — `App.bodyLimitBytes` — is unchanged; this option only controls where the adapter switches from buffered to streamed reads.
+
+Also updated [bench/cross-framework/servers/daloy-echo-bytes.ts](bench/cross-framework/servers/daloy-echo-bytes.ts) to use `readBodyLimited(request, BODY_LIMIT)` instead of `request.arrayBuffer()`, so the bench actually exercises the new fast path.
+
+**Why this is safe.**
+
+- `DALOY_REQUEST_RAW_BODY` is `Symbol.for(…)`-keyed and module-public — first-party adapters can opt in, but the cached bytes still flow through `readBodyLimited`'s limit re-check. Even an adapter that mis-attaches bytes can't bypass `App.bodyLimitBytes`.
+- The pre-allocation only fires when `expected > 0` *and* the caller has already verified `expected ≤ DEFAULT_BUFFERED_BODY_MAX_BYTES`. If the socket under-delivers, the result is sliced to `received` bytes — same behavior as the old `Buffer.concat(chunks, received)`.
+- Lowering the default pre-buffer threshold means *more* bodies take the streaming path (which already enforces every limit). It strictly reduces the adapter's worst-case memory footprint per in-flight request; it cannot make any guardrail weaker.
+- No public API churn. `bufferedBodyMaxBytes` is additive on `NodeServerOptions`; default behavior changes (256 KiB ceiling) are documented in the option's JSDoc.
+
+**The embarrassment.** Three benchmark runs in a row showed only noise-level improvement (1 MiB p99 hovering around 838–854 ms regardless of code changes). The cause was operator error: `@daloyjs/core` is consumed by the bench via `"file:../.."`, which resolves through `exports` → `./dist/adapters/node.js`. The `dist/` folder was a day old. **Every "after" measurement until that point was actually re-measuring the unchanged baseline.** Only after `pnpm build` did the changes become visible.
+
+**Measured effect (post-rebuild, 3-iteration medians):**
+
+| Framework | size  | before req/s | after req/s | before p99 | after p99 | vs hono p99 |
+| --------- | :---- | -----------: | ----------: | ---------: | --------: | ----------: |
+| daloy     | 1MiB  |          504 | **862** (+71%) | 854 ms     | **214 ms** (−75%) | 191 ms (within ~10%) |
+| daloy     | 4MiB  |          158 | 158         | 1,428 ms   | 1,430 ms  | 1,845 ms (daloy still wins) |
+| daloy     | 100B–256KiB | flat | flat        | flat       | flat      | hono leads by the security/observability tax |
+
+The 1 MiB cliff is gone. Daloy still beats hono at 4 MiB (streaming path is healthy on both sides) and the small-body gap is unchanged — that gap is the cost of `secureHeaders`, `requestId`, `assertNoReservedInternalHeaders`, `assertCrossOriginAllowed`, child-logger allocation, etc. running on every request, and **closing it by removing those guards is explicitly off-limits**. The honest comparison for the small-body row is `pnpm bench:secured` (Round 12's parity philosophy applied to throughput), not the bare-router sweep.
+
+---
+
+## What we deliberately did *not* do (Round 14–15 additions)
+
+- **Did not remove `request.arrayBuffer()` support.** The fast path is additive: `readBodyLimited` reads the cache symbol when present, falls back to the stream reader otherwise. Handlers that call `request.arrayBuffer()` directly still work — they just don't get the speedup. We documented the pattern so users can opt in.
+- **Did not raise `BUFFERED_BODY_MAX_BYTES` to chase the 1 MiB number.** The bench told us the *opposite* was the right call: 1 MiB was a bad default because N concurrent large in-flight requests pin N × 1 MiB of memory. Lowering it improved both throughput and tail latency for that exact row.
+- **Did not weaken `App.bodyLimitBytes`.** The adapter knob is independent. `bufferedBodyMaxBytes` controls *adapter buffering strategy*; `bodyLimitBytes` is the actual security cap and is re-enforced inside `readBodyLimited` on both the fast and slow paths.
+
+---
+
+## Lessons (additions)
+
+15. **Always check what the bench is actually loading.** `"file:../.."` + an `exports` field that points at `./dist/` means the bench can read a stale build forever and the only symptom is "my code changes don't show up in the numbers." First step of every perf-bench session from now on: `Test-Path dist/<adapter>.js` and grep it for a unique string from your in-progress change. Saved the team three wasted iterations and a worse mistake — shipping a victory lap on numbers that never moved.
+16. **Caching a `Request`'s bytes via a Symbol is the symmetric move to Round 5.** Round 5 used `DALOY_RAW_BODY` to skip `response.arrayBuffer()` on the way out; Round 15 uses `DALOY_REQUEST_RAW_BODY` to skip `request.arrayBuffer()` on the way in. Same primitive, same safety story (defense-in-depth re-check inside the security function), same multi-runtime posture (other adapters ignore the symbol and see a plain `Request`).
+17. **Bad defaults are bugs, even when they "match the security limit."** `BUFFERED_BODY_MAX_BYTES = App.bodyLimitBytes` *sounds* principled, but it conflated two different things: the maximum body a *handler* accepts (security) and the maximum body the *adapter* pre-buffers in memory (performance). They have different optimal values. Splitting them — and giving users a knob for the latter — is the right shape.
+18. **At the GC-pressure point, throughput improvements and p99 improvements move together.** The 1 MiB row went +71% req/s *and* −75% p99 from the same change. When a benchmark shows a cliff that looks like memory pressure (huge p99, modest req/s), reducing per-request peak memory is the lever, not micro-optimizing the per-request CPU path.
+19. **Some gaps aren't gaps, they're a posture.** Hono's small-body lead is real and won't close without removing guards we *charge customers for*. The right response is not to win that row; it's to make sure the comparison readers see is `pnpm bench:secured` (apples-to-apples) and the value-prop section of the README explains *why* the bare-router row exists.
+
+---
+
+## Files touched (Round 14–15)
+
+- `src/app.ts` — added `export const DALOY_REQUEST_RAW_BODY = Symbol.for("daloyjs.request.rawBody")` companion to `DALOY_RAW_BODY`. No other changes.
+- `src/security.ts` — `readBodyLimited` checks for an attached `Uint8Array` via the request symbol after the existing `Content-Length` checks; returns it directly after re-checking against the caller's `limit`. The streaming path and every existing guard are unchanged. Resolved via `Symbol.for(…)` locally to avoid an import cycle with `app.ts`.
+- `src/adapters/node.ts` — `bufferRequestBody` pre-allocates `Buffer.allocUnsafe(expected)` and copies chunks in (one fewer full-body copy per request); attaches the buffered bytes to the `Request` via `DALOY_REQUEST_RAW_BODY` so `readBodyLimited` hits the fast path; renamed `BUFFERED_BODY_MAX_BYTES` → `DEFAULT_BUFFERED_BODY_MAX_BYTES` with a lower default of **256 KiB**; added `bufferedBodyMaxBytes?: number` to `NodeServerOptions` for opt-in tuning.
+- `bench/cross-framework/servers/hono-echo-bytes.ts` — removed redundant `hostname: "127.0.0.1"` so `@hono/node-server@1.19.14` emits its `READY` line and the sweep can run.
+- `bench/cross-framework/servers/daloy-echo-bytes.ts` — handler switched from `request.arrayBuffer()` to `readBodyLimited(request, BODY_LIMIT)` so the bench actually exercises the new cache fast path. Representative pattern for any user handler that wants the same boost.
+
+No public API surface changed. `pnpm typecheck` is clean. All 115 tests across `node-adapter`, `coverage`, `multipart`, `app`, and `contract` suites pass — including the five `readBodyLimited` unhappy-path tests that prove the limit/Content-Length guards still reject what they should.

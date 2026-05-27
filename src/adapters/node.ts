@@ -12,7 +12,7 @@ import {
 import { Readable } from "node:stream";
 import type { Duplex } from "node:stream";
 import type { App } from "../app.js";
-import { DALOY_RAW_BODY } from "../app.js";
+import { DALOY_RAW_BODY, DALOY_REQUEST_RAW_BODY } from "../app.js";
 import {
   FrameSink,
   encodeFrame,
@@ -52,6 +52,17 @@ export interface NodeServerOptions {
    * clients can spoof the scheme/host. Default: false.
    */
   trustProxy?: boolean;
+  /**
+   * Maximum declared `Content-Length` (in bytes) for which the Node adapter
+   * pre-buffers the request body into a `Uint8Array` before constructing the
+   * `Request`. Bodies above this threshold fall back to the streaming
+   * `Readable.toWeb(req)` path so the adapter never holds an unbounded buffer
+   * per in-flight request — important under high concurrency where N
+   * simultaneous large uploads would otherwise pin N × threshold bytes of
+   * memory. The threshold is independently capped by `App.bodyLimitBytes`,
+   * which is the actual security limit. Default: 256 KiB.
+   */
+  bufferedBodyMaxBytes?: number;
 }
 
 /** Handle returned by {@link serve} exposing the underlying Node `Server` plus a `close()` for graceful shutdown. */
@@ -60,6 +71,10 @@ export interface NodeServerHandle { server: Server; port: number; close(): Promi
 /** Start a Node.js HTTP (and optional WebSocket) server bound to the given {@link App}. */
 export function serve(app: App, opts: NodeServerOptions = {}): NodeServerHandle {
   const trustProxy = opts.trustProxy === true;
+  const bufferedBodyMaxBytes =
+    typeof opts.bufferedBodyMaxBytes === "number" && opts.bufferedBodyMaxBytes >= 0
+      ? opts.bufferedBodyMaxBytes
+      : DEFAULT_BUFFERED_BODY_MAX_BYTES;
   const server = createServer({ maxHeaderSize: opts.maxHeaderBytes ?? 16 * 1024 }, (req, res) => {
     // GET/HEAD: no body work, dispatch directly. Keep this first so the GET
     // hot path doesn't pay for any of the buffering bookkeeping below.
@@ -74,7 +89,7 @@ export function serve(app: App, opts: NodeServerOptions = {}): NodeServerHandle 
     // WHATWG-stream adapter that dominates POST throughput on Node.
     const cl = req.headers["content-length"];
     const n = cl ? Number(cl) : NaN;
-    if (Number.isFinite(n) && n >= 0 && n <= BUFFERED_BODY_MAX_BYTES) {
+    if (Number.isFinite(n) && n >= 0 && n <= bufferedBodyMaxBytes) {
       bufferRequestBody(req, n).then(
         (bytes) => dispatchToApp(app, req, res, trustProxy, bytes),
         (e) => writeAdapterError(res, e),
@@ -123,12 +138,14 @@ export function serve(app: App, opts: NodeServerOptions = {}): NodeServerHandle 
   return { server, port, close }; }
 
 /**
- * Maximum content-length (in bytes) that the Node adapter will pre-buffer
- * before constructing the `Request`. Bodies above this fall back to the
- * streaming `Readable.toWeb` path so unbounded uploads can't exhaust
- * adapter memory. 1 MiB matches the default `App.bodyLimitBytes`.
+ * Default pre-buffer ceiling for the Node adapter. 256 KiB is a compromise:
+ * large enough that the vast majority of JSON / form requests stay on the
+ * fast (Uint8Array) path, small enough that N concurrent in-flight bodies
+ * don't pin huge amounts of memory. Override via
+ * {@link NodeServerOptions.bufferedBodyMaxBytes}. The actual security cap
+ * on body size remains `App.bodyLimitBytes`.
  */
-const BUFFERED_BODY_MAX_BYTES = 1024 * 1024;
+const DEFAULT_BUFFERED_BODY_MAX_BYTES = 256 * 1024;
 
 function dispatchToApp(
   app: App,
@@ -169,20 +186,27 @@ function dispatchToApp(
 
 function bufferRequestBody(req: IncomingMessage, expected: number): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
+    // Pre-allocate to the declared Content-Length. The caller has already
+    // checked `expected <= BUFFERED_BODY_MAX_BYTES` (1 MiB) so this
+    // allocation is bounded and DoS-safe. Skipping the intermediate
+    // `chunks: Buffer[]` array + `Buffer.concat` avoids one full-body
+    // copy per request — significant at 1 MiB bodies under load.
+    const out = expected > 0 ? Buffer.allocUnsafe(expected) : null;
     let received = 0;
     let settled = false;
     const onData = (chunk: Buffer) => {
       if (settled) return;
-      received += chunk.length;
-      if (received > expected) {
+      const next = received + chunk.length;
+      if (next > expected) {
         settled = true;
         cleanup();
         req.destroy();
         reject(new Error("Request body exceeded declared Content-Length"));
         return;
       }
-      chunks.push(chunk);
+      // out is non-null here because next > 0 implies expected > 0.
+      chunk.copy(out!, received);
+      received = next;
     };
     const onEnd = () => {
       if (settled) return;
@@ -192,7 +216,9 @@ function bufferRequestBody(req: IncomingMessage, expected: number): Promise<Uint
         resolve(new Uint8Array(0));
         return;
       }
-      const buf = chunks.length === 1 ? chunks[0]! : Buffer.concat(chunks, received);
+      // Trust Content-Length: if the client under-delivered we still
+      // resolve the prefix actually received (matches prior behavior).
+      const buf = received === expected ? out! : out!.subarray(0, received);
       resolve(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength));
     };
     const onErr = (err: Error) => {
@@ -258,11 +284,17 @@ function toWebRequest(
     return new Request(url, { method, headers });
   }
   if (bufferedBody !== undefined) {
-    return new Request(url, {
+    const req2 = new Request(url, {
       method,
       headers,
       body: bufferedBody as BodyInit,
     });
+    // Stash the validated bytes so readBodyLimited (and any other internal
+    // body reader) can skip the WHATWG ReadableStream reader loop. The
+    // adapter has already enforced BUFFERED_BODY_MAX_BYTES + Content-Length
+    // here; readBodyLimited re-checks against the caller's limit.
+    (req2 as unknown as Record<symbol, unknown>)[DALOY_REQUEST_RAW_BODY] = bufferedBody;
+    return req2;
   }
   return new Request(url, {
     method,

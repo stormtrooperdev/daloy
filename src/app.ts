@@ -666,6 +666,18 @@ const TEXT_ENCODER = new TextEncoder();
 export const DALOY_RAW_BODY = Symbol.for("daloyjs.response.rawBody");
 
 /**
+ * Internal Symbol used by adapters to stash a pre-buffered request body on
+ * the `Request` instance. When set, {@link readBodyLimited} skips the
+ * `ReadableStream` reader loop and returns the cached bytes directly after
+ * re-checking them against the caller-supplied limit. Adapters MUST only
+ * attach bytes they have already validated against the configured
+ * {@link AppOptions.bodyLimitBytes}; the limit re-check in
+ * `readBodyLimited` is defense-in-depth, not the primary cap. Module-public
+ * so first-party adapters can opt in; not part of the userland API surface.
+ */
+export const DALOY_REQUEST_RAW_BODY = Symbol.for("daloyjs.request.rawBody");
+
+/**
  * Contract-first HTTP application.
  *
  * `App` is the top-level entry point: register {@link RouteDefinition routes}

@@ -2,12 +2,14 @@
 // POST /echo-bytes accepts application/octet-stream and returns
 // { received: N } where N is the body length.
 import { z } from "zod";
-import { App } from "@daloyjs/core";
+import { App, readBodyLimited } from "@daloyjs/core";
 import { serve } from "@daloyjs/core/node";
+
+const BODY_LIMIT = 8 * 1024 * 1024;
 
 const app = new App({
   // Allow up to 8 MiB so the 4 MiB sweep point fits with headroom.
-  bodyLimitBytes: 8 * 1024 * 1024,
+  bodyLimitBytes: BODY_LIMIT,
 });
 
 app.route({
@@ -22,11 +24,13 @@ app.route({
   method: "POST",
   path: "/echo-bytes",
   operationId: "echoBytes",
-  // No schema body — we want raw bytes through readRawBody.
+  // No schema body — we want raw bytes. Use readBodyLimited so the Node
+  // adapter's pre-buffered-bytes fast path is hit (skips the WHATWG
+  // ReadableStream reader loop that request.arrayBuffer() forces).
   responses: { 200: { description: "ok", body: z.object({ received: z.number() }) } },
   handler: async ({ request }) => {
-    const buf = await request.arrayBuffer();
-    return { status: 200, body: { received: buf.byteLength } };
+    const bytes = await readBodyLimited(request, BODY_LIMIT);
+    return { status: 200, body: { received: bytes.byteLength } };
   },
 });
 

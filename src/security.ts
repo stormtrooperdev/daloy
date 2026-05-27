@@ -14,6 +14,13 @@ import {
   BadRequestError,
 } from "./errors.js";
 
+// Resolved once at module load. Mirror of `DALOY_REQUEST_RAW_BODY` in
+// app.ts; defined here via the global Symbol registry to avoid an import
+// cycle (app.ts -> security.ts). Adapters attach a pre-validated
+// Uint8Array under this key so readBodyLimited can skip the WHATWG stream
+// reader loop.
+const REQUEST_RAW_BODY = Symbol.for("daloyjs.request.rawBody");
+
 /**
  * Read a `Request` body to a `Uint8Array` while enforcing a hard byte cap.
  *
@@ -41,6 +48,15 @@ export async function readBodyLimited(
     const n = Number(cl);
     if (!Number.isFinite(n) || n < 0) throw new BadRequestError("Invalid Content-Length");
     if (n > limit) throw new PayloadTooLargeError(limit);
+  }
+
+  // Fast path: adapter pre-buffered the body and stashed it via the
+  // REQUEST_RAW_BODY symbol. Re-check the limit (defense-in-depth) and
+  // return zero-copy. Skips the WHATWG ReadableStream reader loop entirely.
+  const cached = (req as unknown as Record<symbol, unknown>)[REQUEST_RAW_BODY];
+  if (cached instanceof Uint8Array) {
+    if (cached.byteLength > limit) throw new PayloadTooLargeError(limit);
+    return cached;
   }
 
   if (!req.body) return new Uint8Array(0);
@@ -749,7 +765,7 @@ const WINDOWS_RESERVED_NAMES = new Set([
  * @returns A sanitized basename safe to combine with a trusted directory.
  * @throws {BadRequestError} When the input reduces to an empty string or
  *   matches a Windows-reserved device name.
- * @since 0.35.1
+ * @since 0.35.0
  */
 export function sanitizeFilename(name: string): string {
   if (typeof name !== "string") {
@@ -801,7 +817,7 @@ export function sanitizeFilename(name: string): string {
  * @param input - The candidate relative path.
  * @returns The input unchanged when safe.
  * @throws {BadRequestError} When the path could escape its base directory.
- * @since 0.35.1
+ * @since 0.35.0
  */
 export function assertSafeRelativePath(input: string): string {
   if (typeof input !== "string" || input.length === 0) {
@@ -861,7 +877,7 @@ function walkForMongoOperators(value: unknown): boolean {
  * Returns `true` on the first hit. Use before passing untrusted data
  * into a query object that may be interpreted as an operator expression.
  *
- * @since 0.35.1
+ * @since 0.35.0
  */
 export function hasMongoOperatorKeys(value: unknown): boolean {
   return walkForMongoOperators(value);
@@ -873,7 +889,7 @@ export function hasMongoOperatorKeys(value: unknown): boolean {
  * threading it into a NoSQL driver — closes the
  * `{"password": {"$ne": null}}` authentication-bypass class of bug.
  *
- * @since 0.35.1
+ * @since 0.35.0
  */
 export function assertNoMongoOperators(value: unknown): void {
   if (walkForMongoOperators(value)) {

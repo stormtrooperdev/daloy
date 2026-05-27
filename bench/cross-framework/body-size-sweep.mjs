@@ -19,7 +19,13 @@ import {
 
 const FRAMEWORKS = [
   { name: "daloy",    file: "servers/daloy-echo-bytes.ts" },
-  // Add other servers that accept POST /echo-bytes with raw bytes.
+  { name: "hono",     file: "servers/hono-echo-bytes.ts" },
+  // { name: "fastify",  file: "servers/fastify.ts" },
+  // { name: "express",  file: "servers/express.ts" },
+  // { name: "koa",      file: "servers/koa.ts" },
+  // { name: "nest",     file: "servers/nest.ts" },
+  // { name: "elysia",   file: "servers/elysia.ts" },
+  // { name: "feathers", file: "servers/feathers.ts" },
 ];
 
 const args = parseArgs(process.argv);
