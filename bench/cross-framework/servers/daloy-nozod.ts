@@ -1,6 +1,6 @@
 // DaloyJS without zod — for cold-start measurement only. This is a fair
 // like-for-like comparison with Hono, which also ships no validator.
-import { App } from "@daloyjs/core/app";
+import { App } from "@daloyjs/core";
 import { serve } from "@daloyjs/core/node";
 
 const app = new App();

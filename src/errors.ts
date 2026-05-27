@@ -308,8 +308,12 @@ export class HttpError extends Error {
     }
     if (opts.requestId) out.instance = `urn:request:${opts.requestId}`;
     const headers = new Headers({ "content-type": "application/problem+json" });
-    for (const [name, value] of Object.entries(this.headers ?? {})) {
-      headers.set(name, value);
+    // Skip the Object.entries({}) churn on the common case where the
+    // error was constructed without extra response headers.
+    if (this.headers !== undefined) {
+      for (const [name, value] of Object.entries(this.headers)) {
+        headers.set(name, value);
+      }
     }
     // Merge Context.set.headers (CSRF rotation, session renewal,
     // request-id, secureHeaders output) without overriding headers the

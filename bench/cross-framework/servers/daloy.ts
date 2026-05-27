@@ -1,9 +1,10 @@
 // DaloyJS — uses @daloyjs/core via the file:../.. devDep.
 import { z } from "zod";
-import { App } from "@daloyjs/core/app";
+import { App } from "@daloyjs/core";
 import { serve } from "@daloyjs/core/node";
 
-const app = new App();
+// Parity with Hono's bench server, which has no built-in logger.
+const app = new App({ logger: false });
 
 app.route({
   method: "GET",

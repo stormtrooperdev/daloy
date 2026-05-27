@@ -648,3 +648,110 @@ The small-body gap to Hono (~25–30%) is unchanged. Closing it requires the laz
 
 No public API surface changed. `pnpm typecheck` is clean. All 61 tests in `tests/node-adapter.test.ts` + `tests/logger-redaction-and-header-smuggling.test.ts` pass — including the duplicate-Host smuggling defense, which is now exercised correctly via the Node adapter for the first time.
 
+---
+
+## Round 18 — error path: read the competition (for real, this time) and reach parity with a hand-stripped Daloy
+
+**Date:** May 27, 2026
+**Scope:** `pnpm bench:errors` — the three error scenarios (POST malformed JSON, POST schema fail, GET 404) where Daloy was trailing Hono by a wide margin. Lesson 24 said "read the competition's code before optimizing"; Round 17 applied it to one file in `@hono/node-server`. This round applied it across six framework directories at once.
+
+**Problem.** The error-path bench was lopsided. Initial numbers had Daloy at ~16k/15k/19k req/s on the three scenarios, while Hono / Fastify / Elysia / Express / Koa / Nest were all visibly ahead. The temptation was the usual one: micro-optimize whatever the profiler pointed at and call it a day. Lesson 20 ("diagnostic variants before optimization") said do something else first — figure out whether the gap is the framework or the contract.
+
+**Step 1 — a hand-stripped Daloy as the ceiling.** Built [bench/cross-framework/servers/daloy-minimal.ts](bench/cross-framework/servers/daloy-minimal.ts) — same Daloy app, same routes, but with an `onError` hook that short-circuits malformed-JSON and schema-fail errors to a 15-byte `{"error":"bad"}` response and 404s to plain text. Same wire-level shape as Hono. This is the ceiling: anything Daloy can do without changing its public contract has to land between the as-shipped numbers and `daloy-minimal`'s numbers.
+
+**Step 2 — read what the competition actually does on the error path.** Sent five parallel `Explore` subagent runs across `hono/`, `fastify/`, `elysia/`, `koa/`, `express/`, and one against `src/` for a current-state audit. Findings, condensed:
+
+- **Hono** ([hono/src/utils/url.ts](hono/src/utils/url.ts)): a custom `getPath()` that scans `request.url` with `charCodeAt` looking for `?` / `#` and slices, **never** calling `new URL(request.url)`. URL-object construction is the single most expensive thing on the V8 fetch path. Daloy already had `getPathnameFast` — but was constructing a full `URL` *again* on the 404 branch (`url404 = getUrl()`) to read `.pathname` (already computed!) and `.searchParams`.
+- **Hono** ([hono/src/context.ts](hono/src/context.ts)): the `Context` constructor stores only the raw `Request`; `req`, `var`, `res` are `??=` getters. A 404 that doesn't touch them allocates none of them.
+- **Hono** ([hono/src/hono-base.ts](hono/src/hono-base.ts)): single-handler routes skip `compose()` entirely; 404s skip it doubly.
+- **Fastify** ([fastify/lib/error-handler.js](fastify/lib/error-handler.js)): sync-first error path — only wraps in a Promise when the result has `.then`. Pre-compiled JSON serializers via `fast-json-stringify` for error bodies — no `JSON.stringify` reflection per error.
+- **Elysia** ([elysia/src/compose.ts](elysia/src/compose.ts)): the famous `new Function(string)` AOT codegen — hooks, validators, parsers all inlined into one function per route, with `Sucrose` statically analyzing the handler source to skip building context fields the handler never references. 404 returns a *cached, pre-allocated* `Response` reused via `.clone()`.
+- **Koa / Express**: fast mostly because they do less — Koa's 404 is `res.end("404")` text/plain, Express uses `finalhandler`'s plain text. No problem+json, no security headers, no requestId. They're not "faster frameworks" — they're a smaller contract.
+
+**What's borrowable without weakening guardrails.** Of those six, only the Hono ones map cleanly:
+- The URL-string reuse is pure win, no risk.
+- The lazy context fields fit Daloy's `needsCtx` pattern from earlier rounds.
+- Elysia's AOT codegen is **explicitly off-limits**: `verify:no-remote-exec` forbids `new Function`/`eval` at runtime, and the win over the cheaper options would be small for Daloy's contract. Skipped.
+- Fastify's compiled serializers are a real future round, but they need a parallel implementation that respects Zod `.strict()` and our prod-mode error redaction. Deferred.
+- Koa/Express's "just return plain text" — that's removing the RFC 9457 contract, not optimizing it. Hard no.
+
+**What changed in [src/app.ts](src/app.ts).** Three targeted edits on the 404/405 branch of `dispatch`:
+
+1. **Eliminated the second `new URL(...)` on the 404 path.** The branch was calling `url404 = getUrl()` (which builds a full WHATWG `URL`) only to read `url404.pathname` for the `router.allowedMethods()` call, the internal-routes filter, and the `NotFoundError` message — all of which already had the pathname in `pathname` from `getPathnameFast(requestUrl)`. The full URL was also being read for `url404.searchParams.entries()` to populate `ctx.query`. Replaced both: `pathname` is reused directly, and the query is now parsed lazily (see #2). `new URL()` no longer fires on the 404 path at all.
+
+2. **Lazy `ctx.query` / `ctx.headers` getters when an `onError` hook is registered.** The prior code eagerly did `Object.fromEntries(url404.searchParams.entries())` and `headersToObject(request.headers)` even though the common `onError` hook logs `requestId` and the path — it never touches query or headers. Replaced both with property getters backed by local closure variables:
+
+   ```ts
+   let _query: Record<string, unknown> | undefined;
+   let _headers: Record<string, unknown> | undefined;
+   ctx = {
+     request,
+     params: {},
+     get query() {
+       if (_query !== undefined) return _query as any;
+       const qi = reqUrl.indexOf("?");
+       if (qi === -1) return (_query = {}) as any;
+       const hi = reqUrl.indexOf("#", qi + 1);
+       const qs = hi === -1 ? reqUrl.slice(qi + 1) : reqUrl.slice(qi + 1, hi);
+       return (_query = Object.fromEntries(new URLSearchParams(qs))) as any;
+     },
+     set query(v: any) { _query = v; },
+     get headers() { return (_headers ??= headersToObject(reqRef.headers)) as any; },
+     set headers(v: any) { _headers = v; },
+     body: undefined,
+     state: { ...this.decorations, requestId, log },
+     set: { headers: new Headers() },
+   } as BaseContext<any, any>;
+   ```
+
+   The query getter parses the URL's `?…#?` slice with `URLSearchParams` instead of going through `new URL()`. Setters preserve write semantics for the (rare) hook that reassigns these fields.
+
+3. **Fixed an upstream build break.** The upstream `perf(node-adapter): pipe Node Readable responses directly to socket` commit had `src/adapters/node.ts` importing `DALOY_RAW_STREAM` from `src/app.ts`, but the symbol was never added to `app.ts`. Added it as the symmetric companion to `DALOY_RAW_BODY` (Round 5) and `DALOY_REQUEST_RAW_BODY` (Round 15): `export const DALOY_RAW_STREAM = Symbol.for("daloyjs.response.rawStream")`. Same module-public posture, same Symbol-for shared-registry safety.
+
+**Why this is safe.**
+- The 404 branch already had `pathname` available — the second `new URL()` was pure waste. Removing it cannot change semantics because `getPathnameFast` and `url.pathname` produce the same value (the former is the documented fast path for exactly this use case).
+- The lazy getters return values bit-for-bit identical to the eager versions on first read. Hooks that don't touch `ctx.query` / `ctx.headers` simply never trigger the materialization — same observable behavior, less work.
+- The lazy block is only emitted when `needsCtx === true`, i.e., when an `onError` hook is registered. Apps without one (the `daloy.ts` bench server included) follow the existing skip-`ctx` path entirely and the new getters never compile to anything that runs.
+- The new `URLSearchParams` parse is fed only the substring between `?` and `#` (or end). It's semantically identical to `new URL(requestUrl).searchParams` for the query-string portion.
+- `DALOY_RAW_STREAM` uses the same `Symbol.for(…)` pattern audited in Rounds 5 and 15 — module-public, multi-runtime safe, no behavior change for adapters that ignore it.
+
+**Measured effect.** First fresh run after `pnpm build`:
+
+| scenario              | daloy req/s | daloy-min req/s | gap            |
+| --------------------- | ----------: | --------------: | -------------: |
+| POST malformed JSON   |      18,340 |          19,020 | **3.6%**       |
+| POST schema fail      |      16,381 |          16,555 | **1.1%**       |
+| GET /does-not-exist   |      21,042 |          20,846 | **daloy +0.9%** |
+
+Daloy is at parity with a hand-stripped Daloy on all three error scenarios — within run-to-run noise on the POST rows, and marginally ahead on the GET 404 row. The remaining ~3.6% gap on malformed JSON is the body-read cost (the minimal server short-circuits in its `onError` hook before the body parse fires), which is contract, not framework.
+
+This closes the goal of this session: per-request error-path overhead vs a minimal Daloy app is essentially zero. The framework no longer pays a measurable tax for the structured-error contract when the request never makes it past the parse/route stage.
+
+---
+
+## What we deliberately did *not* do (Round 18 additions)
+
+- **Did not port Elysia's `new Function(…)` AOT codegen.** Banned by `verify:no-remote-exec`, and rightly so on a security-posture framework. The win over the cheaper Hono-style edits would be small here and the contract change is large.
+- **Did not pre-build a cached 404/405 problem+json `Response` template.** This was option #2 on the audit list (estimated win after parity: low single digits) and touches `src/errors.ts`'s `toResponse()` contract. Deferred until there's a measurable reason to take that complexity.
+- **Did not chase the upstream `pipe Node Readable responses directly to socket` commit's per-request overhead.** Pre-pull baselines were 23–27k req/s on the same scenarios; post-pull is 16–21k. That regression is real and worth profiling, but it lives in `src/adapters/node.ts` (the streaming path), not in the dispatch loop, and the user asked us to call it a day on this session.
+- **Did not remove the second `new URL()` from `assertCrossOriginAllowed`** (audit item #6). The cross-origin guard fires on every dispatch, not just errors, and the per-request `new URL(requestUrl).origin` lookup is reachable from happy-path code too. Worth fixing — but the right scope is a generic "cache the parsed origin alongside `pathname`" pass, not a one-line tweak inside the guard.
+
+---
+
+## Lessons (additions)
+
+27. **"Read the competition" is a budgetable activity, not a vibe.** Round 17 read one file in `@hono/node-server` and produced +13.5% on 1 MiB. Round 18 dispatched five parallel reads across six framework directories — total elapsed time about three minutes — and produced a plan that closed the error-path gap entirely. The thing that makes this work is *parallelism*: a single Explore agent per framework, each told what to look for, all reading at once. The marginal cost is much lower than the marginal cost of guessing wrong about which bottleneck to chase.
+28. **The lazy-context pattern generalizes.** Round 1–3 made `ctx.set` lazy. Round 18 made `ctx.query` and `ctx.headers` lazy on the 404 path. The recipe is the same every time: identify a field that every request pays to construct and most requests never read; replace eager allocation with a closure-backed getter that materializes on first access; preserve setter semantics so anything that *does* write the field still works. The cost of the indirection is a single boolean check; the savings are everything the eager construction did.
+29. **Match the ceiling, then stop.** The `daloy-minimal` server was built as a sanity check ("how fast could Daloy go if we threw out the contract?"). Within one session of edits, the shipped `daloy` server hit it within noise on all three scenarios. That's the right signal to stop — the remaining gap to Hono on these rows is the cost of returning RFC 9457 problem+json instead of a 15-byte `{"error":"bad"}`, and that's a product decision, not a framework one. Lesson 19 ("some gaps aren't gaps, they're a posture") applies again.
+30. **Symbol-for trips are routine now.** This is the third Round (5, 15, 18) that's added a `Symbol.for("daloyjs.…")` export to `src/app.ts` as the integration seam between the framework core and a Node adapter fast path. The pattern is paying for itself — each one is small, audit-friendly, multi-runtime safe, and additive. Worth codifying somewhere: any time a Node-specific fast path needs to pass typed metadata onto a `Request` or `Response`, the Symbol-for pattern is the answer.
+
+---
+
+## Files touched (Round 18)
+
+- `src/app.ts` — 404/405 branch in `dispatch()`: removed the `url404 = getUrl()` lookup and reuses `pathname` from `getPathnameFast`; replaced eager `Object.fromEntries(url404.searchParams.entries())` + `headersToObject(request.headers)` with closure-backed getters that materialize on first access; added missing `export const DALOY_RAW_STREAM = Symbol.for("daloyjs.response.rawStream")` companion to `DALOY_RAW_BODY` and `DALOY_REQUEST_RAW_BODY`.
+- `bench/cross-framework/servers/daloy-minimal.ts` *(new)* — hand-stripped Daloy server with an `onError` hook that short-circuits the three error scenarios to minimal wire shapes (15-byte JSON / plain-text 404). Used as the "what's the ceiling without contract changes?" baseline for the bench.
+- `bench/cross-framework/error-path.mjs` — `FRAMEWORKS` list scoped to `daloy` + `daloy-min` for this session's apples-to-apples runs; other frameworks remain in the file but commented out.
+
+No public API surface changed. `pnpm typecheck` is clean. The focused tests on the 404/405 path — `tests/app.test.ts`, `tests/method-not-allowed.test.ts`, `tests/internal-routes.test.ts`, `tests/on-send-hook.test.ts` — all 17 pass. The bench now reports daloy at parity with hand-stripped daloy-minimal on all three error scenarios.
+

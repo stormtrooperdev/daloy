@@ -666,16 +666,6 @@ const TEXT_ENCODER = new TextEncoder();
 export const DALOY_RAW_BODY = Symbol.for("daloyjs.response.rawBody");
 
 /**
- * Internal Symbol used by {@link serializeResult} to stash the raw
- * `ReadableStream` returned by a handler on the resulting `Response`.
- * Adapters can pipe this stream directly to the underlying transport,
- * skipping the wrapper stream that `new Response(stream, ...)` exposes
- * via `response.body`. Module-public so first-party adapters can opt in;
- * not part of the userland API surface.
- */
-export const DALOY_RAW_STREAM = Symbol.for("daloyjs.response.rawStream");
-
-/**
  * Internal Symbol used by adapters to stash a pre-buffered request body on
  * the `Request` instance. When set, {@link readBodyLimited} skips the
  * `ReadableStream` reader loop and returns the cached bytes directly after
@@ -686,6 +676,15 @@ export const DALOY_RAW_STREAM = Symbol.for("daloyjs.response.rawStream");
  * so first-party adapters can opt in; not part of the userland API surface.
  */
 export const DALOY_REQUEST_RAW_BODY = Symbol.for("daloyjs.request.rawBody");
+
+/**
+ * Internal Symbol set by handlers/serializers to attach a raw stream
+ * (Node `Readable` or Web `ReadableStream`) to a `Response`. The Node
+ * adapter pipes the stream straight to the socket, skipping the
+ * Web-stream reader bridge. Module-public so first-party adapters can
+ * opt in; userland code should not depend on it.
+ */
+export const DALOY_RAW_STREAM = Symbol.for("daloyjs.response.rawStream");
 
 /**
  * Contract-first HTTP application.
@@ -749,6 +748,14 @@ export class App {
   readonly routes: RouteDefinition<any, any, any, any>[] = [];
 
   private router = new Router<CompiledRoute>();
+  /**
+   * Memoized result of `isProduction()`. The inputs (`options.env`,
+   * `options.production`, `process.env.NODE_ENV`) cannot change between
+   * the moment a route is dispatched and the moment its error is rendered,
+   * so reading `process.env.NODE_ENV` on every error response is wasted
+   * work in the hot path. Computed lazily on first read.
+   */
+  private _productionCache: boolean | undefined;
   /** WebSocket route registry. Adapters look up handlers via `app.webSocketRoutes.find()`. */
   readonly webSocketRoutes: WebSocketRegistry = new WebSocketRegistry();
   private prefix = "";
@@ -1018,13 +1025,17 @@ export class App {
    * auto-mount and error response detail stripping.
    */
   private isProduction(): boolean {
-    if (this.options.env !== undefined) return this.options.env === "production";
-    if (this.options.production !== undefined) return this.options.production;
-    return (
-      typeof process !== "undefined" &&
-      typeof process.env !== "undefined" &&
-      process.env.NODE_ENV === "production"
-    );
+    if (this._productionCache !== undefined) return this._productionCache;
+    let v: boolean;
+    if (this.options.env !== undefined) v = this.options.env === "production";
+    else if (this.options.production !== undefined) v = this.options.production;
+    else
+      v =
+        typeof process !== "undefined" &&
+        typeof process.env !== "undefined" &&
+        process.env.NODE_ENV === "production";
+    this._productionCache = v;
+    return v;
   }
 
   /**
@@ -2320,14 +2331,13 @@ export class App {
       }
 
       if (!match || internalHidden) {
-        const url404 = getUrl();
         if (internalHidden) {
           // Don't leak existence via 405/Allow header. Always 404.
           throw new NotFoundError(
-            `No route for ${request.method} ${url404.pathname}`,
+            `No route for ${request.method} ${pathname}`,
           );
         }
-        const rawAllowed = this.router.allowedMethods(url404.pathname);
+        const rawAllowed = this.router.allowedMethods(pathname);
         // Filter out methods whose route definitions are marked
         // `internal: true` unless the caller explicitly opted in via
         // app.inject(). This prevents 405/Allow from leaking the
@@ -2335,19 +2345,50 @@ export class App {
         const allowed = opts.allowInternal
           ? rawAllowed
           : rawAllowed.filter((m) => {
-              const candidate = this.router.find(m, url404.pathname);
+              const candidate = this.router.find(m, pathname);
               return candidate?.handler.def.internal !== true;
             });
-        ctx = {
-          request,
-          params: {},
-          query: Object.fromEntries(url404.searchParams.entries()),
-          headers: headersToObject(request.headers),
-          body: undefined,
-          state: { ...this.decorations, requestId, log },
-          set: { headers: new Headers() },
-        };
-        ctx.set.headers.set("x-request-id", requestId);
+        // On the throw paths (405 -> MethodNotAllowedError, 404 -> NotFoundError)
+        // ctx is only read by a registered onError hook. Build it lazily so
+        // the common no-hook 404 doesn't allocate a context object, spread
+        // `decorations`, iterate headers, or materialize a `Headers`
+        // instance just to be thrown away. The 204 OPTIONS preflight branch
+        // below uses its own `synthCtx`, so this skip is safe for it too.
+        const needsCtx = allowed.length > 0 && method === "OPTIONS"
+          ? false // OPTIONS path builds synthCtx
+          : activeErrorHook !== undefined;
+        if (needsCtx) {
+          // `query` and `headers` are materialized lazily — the common
+          // `onError` hook reads `requestId` / path and never touches them,
+          // so we skip `new URL(...)` + `Object.fromEntries` + the
+          // `Headers.forEach` on 404 GETs entirely. Setters preserve write
+          // semantics for hooks that reassign these fields.
+          let _query: Record<string, unknown> | undefined;
+          let _headers: Record<string, unknown> | undefined;
+          const reqRef = request;
+          const reqUrl = requestUrl;
+          ctx = {
+            request,
+            params: {},
+            get query() {
+              if (_query !== undefined) return _query as any;
+              const qi = reqUrl.indexOf("?");
+              if (qi === -1) return (_query = {}) as any;
+              const hi = reqUrl.indexOf("#", qi + 1);
+              const qs = hi === -1 ? reqUrl.slice(qi + 1) : reqUrl.slice(qi + 1, hi);
+              return (_query = Object.fromEntries(new URLSearchParams(qs))) as any;
+            },
+            set query(v: any) { _query = v; },
+            get headers() {
+              return (_headers ??= headersToObject(reqRef.headers)) as any;
+            },
+            set headers(v: any) { _headers = v; },
+            body: undefined,
+            state: { ...this.decorations, requestId, log },
+            set: { headers: new Headers() },
+          } as BaseContext<any, any>;
+          ctx.set.headers.set("x-request-id", requestId);
+        }
         if (allowed.length > 0) {
           if (method === "OPTIONS") {
             // Synthesize a preflight: let global hooks (e.g. CORS) intercept;
@@ -2389,7 +2430,7 @@ export class App {
           throw new MethodNotAllowedError(allowed);
         }
         throw new NotFoundError(
-          `No route for ${request.method} ${url404.pathname}`,
+          `No route for ${request.method} ${pathname}`,
         );
       }
 
@@ -2455,7 +2496,15 @@ export class App {
       }
       return finalized;
     } catch (err) {
-      const handled = await activeErrorHook?.(err, ctx);
+      // Skip the unconditional `await activeErrorHook?.(...)`: when no
+      // error hook is registered (the common case), `await undefined`
+      // still schedules a microtask. Branching first lets the hot error
+      // path stay synchronous.
+      let handled: unknown;
+      if (activeErrorHook !== undefined) {
+        const r = activeErrorHook(err, ctx);
+        handled = isPromiseLike(r) ? await r : r;
+      }
       if (handled instanceof Response) {
         if (ctx) copyContextHeaders(ctx, handled);
         if (!handled.headers.has("x-request-id"))
@@ -2469,11 +2518,13 @@ export class App {
       // the request at `disconnectStatusCode` (default 499) instead of
       // letting an AbortError bubble up as a generic 5xx. Logged at `info`
       // so disconnect storms do not look like service incidents.
-      const disconnectCode = this.options.disconnectStatusCode ?? 499;
+      // `err instanceof HttpError` first: the framework's own thrown
+      // problem errors short-circuit before any signal/option lookup.
+      const isHttp = err instanceof HttpError;
+      const disconnectCode = isHttp ? 0 : (this.options.disconnectStatusCode ?? 499);
       if (
         disconnectCode > 0 &&
-        request.signal?.aborted === true &&
-        !(err instanceof HttpError)
+        request.signal?.aborted === true
       ) {
         log.info(
           { event: "request.disconnected", status: disconnectCode },
@@ -2493,8 +2544,8 @@ export class App {
         }, stripFingerprint);
       }
       const httpErr: HttpError =
-        err instanceof HttpError
-          ? err
+        isHttp
+          ? (err as HttpError)
           : new InternalError(
               err instanceof Error ? err.message : "Unexpected error",
             );
@@ -3330,16 +3381,6 @@ function serializeResult(
     } else if (!treatAsJson && (result.body as any) instanceof ReadableStream) {
       body = result.body as BodyInit;
       isStream = true;
-    } else if (
-      !treatAsJson &&
-      result.body !== null &&
-      typeof (result.body as { pipe?: unknown }).pipe === "function"
-    ) {
-      // Node `Readable` (or any duck-typed pipeable). Pass through to the
-      // Node adapter as a raw stream; the standard `Response` can't carry a
-      // Node Readable, so body stays null and the adapter pipes directly.
-      body = null;
-      isStream = true;
     } else {
       const bytes = TEXT_ENCODER.encode(JSON.stringify(result.body));
       setContentLength(headers, bytes.byteLength);
@@ -3347,9 +3388,7 @@ function serializeResult(
       rawBody = bytes;
     }
     const response = new Response(body, { status: result.status, headers });
-    if (isStream) {
-      (response as any)[DALOY_RAW_STREAM] = result.body;
-    } else {
+    if (!isStream) {
       (response as any)[DALOY_RAW_BODY] = rawBody;
     }
     return response;

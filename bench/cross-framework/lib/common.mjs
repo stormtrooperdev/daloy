@@ -2,6 +2,7 @@
 import { spawn } from "node:child_process";
 import { setTimeout as wait } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import net from "node:net";
 import path from "node:path";
 import os from "node:os";
 
@@ -35,7 +36,10 @@ export function parseArgs(argv) {
   );
 }
 
-export function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTimeoutMs = 20_000 } = {}) {
+export async function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTimeoutMs = 20_000 } = {}) {
+  // Avoid EADDRINUSE when a previous SIGKILLed listener hasn't released the
+  // socket yet (common on macOS for listeners that didn't set SO_REUSEADDR).
+  await waitForPortFree(port).catch(() => {});
   const child = spawn(
     process.execPath,
     ["--no-warnings", "--import", "tsx", path.join(ROOT, file)],
@@ -50,9 +54,10 @@ export function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTim
     let resolved = false;
     let stderrBuf = "";
     let stdoutBuf = "";
+    const MAX_DIAG_BYTES = 64 * 1024;
     const onStdout = (buf) => {
       const s = buf.toString();
-      if (!resolved) stdoutBuf += s;
+      if (!resolved && stdoutBuf.length < MAX_DIAG_BYTES) stdoutBuf += s;
       if (resolved) return;
       if (s.includes(`READY ${port}`)) {
         resolved = true;
@@ -60,7 +65,10 @@ export function startServer(file, { port = DEFAULT_PORT, extraEnv = {}, readyTim
       }
     };
     child.stdout.on("data", onStdout);
-    child.stderr.on("data", (buf) => { stderrBuf += buf.toString(); });
+    child.stderr.on("data", (buf) => {
+      if (resolved || stderrBuf.length >= MAX_DIAG_BYTES) return;
+      stderrBuf += buf.toString();
+    });
     child.once("exit", (code) => {
       if (!resolved) {
         reject(new Error(`Server exited with code ${code} before READY.\nstdout: ${stdoutBuf}\nstderr: ${stderrBuf}`));
@@ -84,6 +92,24 @@ export async function killServer(child) {
   ]);
   if (!exited) child.kill("SIGKILL");
   await wait(250);
+}
+
+// Wait until `port` is free to bind on both IPv4 (127.0.0.1) and IPv6 (::).
+// Some adapters (Hono's node-server) bind to "::" and will hit EADDRINUSE
+// against lingering listener sockets from a SIGKILLed predecessor.
+export async function waitForPortFree(port, { timeoutMs = 10_000 } = {}) {
+  const tryBind = (host) => new Promise((resolve) => {
+    const s = net.createServer();
+    s.once("error", () => resolve(false));
+    s.once("listening", () => s.close(() => resolve(true)));
+    try { s.listen(port, host); } catch { resolve(false); }
+  });
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if ((await tryBind("127.0.0.1")) && (await tryBind("::"))) return;
+    await wait(100);
+  }
+  throw new Error(`Port ${port} did not become free within ${timeoutMs}ms.`);
 }
 
 // Population stats. Operates on a numeric array.

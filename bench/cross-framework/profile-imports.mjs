@@ -9,7 +9,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 
 const TARGETS = [
-  "@daloyjs/core/app",
   "@daloyjs/core",
   "@daloyjs/core/node",
   "zod",
