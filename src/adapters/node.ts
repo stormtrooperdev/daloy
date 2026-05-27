@@ -276,12 +276,23 @@ function toWebRequest(
     forwardedProto ??
     ((req.socket as { encrypted?: boolean }).encrypted ? "https" : "http");
   const url = `${proto}://${host}${req.url ?? "/"}`;
-  const headers = new Headers();
-  for (const k in reqHeaders) {
-    const v = reqHeaders[k];
-    if (v === undefined) continue;
-    headers.set(k, Array.isArray(v) ? v.join(", ") : v);
+  // Build headers from `rawHeaders` (a flat [k0,v0,k1,v1,...] array) instead
+  // of the parsed `req.headers` object. This matches @hono/node-server's
+  // `newHeadersFromIncoming`: one `new Headers([[k,v],...])` constructor
+  // call rather than N `headers.set()` calls. It is also stricter for
+  // duplicate-Host smuggling — Node coalesces some singleton headers down
+  // to the first value on `req.headers`, but `rawHeaders` preserves every
+  // occurrence so `assertNoDuplicateSingletonHeaders` actually sees them.
+  // Skip HTTP/2 pseudo-headers (leading ':') defensively, even though
+  // node:http's createServer is HTTP/1.1 only today.
+  const rawHeaders = req.rawHeaders;
+  const headerPairs: Array<[string, string]> = [];
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const k = rawHeaders[i]!;
+    if (k.charCodeAt(0) === 58 /* ':' */) continue;
+    headerPairs.push([k, rawHeaders[i + 1]!]);
   }
+  const headers = new Headers(headerPairs);
   const method = req.method ?? "GET";
   if (method === "GET" || method === "HEAD") {
     return new Request(url, { method, headers });

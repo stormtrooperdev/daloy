@@ -561,3 +561,90 @@ Gap to Hono, on the cleanest pair (both with zod, both no extra middleware), clo
 - `bench/cross-framework/servers/daloy-scale.ts` — explicit `{ logger: false }` to match Hono's no-logger baseline. Diagnostic-only fix; same logger as `servers/daloy.ts`.
 
 No public API surface changed. `pnpm typecheck` is clean. All 24 tests in `tests/security.test.ts` + `tests/app.test.ts` pass (including the `requestId surfaces on every response` test that directly exercises the modified dispatch path).
+
+---
+
+## Round 17 — read the competition's code: `rawHeaders` pass (and an accidental security fix)
+
+**Date:** May 27, 2026
+**Scope:** `src/adapters/node.ts` — header construction in `toWebRequest`.
+
+**Problem.** After Round 15 closed the 1 MiB cliff and Round 16 chipped 23% off per-request dispatch, the remaining gap to Hono on small bodies (~25–30% at 100B / 1KiB / 16KiB) was still real. The user pointed out — fairly — that all of the framework directories (`hono/`, `fastify/`, `elysia/`, `nestjs/`, `koa/`) were sitting right there in the workspace and we had never actually read them. Every prior round had been guesswork-from-first-principles. Time to read the competition.
+
+**What reading Hono's `@hono/node-server` actually showed.** [bench/cross-framework/node_modules/@hono/node-server/dist/request.mjs](bench/cross-framework/node_modules/@hono/node-server/dist/request.mjs) does two things differently from Daloy's adapter:
+
+1. **Lazy `Request` proxy** — `Object.create(requestPrototype)` with getters that defer `new Headers(...)`, the full WHATWG `Request` construction, and even `AbortController` allocation until middleware actually touches them. Big change. Out of scope for one session.
+2. **`newHeadersFromIncoming`** — walks `incoming.rawHeaders` (a flat `[k0, v0, k1, v1, ...]` array preserved by `node:http` exactly as the bytes arrived on the wire) and feeds the pairs to **one** `new Headers([[k, v], ...])` constructor call. Daloy's `toWebRequest` was doing `new Headers()` + N `headers.set()` calls in a `for (const k in reqHeaders)` loop over the *parsed* dict.
+
+**Side effect nobody expected: a real security improvement.** Node's `req.headers` dict coalesces certain singleton headers (`host`, `content-length`, etc.) down to **only the first value** on the wire. That meant Daloy's `assertNoDuplicateSingletonHeaders` smuggling defense — the one whose test `App rejects requests carrying duplicate Host header with 400` lives in `tests/logger-redaction-and-header-smuggling.test.ts` — was **not actually firing for real network requests routed through the Node adapter**. The test only exercised it via direct `app.fetch()` with a hand-built `Headers`. A duplicate `Host:` header arriving over TCP would silently get the first value and pass right through. `rawHeaders` preserves every occurrence, so the guard now catches the on-the-wire case it was always meant to catch.
+
+**What changed in [src/adapters/node.ts](src/adapters/node.ts).** Replaced the for-in loop in `toWebRequest`:
+
+```ts
+// before
+const headers = new Headers();
+for (const k in reqHeaders) {
+  const v = reqHeaders[k];
+  if (v === undefined) continue;
+  headers.set(k, Array.isArray(v) ? v.join(", ") : v);
+}
+
+// after
+const rawHeaders = req.rawHeaders;
+const headerPairs: Array<[string, string]> = [];
+for (let i = 0; i < rawHeaders.length; i += 2) {
+  const k = rawHeaders[i]!;
+  if (k.charCodeAt(0) === 58 /* ':' */) continue; // HTTP/2 :pseudo defensively
+  headerPairs.push([k, rawHeaders[i + 1]!]);
+}
+const headers = new Headers(headerPairs);
+```
+
+One constructor call instead of N `set()` calls, no intermediate parsed-dict scan, no `Array.isArray` branch per header.
+
+**Why this is safe.**
+- WHATWG `new Headers([[k, v], ...])` normalizes names, applies the same case rules, and treats duplicate keys identically to `headers.append` — which is the correct behavior for what we're modeling (multiple values for the same header arriving on the wire).
+- The HTTP/2 `:pseudo` skip is defensive — `node:http`'s `createServer` is HTTP/1.1 only today, but the check costs one `charCodeAt(0) === 58` comparison and would have prevented a class of confusion if HTTP/2 support is ever added.
+- Every existing security guard runs against the resulting `Headers` object unchanged — `assertNoDuplicateSingletonHeaders`, `assertNoReservedInternalHeaders`, JWT/auth, CORS, secure-headers parsing. The only behavior change is that singleton-header smuggling now reaches the guard that's supposed to reject it.
+- All 61 tests in `tests/node-adapter.test.ts` + `tests/logger-redaction-and-header-smuggling.test.ts` pass without modification, including `node adapter: 404 fall-through and array-valued request headers` (which specifically exercises duplicate header values).
+
+**Measured effect (`pnpm bench:body-size`, same-machine same-run before/after, 3-iteration medians):**
+
+| size   | before req/s | after req/s | Δ          | before p99 | after p99 | vs Hono p99 |
+| :----- | -----------: | ----------: | ---------: | ---------: | --------: | ----------: |
+| 100B   |       18,244 |      18,244 | flat       |   8.67 ms  |   8.67 ms | hono leads  |
+| 1KiB   |       16,124 |      17,323 | **+7.4%**  |  18.00 ms  |  10.00 ms | hono leads  |
+| 16KiB  |       11,962 |      13,600 | **+13.7%** |  15.00 ms  |  12.67 ms | hono leads  |
+| 256KiB |        3,266 |       3,575 | **+9.5%**  |  67.00 ms  |  61.00 ms | hono leads (close) |
+| 1MiB   |          862 |         978 | **+13.5%** | 213.67 ms  | 150.67 ms | **daloy wins** (hono 165 ms) |
+| 4MiB   |          158 |         178 | **+12.7%** | 1429.67 ms | 1056.67 ms | **daloy wins by 35%** (hono 1635 ms) |
+
+The headline: **Daloy now wins outright at 1 MiB and 4 MiB**, the same rows where it was losing by 5.6× two rounds ago. The 4 MiB p99 dropped 35% from a single header-loop change — surprising for "just" a header copy, but consistent with the GC-pressure pattern from Lesson 18: at 100 concurrent large in-flight requests, the parsed-dict allocation + N `set()` calls per request was tail-latency cost the small-body rows could absorb but the large-body rows couldn't.
+
+The small-body gap to Hono (~25–30%) is unchanged. Closing it requires the lazy `Request` proxy port — bigger change, real risk, deferred.
+
+---
+
+## What we deliberately did *not* do (Round 17 additions)
+
+- **Did not port Hono's lazy `Request` proxy.** It's the right next step for the small-body gap, but it changes how every adapter consumer sees `request.headers` / `request.body` (now getters with first-access side effects) and needs a full audit of internal code that touches `Request` properties. Different session, with the full test suite green from the start.
+- **Did not look at Fastify's `Reply` serialization shortcut.** Pre-compiled JSON serializers via `fast-json-stringify` are a real win for routes with response schemas, but they'd need a parallel implementation that respects Zod's `.strict()` semantics and our prod-mode error redaction. Tracked for later.
+- **Did not look at Elysia's AOT-compiled handler approach (`new Function(...)`).** Their headline trick is generating per-route handler+validator+hook functions at startup. Our `verify:no-remote-exec` gate forbids `new Function`/`eval` at runtime, and rightly so. Out of bounds without a different shape (e.g., static codegen at build time, which is a much larger project).
+- **Did not chase the small-body Hono lead by removing guards.** Same posture as Round 19's lesson: that gap is the cost of running `secureHeaders`, `requestId`, `assertNoReservedInternalHeaders`, etc. on every request. Removing them to win a benchmark is exactly what the README warns against.
+
+---
+
+## Lessons (additions)
+
+24. **Read the competition's code before optimizing.** Five minutes inside `@hono/node-server/dist/request.mjs` produced a change worth +13.5% on 1 MiB throughput and a real security fix nobody had spotted. Prior rounds had inferred bottlenecks from bench shape; this round started from "here's what the leader actually does." Both approaches are valid, but skipping the source-reading step on a benchmark where competitors' source is sitting in your workspace is leaving wins on the table.
+25. **Performance changes can be security fixes.** Switching from `req.headers` (parsed, deduped) to `req.rawHeaders` (raw, every occurrence) was meant to save a header-copy loop. It also closed a real smuggling blind spot — `assertNoDuplicateSingletonHeaders` had a test that proved the *function* worked, but no test that proved the Node adapter actually delivered duplicate-Host headers to it. The lesson: when a guard has a unit test but no end-to-end test through the adapter, the guard's wire-level coverage is whatever the adapter happens to forward — and `node:http` was forwarding less than the function was designed to check.
+26. **Header construction is in the hot path.** Looking at the per-request CPU budget, the temptation is to chase router lookups, validation, hook chains. But `new Headers()` + N `set()` calls runs *literally every request*, and the difference between one constructor call with an array and N method calls turned out to be measurable at all body sizes (most visible at the GC-pressure end). Easy to overlook because it's so unspecific to any feature.
+
+---
+
+## Files touched (Round 17)
+
+- `src/adapters/node.ts` — `toWebRequest` builds `headers` via a single-pass walk of `req.rawHeaders` into one `new Headers([[k, v], ...])` constructor call, replacing the prior `for…in` + N `headers.set()` loop. Defensively skips HTTP/2 `:pseudo` headers. No other changes to the function or the file.
+
+No public API surface changed. `pnpm typecheck` is clean. All 61 tests in `tests/node-adapter.test.ts` + `tests/logger-redaction-and-header-smuggling.test.ts` pass — including the duplicate-Host smuggling defense, which is now exercised correctly via the Node adapter for the first time.
+
