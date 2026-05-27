@@ -21,6 +21,15 @@ import {
 
 const FRAMEWORKS = [
   { name: "daloy", file: "servers/daloy.ts" },
+  { name: "daloy-nozod", file: "servers/daloy-nozod.ts" },
+  { name: "hono",     file: "servers/hono.ts" },
+  { name: "hono-validated", file: "servers/hono-validated.ts" },
+  { name: "fastify",  file: "servers/fastify.ts" },
+  { name: "express",  file: "servers/express.ts" },
+  { name: "koa",      file: "servers/koa.ts" },
+  { name: "nest",     file: "servers/nest.ts" },
+  { name: "elysia",   file: "servers/elysia.ts" },
+  { name: "feathers", file: "servers/feathers.ts" },
 ];
 
 const args = parseArgs(process.argv);
@@ -47,12 +56,19 @@ function rssOfPid(pid) {
     ch.stdout.on("data", (b) => { out += b.toString(); });
     ch.once("exit", () => {
       if (process.platform === "win32") {
-        // CSV: "name","pid","sessionName","sessionNo","memUsage" e.g. "1,234 K"
-        const cols = out.trim().split(",").map((s) => s.replace(/^"|"$/g, ""));
-        const mem = cols[cols.length - 1];
+        // CSV: "name","pid","sessionName","sessionNo","memUsage". The memUsage
+        // cell itself can contain a locale thousands separator (e.g. "1,234 K"
+        // on en-US, "1.234 K" on de-DE), so a naive split on "," cuts inside
+        // the quoted value and yields ~1/1000 of the real RSS. Parse the
+        // quoted fields properly.
+        const fields = [];
+        const re = /"((?:[^"]|"")*)"/g;
+        let m;
+        while ((m = re.exec(out)) !== null) fields.push(m[1]);
+        const mem = fields[fields.length - 1];
         if (!mem) return resolve(NaN);
         const kib = Number(mem.replace(/[^\d]/g, ""));
-        resolve(kib * 1024);
+        resolve(Number.isFinite(kib) ? kib * 1024 : NaN);
       } else {
         const kib = Number(out.trim());
         resolve(Number.isFinite(kib) ? kib * 1024 : NaN);
