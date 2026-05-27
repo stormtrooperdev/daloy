@@ -191,7 +191,10 @@ function bufferRequestBody(req: IncomingMessage, expected: number): Promise<Uint
     // allocation is bounded and DoS-safe. Skipping the intermediate
     // `chunks: Buffer[]` array + `Buffer.concat` avoids one full-body
     // copy per request — significant at 1 MiB bodies under load.
-    const out = expected > 0 ? Buffer.allocUnsafe(expected) : null;
+    // Use `Buffer.alloc` (zero-filled) rather than `Buffer.allocUnsafe`:
+    // the unsafe variant returns uninitialized memory and is forbidden by
+    // `verify:no-unsafe-buffer`. Any unwritten tail is sliced off below.
+    const out = expected > 0 ? Buffer.alloc(expected) : null;
     let received = 0;
     let settled = false;
     const onData = (chunk: Buffer) => {
