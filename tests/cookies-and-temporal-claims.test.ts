@@ -1603,7 +1603,7 @@ test("verify-no-vulnerable-sandboxes flags every forbidden sandbox package acros
   // `bundledDependencies` (array form) to exercise that branch.
   const pkg = {
     dependencies: { vm2: "3.10.4", left_pad: "1.3.0", "node-serialize": "0.0.4" },
-    devDependencies: { "safe-eval": "0.4.1", "serialize-to-js": "3.1.1" },
+    devDependencies: { "safe-eval": "0.4.1", "serialize-to-js": "3.1.1", funcster: "2.0.1" },
     peerDependencies: { notevil: "1.0.0" },
     optionalDependencies: { "static-eval": "2.1.0", "vm2-sandbox-escape": "1.0.0" },
     bundledDependencies: ["eval-sandbox", "lodash"],

@@ -18,13 +18,19 @@
  * includes eval-wrapping *deserializers* that revive functions from a
  * string format — most famously `node-serialize` (CVE-2017-5941: a
  * payload tagged `_$$ND_FUNC$$_` is fed straight into `eval`, turning
- * any reachable `unserialize()` call on user input into RCE) and the
- * historically vulnerable `serialize-to-js`. See
+ * any reachable `unserialize()` call on user input into RCE), the
+ * historically vulnerable `serialize-to-js`, and `funcster` (which
+ * round-trips JavaScript functions by `eval`ing the serialized body on
+ * deserialize — the same RCE-on-decode shape). See
  * https://snyk.io/blog/preventing-insecure-deserialization-node-js/.
+ * The same class is what attackers exploited in Microsoft SharePoint
+ * CVE-2026-45659 (deserialization of untrusted data → RCE for any
+ * authenticated Site Member); see
+ * https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45659.
  *
  * Daloy treats this combined class — `vm2`, `vm2-sandbox-escape`,
  * `safe-eval`, `notevil`, `static-eval`, `eval-sandbox`,
- * `node-serialize`, `serialize-to-js` — as forbidden direct
+ * `node-serialize`, `serialize-to-js`, `funcster` — as forbidden direct
  * dependencies, in any `package.json` shipped from this repo (core,
  * `create-daloy`, and every scaffolded template), and additionally
  * refuses to resolve them at the root lockfile level so they cannot
@@ -75,6 +81,12 @@ export const FORBIDDEN_SANDBOX_PACKAGES: readonly string[] = [
   // See https://snyk.io/blog/preventing-insecure-deserialization-node-js/
   "node-serialize",
   "serialize-to-js",
+  // `funcster` round-trips JavaScript functions by stringifying them on
+  // serialize and `eval`ing the body on deserialize — the same
+  // RCE-on-decode shape as `node-serialize`, and the Node analog of the
+  // .NET BinaryFormatter / SOAP deserialization RCE class behind
+  // Microsoft SharePoint CVE-2026-45659.
+  "funcster",
 ];
 
 export interface SandboxFinding {
