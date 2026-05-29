@@ -210,6 +210,40 @@ test("logger redacts whole-value GitHub / npm / Stripe / AWS / Slack / Google to
   }
 });
 
+test("logger redacts the 2026 stateless JWT-format GitHub installation token (ghs_ with dots)", () => {
+  // https://github.blog/changelog/2026-05-15-github-app-installation-tokens-per-request-override-header/
+  // The new server-to-server / Actions GITHUB_TOKEN format is a ~520-char
+  // `ghs_`-prefixed JWT with two dots. A regex limited to [A-Za-z0-9] would
+  // truncate at the first dot and leak the payload + signature segments.
+  const lines: string[] = [];
+  const log = createLogger({ level: "info", write: (l) => lines.push(l) });
+  const statelessToken =
+    "ghs_" +
+    "A".repeat(80) +
+    "." +
+    "B".repeat(300) +
+    "." +
+    "C".repeat(100) +
+    "-_";
+  log.info({ whole: statelessToken });
+  log.error(
+    { err: `auth failed with token ${statelessToken} from CI` },
+    "auth-fail",
+  );
+  const whole = JSON.parse(lines[0]!);
+  const interpolated = JSON.parse(lines[1]!);
+  assert.equal(whole.whole, "[REDACTED]", "whole stateless token must be redacted");
+  assert.ok(
+    !interpolated.err.includes("B".repeat(300)),
+    "JWT payload segment must not survive after the first dot",
+  );
+  assert.ok(
+    !interpolated.err.includes(statelessToken),
+    "raw stateless token must not appear in log output",
+  );
+  assert.match(interpolated.err, /\[REDACTED\]/);
+});
+
 test("logger redacts credential substrings interpolated into error-style strings", () => {
   // This is the exact Composer/Packagist 2026 leak pattern: the framework
   // (or user code) embeds the rejected token value into a message.

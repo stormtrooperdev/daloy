@@ -1899,6 +1899,14 @@ test("scanFileContentForCredentials catches every documented secret pattern", ()
       expect: /GitHub fine-grained PAT/,
     },
     {
+      // 2026 stateless installation-token format: a long `ghs_`-prefixed JWT
+      // with two dots. The old `ghs_[A-Za-z0-9]{36}` shape would miss it.
+      // https://github.blog/changelog/2026-05-15-github-app-installation-tokens-per-request-override-header/
+      line:
+        "GHS=ghs_" + "A".repeat(80) + "." + "B".repeat(300) + "." + "C".repeat(100),
+      expect: /GitHub server-to-server token/,
+    },
+    {
       line: "//registry.npmjs.org/:_authToken=npm_abcdefghijklmnopqrstuvwxyz0123456789",
       expect: /npm access token/,
     },

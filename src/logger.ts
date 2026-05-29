@@ -144,7 +144,11 @@ const JWT_LIKE_RE = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
  * conservatively to avoid false positives on ordinary identifiers.
  *
  * Sources (token formats published by each provider as of 2026):
- * - GitHub: `gh[opsur]_` 36–251 alphanumerics; `github_pat_` 40+ alnum/_
+ * - GitHub: `gh[opru]_` 36–251 alphanumerics (opaque); `ghs_` 36+ of
+ *   alnum/`.`/`-`/`_` to also cover the 2026 stateless installation-token
+ *   format (a ~520-char `ghs_`-prefixed JWT with two dots — see
+ *   <https://github.blog/changelog/2026-05-15-github-app-installation-tokens-per-request-override-header/>);
+ *   `github_pat_` 40+ alnum/_
  * - Slack:  `xox[abprs]-` legacy/bot/user/refresh tokens
  * - AWS:    `AKIA`/`ASIA` + 16 uppercase alphanumerics
  * - Stripe: `sk|rk|pk` + `_live_|_test_` + 20+ alphanumerics
@@ -155,7 +159,7 @@ const JWT_LIKE_RE = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
  * - OpenAI: `sk-` + 20+ alnum/_/- (matched after the `sk-ant-` form)
  */
 const CREDENTIAL_LIKE_RE =
-  /(?:gh[opsur]_[A-Za-z0-9]{36,251}|github_pat_[A-Za-z0-9_]{40,255}|xox[abprs]-[A-Za-z0-9-]{10,}|(?:AKIA|ASIA)[A-Z0-9]{16}|(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{20,}|npm_[A-Za-z0-9]{36}|glpat-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{35}|sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,})/g;
+  /(?:ghs_[A-Za-z0-9._-]{36,1024}|gh[opru]_[A-Za-z0-9]{36,251}|github_pat_[A-Za-z0-9_]{40,255}|xox[abprs]-[A-Za-z0-9-]{10,}|(?:AKIA|ASIA)[A-Z0-9]{16}|(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{20,}|npm_[A-Za-z0-9]{36}|glpat-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{35}|sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,})/g;
 
 interface ResolvedRedaction {
   keys: Set<string>;

@@ -87,7 +87,14 @@ export const CREDENTIAL_CONTENT_PATTERNS: readonly { name: string; re: RegExp }[
     { name: "AWS access key id", re: /\bAKIA[0-9A-Z]{16}\b/ },
     { name: "GitHub personal access token (ghp_)", re: /\bghp_[A-Za-z0-9]{36}\b/ },
     { name: "GitHub OAuth token (gho_)", re: /\bgho_[A-Za-z0-9]{36}\b/ },
-    { name: "GitHub server-to-server token (ghs_)", re: /\bghs_[A-Za-z0-9]{36}\b/ },
+    {
+      // Matches both the classic opaque 36-char form and the 2026 stateless
+      // JWT-format installation token (a ~520-char `ghs_`-prefixed JWT with
+      // two dots). GitHub's recommended shape is `ghs_[A-Za-z0-9.\-_]{36,}`:
+      // https://github.blog/changelog/2026-05-15-github-app-installation-tokens-per-request-override-header/
+      name: "GitHub server-to-server token (ghs_)",
+      re: /\bghs_[A-Za-z0-9._-]{36,1024}/,
+    },
     { name: "GitHub refresh token (ghr_)", re: /\bghr_[A-Za-z0-9]{36}\b/ },
     { name: "GitHub user-to-server token (ghu_)", re: /\bghu_[A-Za-z0-9]{36}\b/ },
     {
