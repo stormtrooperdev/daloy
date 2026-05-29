@@ -1,3 +1,14 @@
+---
+name: daloyjs-best-practices
+description: >-
+  Best practices for building, testing, and hardening this DaloyJS REST API on
+  the Bun runtime. Use when adding or changing HTTP routes, Zod schemas,
+  middleware, or error handling; regenerating the OpenAPI spec or the typed
+  Hey API client; or working on auth, rate limits, secrets, and the project's
+  quality gates.
+license: MIT
+---
+
 # SKILL.md — DaloyJS best practices (Bun)
 
 Operational guidance and best practices for AI coding agents working in this

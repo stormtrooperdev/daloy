@@ -1,5 +1,29 @@
-# The guiding principles for Daloy's design and development are:
+# AGENTS.md
 
+`@daloyjs/core` is a runtime-portable, contract-first TypeScript web framework
+with built-in OpenAPI generation, typed-client codegen (Hey API), and
+security-first defaults. This repo is a pnpm monorepo containing the framework
+(`src/`), the `create-daloy` scaffolder (`packages/create-daloy/`), and the
+docs/marketing site (`website/`).
+
+- **Package manager:** pnpm (>= 11). Do not use `npm`/`yarn` here.
+- **Runtime:** Node.js >= 24. The framework also ships adapters for Bun, Deno,
+  Cloudflare Workers, and Vercel Edge.
+- **No runtime dependencies:** `@daloyjs/core` must stay dependency-free
+  (`pnpm verify:no-runtime-deps` is the floor).
+
+## Commands
+
+- `pnpm dev` — watch-mode `tsc`
+- `pnpm build` — emit `dist/` via `tsconfig.build.json`
+- `pnpm typecheck` — `tsc --noEmit`
+- `pnpm test` — run the test suite (`node --test` via `tsx`)
+- `pnpm coverage` — tests with the 90% line/function gate
+- `pnpm gen` — regenerate the OpenAPI spec and typed client
+- `pnpm format` — Prettier write
+- `cd website && pnpm dev | build | typecheck` — docs site
+
+## Design principles
 
 1. **Best OpenAPI ergonomics**: FastAPI's single-source-of-truth route definitions that generate OpenAPI docs and a client SDK with no extra code.
 2. **Vercel / serverless / edge fit**: Hono's web-standard core and multi-runtime adapters that let you run the same app on any platform.
@@ -7,8 +31,6 @@
 4. **Modern TS-first DX, Bun OK**: Elysia's end-to-end typed handlers, typed context, and typed client that give you confidence and great DX without needing to write extra types or use codegen.
 5. **Best typed client codegen**: Hey API's `pnpm gen` command that generates a fully typed fetch SDK from your OpenAPI spec with zero config and no extra code.
 6. **Supply-chain-hardened installs and publishing**: pnpm's security defaults for installs plus a hardened CI/CD pipeline with blocked scripts, release-age cooldowns, SHA-pinned actions, and provenance publishing that make it harder for attackers to compromise your supply chain and give you confidence in the integrity of your dependencies and the software you publish.
-
-
 
 ## Quality Gates
 

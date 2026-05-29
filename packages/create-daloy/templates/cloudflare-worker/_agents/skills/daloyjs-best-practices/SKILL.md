@@ -1,3 +1,14 @@
+---
+name: daloyjs-best-practices
+description: >-
+  Best practices for building, testing, and hardening this DaloyJS REST API on
+  Cloudflare Workers. Use when adding or changing HTTP routes, Zod schemas,
+  middleware, or error handling; wiring Worker bindings (KV, D1, R2, Queues,
+  env, secrets); or working on auth, rate limits, and the project's quality
+  gates.
+license: MIT
+---
+
 # SKILL.md — DaloyJS best practices (Cloudflare Workers)
 
 Operational guidance and best practices for AI coding agents working in this
