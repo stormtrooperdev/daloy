@@ -216,7 +216,8 @@ const SYMBOLS = SUPPORTS_UNICODE
 const BAR = color(COLORS.gray, SYMBOLS.bar);
 
 function printIntro(title) {
-  console.log(`${color(COLORS.cyan, SYMBOLS.cornerTL + SYMBOLS.lineH)}  ${color(COLORS.bold, title)}`);
+  console.log(`${color(COLORS.cyan, SYMBOLS.cornerTL + SYMBOLS.lineH)}  ${color(COLORS.bold + COLORS.white, title)}`);
+  console.log(`${BAR}  ${color(COLORS.dim, "Answer a few prompts \u2014 arrow keys to move, Enter to confirm.")}`);
   console.log(BAR);
 }
 
@@ -259,17 +260,18 @@ function renderBox(lines, options = {}) {
 // requests, and responses moving cleanly between client and server.
 const LOGO_WAVE_LINES = SUPPORTS_UNICODE
   ? [
-      "\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F",
-      "\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F",
-      "\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F\u223F",
+      "\u2248\u2248\u2248\u2248\u2248\u2248", // ≈≈≈≈≈≈
+      "\u2248\u2248\u2248\u2248\u2248\u2248",
+      "\u2248\u2248\u2248\u2248\u2248\u2248",
     ]
-  : ["~".repeat(25), "~".repeat(25), "~".repeat(25)];
+  : ["~~~~~~", "~~~~~~", "~~~~~~"];
 
-// Sky-blue palette tuned to match `tailwindcss` sky-200/400/700 — the same
-// colors used in the wordmark on https://daloyjs.dev.
+// Sky-blue palette anchored to the brand mark (website/public/assets/source/
+// mark.svg): the three stacked waves are sky-200, sky-400, and sky-600. Each
+// row fades slightly along its length so the cascade reads as flowing water.
 const LOGO_WAVE_GRADIENTS = [
   { start: [186, 230, 253], end: [125, 211, 252] }, // sky-200 -> sky-300
-  { start: [56, 189, 248], end: [14, 165, 233] }, //   sky-400 -> sky-500
+  { start: [56, 189, 248], end: [2, 132, 199] }, //    sky-400 -> sky-600
   { start: [2, 132, 199], end: [3, 105, 161] }, //     sky-600 -> sky-700
 ];
 
@@ -291,25 +293,45 @@ function gradientLine(line, startRgb, endRgb) {
 function printBanner(version) {
   if (!SUPPORTS_UNICODE) {
     console.log(`\n${color(COLORS.bold + COLORS.cyan, "create-daloy")}  ${color(COLORS.dim, `v${version}`)}`);
-    console.log(color(COLORS.dim, "Contract-first REST APIs for Node, Bun, Deno, Vercel Edge, and Workers"));
+    console.log(color(COLORS.dim, "The runtime-portable framework with supply-chain-aware defaults"));
+    console.log(color(COLORS.dim, "Secure-by-default runtime | Blocked install scripts | Source-verified lockfiles | Typed end-to-end"));
     console.log(color(COLORS.dim, "https://daloyjs.dev\n"));
     return;
   }
-  for (let i = 0; i < LOGO_WAVE_LINES.length; i += 1) {
-    const { start, end } = LOGO_WAVE_GRADIENTS[i];
-    console.log(`  ${gradientLine(LOGO_WAVE_LINES[i], start, end)}`);
-  }
-  // Centered wordmark beneath the waves: "Daloy" in neutral text, "JS" in
-  // brand sky-blue. Mirrors the SVG lockup used on the website.
+
+  // Brand lockup: the three-wave mark on the left sits beside the wordmark and
+  // tagline on the right — mirroring the social banner on https://daloyjs.dev.
   const wordmark = `${color(COLORS.bold + COLORS.white, "Daloy")}${color(COLORS.bold + COLORS.cyan, "JS")}`;
-  const wordmarkPadding = " ".repeat(Math.max(0, Math.floor((stringWidth(LOGO_WAVE_LINES[0]) - 7) / 2)));
-  console.log(`  ${wordmarkPadding}${wordmark}`);
-  // Build the welcome content lines (each contains its own ANSI color codes).
-  const headline = `${color(COLORS.bold + COLORS.cyan, "Welcome to DaloyJS")}  ${color(COLORS.gray, `\u2014 v${version}`)}`;
-  const subline = color(COLORS.dim, "Contract-first REST APIs for Node, Bun, Deno, Vercel Edge, and Workers.");
-  const docs = `${color(COLORS.gray, "docs:")} ${color(COLORS.cyan, "https://daloyjs.dev/docs")}`;
+  const versionTag = color(COLORS.gray, `v${version}`);
+  const tagline = color(COLORS.gray, "The runtime-portable framework with supply-chain-aware defaults");
+
+  const waves = LOGO_WAVE_LINES.map((line, i) =>
+    gradientLine(line, LOGO_WAVE_GRADIENTS[i].start, LOGO_WAVE_GRADIENTS[i].end),
+  );
+  const gap = "   ";
+
   console.log("");
-  console.log(renderBox([headline, subline, "", docs], { accent: COLORS.cyan }));
+  console.log(`  ${waves[0]}`);
+  console.log(`  ${waves[1]}${gap}${wordmark}  ${versionTag}`);
+  console.log(`  ${waves[2]}${gap}${tagline}`);
+  console.log("");
+
+  // Feature chips, brand-styled with cyan middots between dim labels.
+  const dot = color(COLORS.cyan, " \u00B7 ");
+  const chips = [
+    "Secure-by-default",
+    "Blocked install scripts",
+    "Source-verified lockfiles",
+    "Typed end-to-end",
+  ]
+    .map((chip) => color(COLORS.dim, chip))
+    .join(dot);
+  console.log(`  ${chips}`);
+
+  // Inverse-video "daloyjs.dev" badge, echoing the rounded pill in the brand
+  // banner. Inverse degrades to plain text when color is unavailable.
+  const pill = color(COLORS.cyan + COLORS.inverse, " daloyjs.dev ");
+  console.log(`  ${pill}  ${color(COLORS.gray, "docs:")} ${color(COLORS.cyan + COLORS.underline, "https://daloyjs.dev/docs")}`);
   console.log("");
 }
 
@@ -1312,7 +1334,9 @@ async function askChoice(rl, question, choices, defaultChoice) {
   const rawInput = rawInputHandle.stream;
 
   printPromptHeader(question);
-  printRailLine(color(COLORS.dim, `Use \u2191 \u2193 to navigate, Enter to confirm, type a number to jump.`));
+  printRailLine(
+    `${color(COLORS.dim, "\u2191/\u2193")} ${color(COLORS.gray, "navigate")}   ${color(COLORS.dim, "1\u20139")} ${color(COLORS.gray, "jump")}   ${color(COLORS.dim, "enter")} ${color(COLORS.gray, "confirm")}`,
+  );
 
   let index = Math.max(
     0,
@@ -1326,15 +1350,16 @@ async function askChoice(rl, question, choices, defaultChoice) {
       .map((choice, i) => {
         const isActive = i === active;
         const isDefault = optionValue(choice) === defaultChoice;
+        const pointer = isActive ? color(COLORS.cyan, SYMBOLS.pointer) : " ";
         const marker = isActive ? color(COLORS.cyan, SYMBOLS.radioOn) : color(COLORS.gray, SYMBOLS.radioOff);
         const titleRaw = optionTitle(choice).padEnd(titleWidth);
         const valueRaw = optionValue(choice).padEnd(valueWidth);
         const title = isActive ? color(COLORS.bold + COLORS.cyan, titleRaw) : color(COLORS.white, titleRaw);
-        const value = color(COLORS.dim, `(${valueRaw})`);
+        const value = color(COLORS.dim, `${valueRaw}`);
         const description = optionDescription(choice);
         const descColored = isActive ? color(COLORS.cyan, description) : color(COLORS.dim, description);
         const recommended = isDefault ? color(COLORS.green, `  ${SYMBOLS.star} recommended`) : "";
-        return `${BAR}  ${marker} ${title}  ${value}  ${descColored}${recommended}`;
+        return `${BAR}  ${pointer} ${marker} ${title}  ${value}  ${descColored}${recommended}`;
       })
       .join("\n");
   }

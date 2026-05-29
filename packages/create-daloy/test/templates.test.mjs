@@ -1640,7 +1640,8 @@ test("non-interactive scaffold output includes the polished completion summary",
       proc.on("exit", () => resolve(buf));
       proc.on("error", () => resolve(buf));
     });
-    assert.match(out, /Welcome to DaloyJS/);
+    assert.match(out, /DaloyJS/);
+    assert.match(out, /The runtime-portable framework with supply-chain-aware defaults/);
     assert.match(out, /Scaffolding your project/);
     assert.match(out, /Your DaloyJS project is ready!/);
     assert.match(out, /Next steps/);
