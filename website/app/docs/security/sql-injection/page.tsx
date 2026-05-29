@@ -23,6 +23,15 @@ export default function Page() {
   return (
     <>
       <h1>SQL injection</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a customs officer who insists
+        everyone fill out the standardized declaration form, not a handwritten
+        note. The form has separate boxes for &quot;name&quot; and
+        &quot;quantity&quot; — there&apos;s no way to write &quot;tobacco&quot;
+        in the quantity box and have it counted as goods. Parameterized queries
+        are the printed form; string-concatenated SQL is the handwritten note an
+        attacker can scribble extra instructions on.
+      </blockquote>
       <p>
         SQL injection is the 7-on-the-original-OWASP-top-10,
         never-actually-died, still-causing-real-breaches class of bug.

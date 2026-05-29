@@ -25,6 +25,15 @@ export default function Page() {
   return (
     <>
       <h1>WebSocket + login throttle slice</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a doorman with three jobs at once. He
+        limits how often anyone can knock on the door (
+        <code>wsRateLimit()</code> on the upgrade), how many wrong passwords you
+        can try before he stops listening (<code>loginThrottle()</code>), and he
+        swaps out your wristband the moment you upgrade to VIP (
+        <code>rotateSession()</code>) so anyone who copied the old wristband
+        gets nothing.
+      </blockquote>
       <p>
         Daloy closes the remaining expanded leftover items. The theme is narrow
         but practical: authentication entry points, upload boundaries, and

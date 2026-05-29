@@ -24,6 +24,14 @@ export default function Page() {
   return (
     <>
       <h1>Composition &amp; network</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the velvet ropes outside a club. They
+        steer traffic into the right line (allow/deny lists via
+        <code>ipRestriction</code>), share a single headcount across a group of
+        doors (<code>rateLimit({"{ groupId }"})</code>), and let staff slip in
+        through the side door without queueing (<code>internal: true</code>
+        routes reachable only via <code>app.inject()</code>).
+      </blockquote>
       <p>
         Daloy ships the composition & network slice of the secure-by-default
         initiative: four primitives that compose the security stack you already

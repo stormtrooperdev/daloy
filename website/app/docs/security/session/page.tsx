@@ -24,6 +24,13 @@ export default function Page() {
   return (
     <>
       <h1>Sessions</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a coat-check counter. The server
+        keeps the coat (your session data, sitting in a store). The cookie is
+        the numbered, tamper-proof stub the browser hands back to claim it. If
+        somebody forges the stub the signature won&apos;t match; if they steal
+        the stub, rotating it on login or privilege change cancels the old one.
+      </blockquote>
       <p>
         DaloyJS ships a small, runtime-portable <code>session()</code>{" "}
         middleware: a signed

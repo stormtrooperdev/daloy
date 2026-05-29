@@ -26,6 +26,296 @@ export default function Page() {
         first-party security middleware so the dangerous things are blocked by
         default and the deployment-specific things stay explicit.
       </p>
+      <blockquote>
+        <strong>Think of it like…</strong> a modern car. Seatbelts, airbags,
+        crumple zones, and ABS are built in and armed by default (core
+        guardrails). The route the driver takes, who&apos;s allowed in the
+        passenger seat, and whether you need a child seat are decisions you make
+        per trip (first-party middleware). You don&apos;t have to wire the
+        airbag yourself — but you do have to pick a destination.
+      </blockquote>
+
+      <h2>Plain-English analogies for every protection</h2>
+      <p>
+        If the terminology in this page feels abstract, this table maps every
+        major protection to an everyday analogy. Skim it once and the rest of
+        the security docs read a lot faster.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Protection</th>
+            <th>Think of it like…</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Body-size limit</td>
+            <td>
+              A weight limit on a parcel before the post office accepts it — no
+              truck-bombing the sorting room.
+            </td>
+          </tr>
+          <tr>
+            <td>Prototype-pollution-safe JSON</td>
+            <td>
+              A customs form that ignores hand-written notes in the margins.
+              Only the printed boxes count, so smugglers can&apos;t scribble
+              extra instructions.
+            </td>
+          </tr>
+          <tr>
+            <td>Header / response splitting guard</td>
+            <td>
+              An envelope machine that refuses to print address labels with
+              line-breaks in them, so nobody can sneak a second mailing address
+              onto your package.
+            </td>
+          </tr>
+          <tr>
+            <td>Path-traversal rejection</td>
+            <td>
+              A library check-out desk that refuses any call number containing
+              &quot;..&quot; — you can borrow books, not walk into the
+              staff-only basement.
+            </td>
+          </tr>
+          <tr>
+            <td>Request timeout</td>
+            <td>
+              A taxi meter that auto-ends the trip after 30 seconds of no
+              progress, so a passenger who fell asleep can&apos;t hold the cab
+              forever.
+            </td>
+          </tr>
+          <tr>
+            <td>Method 405 (with Allow header)</td>
+            <td>
+              A receptionist who tells you &quot;this counter only handles
+              deposits and withdrawals&quot; instead of pretending the counter
+              doesn&apos;t exist.
+            </td>
+          </tr>
+          <tr>
+            <td>Production 5xx redaction</td>
+            <td>
+              A &quot;sorry, we&apos;re experiencing issues&quot; sign on a shop
+              window instead of taping the till&apos;s error printout to the
+              glass.
+            </td>
+          </tr>
+          <tr>
+            <td>secureHeaders (CSP, HSTS, X-Frame-Options)</td>
+            <td>
+              A bouncer who tells every passing browser: &quot;only run scripts
+              from this building, always use HTTPS, and no, you can&apos;t stuff
+              this page inside someone else&apos;s frame.&quot;
+            </td>
+          </tr>
+          <tr>
+            <td>CSP nonces + Trusted Types</td>
+            <td>
+              Numbered wristbands handed out fresh every night. Last
+              night&apos;s wristband won&apos;t get a script onto the dance
+              floor today.
+            </td>
+          </tr>
+          <tr>
+            <td>cors (explicit allowlist)</td>
+            <td>
+              A guest list at the door. &quot;Everyone, including
+              credentials&quot; is the same as no guest list — the guard refuses
+              to enforce it.
+            </td>
+          </tr>
+          <tr>
+            <td>csrf (double-submit cookie)</td>
+            <td>
+              A coat-check ticket: the doorman gave you one stub, you hand back
+              the matching stub at the counter. A stranger who didn&apos;t walk
+              past the doorman can&apos;t guess the number.
+            </td>
+          </tr>
+          <tr>
+            <td>csrf (Fetch-Metadata)</td>
+            <td>
+              The doorman just asks &quot;did you come in through my front
+              door?&quot; The browser answers truthfully via{" "}
+              <code>Sec-Fetch-Site</code> — no ticket needed.
+            </td>
+          </tr>
+          <tr>
+            <td>rateLimit</td>
+            <td>
+              A bouncer&apos;s clicker. Same person tries to enter 1000 times in
+              a minute? Sit out the next 60 seconds.
+            </td>
+          </tr>
+          <tr>
+            <td>rateLimit (Redis store)</td>
+            <td>
+              One shared clicker across every door of the club, so opening more
+              doors doesn&apos;t let the same guest sneak in N times.
+            </td>
+          </tr>
+          <tr>
+            <td>loadShedding</td>
+            <td>
+              A power grid that browns out non-essential streetlights before the
+              whole city blacks out.
+            </td>
+          </tr>
+          <tr>
+            <td>loginThrottle</td>
+            <td>An ATM that swallows your card after three wrong PINs.</td>
+          </tr>
+          <tr>
+            <td>ipRestriction (CIDR allow/deny)</td>
+            <td>
+              A gated community guard list of which addresses can drive in or
+              out — only the ranges you wrote down.
+            </td>
+          </tr>
+          <tr>
+            <td>requestId</td>
+            <td>
+              A boarding pass number stapled to every step of your journey. When
+              something breaks, every log can be cross-referenced by that one
+              number.
+            </td>
+          </tr>
+          <tr>
+            <td>bearerAuth / basicAuth</td>
+            <td>
+              An ID badge swiped at the door. <code>timingSafeEqual</code> means
+              the guard reads the whole badge before deciding — even an attacker
+              timing the response can&apos;t tell which digit was wrong.
+            </td>
+          </tr>
+          <tr>
+            <td>jwt / jwk</td>
+            <td>
+              A passport (JWT) issued by a known embassy (JWKS). The border
+              officer checks the issuing authority&apos;s signature against the
+              embassy&apos;s public seal, not against the passport itself.
+            </td>
+          </tr>
+          <tr>
+            <td>requireScopes</td>
+            <td>
+              Hotel keycards that only open certain floors. A maintenance card
+              doesn&apos;t open guest rooms; a guest card doesn&apos;t open the
+              rooftop.
+            </td>
+          </tr>
+          <tr>
+            <td>session (signed cookie + store)</td>
+            <td>
+              A coat-check ticket. The server keeps the coat; the cookie is the
+              numbered, signed stub the browser hands back to claim it.
+            </td>
+          </tr>
+          <tr>
+            <td>rotateSession</td>
+            <td>
+              Re-issuing a new keycard the moment you get promoted, so anyone
+              holding the old one loses access on the spot.
+            </td>
+          </tr>
+          <tr>
+            <td>fetchGuard (SSRF defense)</td>
+            <td>
+              A corporate firewall that won&apos;t let your office laptop dial
+              internal admin servers — even if a phishing email tries to trick
+              it into hitting the cloud metadata endpoint.
+            </td>
+          </tr>
+          <tr>
+            <td>compression (BREACH-aware)</td>
+            <td>
+              Vacuum-sealing parcels for shipping — but never vacuum-sealing
+              anything with a return address visible through the wrap, because a
+              thief watching the truck could measure the bulge and figure out
+              what&apos;s inside.
+            </td>
+          </tr>
+          <tr>
+            <td>etag (private/no-store skip)</td>
+            <td>
+              A library returns-receipt that&apos;s only stamped for public
+              books. Private records get no receipt, so two patrons can&apos;t
+              accidentally compare receipts and learn about each other&apos;s
+              files.
+            </td>
+          </tr>
+          <tr>
+            <td>Refuse-to-boot guards</td>
+            <td>
+              The engine check that won&apos;t let the car start if the parking
+              brake is on or the seatbelts are unbuckled. Better to fail in the
+              driveway than at the first intersection.
+            </td>
+          </tr>
+          <tr>
+            <td>Internal-service preset</td>
+            <td>
+              Taking off your raincoat indoors. CSRF and same-origin checks are
+              raincoats for the public street; inside a private building (your
+              service mesh) they&apos;re useless — but you still lock the safe.
+            </td>
+          </tr>
+          <tr>
+            <td>WebSocket CSWSH refuse-to-boot</td>
+            <td>
+              A doorman who refuses to open the back fire-exit unless he can
+              confirm who you are <em>and</em> which street you walked in from.
+            </td>
+          </tr>
+          <tr>
+            <td>Webhook HMAC verify</td>
+            <td>
+              A wax seal on a letter. Anyone can write a letter; only the real
+              sender owns the signet ring that makes that exact pattern.
+            </td>
+          </tr>
+          <tr>
+            <td>fileField magicBytes</td>
+            <td>
+              Customs opening every &quot;tin of coffee&quot; to confirm it
+              actually smells like coffee, not gunpowder. Filename extensions
+              are stickers; magic bytes are the actual contents.
+            </td>
+          </tr>
+          <tr>
+            <td>Supply-chain hardening (pnpm, provenance, SBOM)</td>
+            <td>
+              Tamper-evident seals on every ingredient before it goes into the
+              kitchen, plus a paper trail (provenance) showing exactly which
+              farm grew it.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>minimum-release-age=1440</code>
+            </td>
+            <td>
+              A 24-hour fridge quarantine on freshly delivered groceries — long
+              enough that an obviously-poisoned batch gets recalled before
+              it&apos;s served.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>ignore-scripts=true</code>
+            </td>
+            <td>
+              Refusing to run the &quot;please install this companion app&quot;
+              pop-up that ships with the package. Just the food, not the side
+              dish that calls home.
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       <h2>What the core enforces</h2>
       <p>

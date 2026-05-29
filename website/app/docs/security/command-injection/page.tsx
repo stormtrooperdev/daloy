@@ -23,6 +23,16 @@ export default function Page() {
   return (
     <>
       <h1>Command injection</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the difference between handing a
+        kitchen a printed order ticket with separate fields (&quot;dish:
+        omelette, eggs: 2&quot;) versus shouting an order through a megaphone
+        the cook reads literally. With the ticket (<code>execFile</code> + argv
+        array), &quot;burn down the restaurant&quot; ends up in the
+        &quot;dish&quot; field — meaningless. With the megaphone (
+        <code>exec(`cmd ${"${input}"}`)</code>), a stray semicolon turns one
+        order into two, and the second one is whatever the attacker wanted.
+      </blockquote>
       <p>
         Aikido&apos;s{" "}
         <a

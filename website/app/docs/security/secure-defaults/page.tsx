@@ -21,6 +21,15 @@ export default function Page() {
   return (
     <>
       <h1>Secure-by-default</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a brand-new car. Seatbelts are
+        buckled, airbags are armed, doors are locked when you start moving. You{" "}
+        <em>can</em> turn any of those off — but only by deliberately pressing a
+        button labelled &quot;I know this is unsafe&quot; (
+        <code>secureDefaults: false</code> +{" "}
+        <code>acknowledgeInsecureDefaults: true</code>), and the car logs that
+        you did.
+      </blockquote>
       <p>
         Daloy is the first release in the &ldquo;secure-by-default&rdquo;
         series. It flips secure headers and cross-origin write protection on by

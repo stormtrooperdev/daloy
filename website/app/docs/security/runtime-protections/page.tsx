@@ -20,6 +20,14 @@ export default function Page() {
   return (
     <>
       <h1>Runtime protections that travel with your app</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the seatbelts, airbags, and crumple
+        zones built into the car itself. They protect you in every country you
+        drive in, regardless of which dealership sold you the car, which gas
+        station you fill up at, or whether your country requires roadworthiness
+        inspections. CI hardening is the inspection sticker; these runtime
+        guards are the car.
+      </blockquote>
       <p>
         These protections live inside <code>@daloyjs/core</code> and run at
         request time in your app process. They apply regardless of where you

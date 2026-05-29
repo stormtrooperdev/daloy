@@ -23,6 +23,14 @@ export default function Page() {
   return (
     <>
       <h1>Secure admin panels</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the back office of a bank. Different
+        door, different lock, different keys, different camera, and a logbook of
+        who opened the safe and when — all separate from the public lobby. Most
+        admin-panel breaches happen because the back office was stapled to the
+        public lobby with a flimsy curtain (the same auth, the same domain, the
+        same surface).
+      </blockquote>
       <p>
         Aikido&apos;s{" "}
         <a

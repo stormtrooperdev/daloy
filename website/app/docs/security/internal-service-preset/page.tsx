@@ -27,6 +27,15 @@ export default function Page() {
   return (
     <>
       <h1>Internal services & service meshes</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> taking off your raincoat when you
+        walk indoors. CSRF, same-origin checks, and browser-specific headers are
+        raincoats for the public street — useful when traffic comes from random
+        people&apos;s browsers, useless inside a private building (your service
+        mesh, where every caller is one of your own services). The preset takes
+        off the raincoats but keeps the safe locked, the IDs verified, and the
+        input guards on.
+      </blockquote>
       <p>
         Most DaloyJS security defaults — body limits, request timeouts, JWT
         algorithm allowlists, <code>timingSafeEqual</code> credential checks,

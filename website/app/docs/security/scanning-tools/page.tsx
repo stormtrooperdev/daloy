@@ -57,6 +57,14 @@ export default function Page() {
   return (
     <>
       <h1>Recommended scanning tools</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> airport security. There are always-on
+        metal detectors at the door (Socket Firewall, in-line on every install),
+        randomly-scheduled bag checks (Snyk / Aikido scans on every PR), and a
+        watch-list desk that knows which travellers are wanted elsewhere
+        (vulnerability databases). You want all three — each one catches things
+        the others miss.
+      </blockquote>
       <p>
         Yes: we recommend pairing DaloyJS with external security scanning. The
         framework gives you strong defaults in the source tree &mdash; blocked

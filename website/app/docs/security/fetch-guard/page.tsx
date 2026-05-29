@@ -23,6 +23,16 @@ export default function Page() {
       <h1>
         SSRF guard (<code>fetchGuard</code>)
       </h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a corporate firewall on your office
+        laptop. You can still browse the public internet, but the firewall
+        won&apos;t let you dial the building&apos;s admin console at
+        <code> 10.0.0.5</code> — even if a phishing email tells you to. SSRF is
+        the exact same trick aimed at your server: an attacker gives your code a
+        URL, hoping it&apos;ll quietly fetch your own internal admin panel or
+        the cloud provider&apos;s metadata endpoint. <code>fetchGuard()</code>
+        is the firewall.
+      </blockquote>
       <p>
         Any handler that calls <code>fetch()</code> on a URL the user can
         influence &mdash; an avatar fetch, a webhook delivery, an &ldquo;import

@@ -22,6 +22,15 @@ export default function Page() {
   return (
     <>
       <h1>Compression middleware</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> vacuum-sealing parcels for shipping:
+        smaller, cheaper, faster to deliver. But you never vacuum-seal anything
+        with a return address visible through the wrap (cookies, auth headers,
+        CSRF tokens) — because a thief watching the loading dock could measure
+        the bulge and figure out what&apos;s inside. That&apos;s the BREACH
+        attack, and that&apos;s why the middleware skips compression on
+        sensitive headers and small responses by default.
+      </blockquote>
       <p>
         Daloy ships a focused compression slice: a first-party{" "}
         <code>compression()</code> middleware that uses the web-standard{" "}

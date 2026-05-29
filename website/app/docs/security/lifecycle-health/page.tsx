@@ -23,6 +23,15 @@ export default function Page() {
   return (
     <>
       <h1>Lifecycle &amp; health</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> closing a kitchen at the end of the
+        night. Finish the orders already on the stove (drain in-flight
+        requests), turn off the burners safely (graceful shutdown with
+        <code>Connection: close</code>), and put a &quot;closed&quot; sign on
+        the door (<code>healthcheck</code>/<code>readinesscheck</code>) so the
+        next courier knows to come back later — not to hammer on the locked
+        door.
+      </blockquote>
       <p>
         Daloy ships the lifecycle & health slice of the secure-by-default
         initiative: connection-draining shutdown, crash-on-unhandled-rejection,

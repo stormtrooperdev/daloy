@@ -28,6 +28,15 @@ export default function Page() {
   return (
     <>
       <h1>Lifecycle leftovers (0.20.0)</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the load-shedding switch in an
+        electrical grid. When the system is near overload, it sheds non-
+        critical loads (<code>503</code> + <code>Retry-After</code>) rather than
+        browning out everyone. Add a CSP violation hotline (
+        <code>cspReportRoute</code>), a clearer code for &quot;the customer hung
+        up&quot; (<code>499</code>), and a config validator that catches typos
+        in your env file before the first request lands.
+      </blockquote>
       <p>
         Daloy <strong>0.20.0</strong> closes four leftover lifecycle items of
         the secure-by-default initiative. Each one is additive and opt-in (or,

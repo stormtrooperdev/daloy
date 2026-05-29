@@ -21,6 +21,14 @@ export default function Page() {
   return (
     <>
       <h1>OWASP API Security Top 10 mapping</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the fire marshal&apos;s inspection
+        checklist. Each item is a known way buildings burn down; this page maps
+        every item to the equivalent fire-safety feature already installed in
+        the framework — sprinklers, fire doors, smoke alarms — so you can point
+        at the actual hardware instead of writing &quot;we&apos;ll get to
+        it&quot; on the form.
+      </blockquote>
       <p>
         The{" "}
         <a

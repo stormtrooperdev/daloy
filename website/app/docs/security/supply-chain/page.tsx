@@ -25,6 +25,17 @@ export default function Page() {
   return (
     <>
       <h1>Supply-chain security</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the tamper-evident seal on every
+        ingredient that enters a restaurant&apos;s kitchen. The seal proves
+        nobody opened the jar between the farm and the chef (
+        <code>--provenance</code>). The 24-hour fridge quarantine means an
+        obviously-poisoned batch gets recalled before it&apos;s served (
+        <code>minimum-release-age=1440</code>). And refusing to run the
+        &quot;please install this companion app&quot; pop-up that ships with the
+        package keeps malware out of the prep area (
+        <code>ignore-scripts=true</code>).
+      </blockquote>
       <p>
         npm worm campaigns ship in waves &mdash; <code>chalk</code>/
         <code>debug</code> in September 2025, <code>node-ipc</code> in May 2026,

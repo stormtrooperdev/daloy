@@ -28,6 +28,14 @@ export default function Page() {
   return (
     <>
       <h1>Compliance posture</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the paperwork side of a building
+        safety inspection. The bricks (technical controls — TLS, auth, audit
+        logs, redaction, rate limits) are already in the framework; this page
+        shows the inspector exactly which brick satisfies which line on the SOC
+        2 / ISO 27001 / HIPAA / GDPR / PCI / NIS2 / DORA form so you stop
+        re-deriving the mapping every audit cycle.
+      </blockquote>
       <p>
         DaloyJS is a backend framework, not a managed service, so it cannot
         certify your deployment for SOC 2, ISO 27001, HIPAA, GDPR, PCI-DSS,
@@ -96,9 +104,9 @@ export default function Page() {
             <td>
               Zod/Valibot schemas on every body, query, and param; router
               rejects
-              <code>..</code> and <code>{`//`}</code>; <code>safeJsonParse</code>{" "}
-              strips prototype-pollution keys; SQL/command-injection guards
-              documented for ORMs and shells.
+              <code>..</code> and <code>{`//`}</code>;{" "}
+              <code>safeJsonParse</code> strips prototype-pollution keys;
+              SQL/command-injection guards documented for ORMs and shells.
             </td>
             <td>
               <a href="/docs/security/sql-injection">SQL injection</a>,{" "}
@@ -492,11 +500,11 @@ export default function Page() {
 
       <h3>Are you in scope? (NIS2 self-assessment)</h3>
       <p>
-        DaloyJS itself is open-source framework software and is not a
-        regulated entity. NIS2 obligations attach to the operator running the
-        service, not to the framework author &mdash; so the first question for
-        any team building on Daloy is whether the directive applies to{" "}
-        <em>them</em>. Aikido&apos;s{" "}
+        DaloyJS itself is open-source framework software and is not a regulated
+        entity. NIS2 obligations attach to the operator running the service, not
+        to the framework author &mdash; so the first question for any team
+        building on Daloy is whether the directive applies to <em>them</em>.
+        Aikido&apos;s{" "}
         <a
           href="https://www.aikido.dev/blog/nis2-who-is-affected"
           target="_blank"
@@ -509,26 +517,25 @@ export default function Page() {
         actually build with this framework.
       </p>
       <p>
-        You are likely in scope if{" "}
-        <strong>all three</strong> of the following are true:
+        You are likely in scope if <strong>all three</strong> of the following
+        are true:
       </p>
       <ol>
         <li>
           <strong>You operate in the EU.</strong> NIS2 applies to entities
-          providing services <em>in</em> the Union, even when the entity
-          itself is established outside the EU (Article 26 establishment
-          rules apply for cloud, data centers, CDN, managed services, MSSPs,
-          online marketplaces, online search, social networks, and DNS
-          providers).
+          providing services <em>in</em> the Union, even when the entity itself
+          is established outside the EU (Article 26 establishment rules apply
+          for cloud, data centers, CDN, managed services, MSSPs, online
+          marketplaces, online search, social networks, and DNS providers).
         </li>
         <li>
           <strong>Your sector is named in Annex I or Annex II.</strong>{" "}
           <em>Annex I (essential, &ldquo;high criticality&rdquo;)</em> covers
           energy, transport, banking, financial market infrastructure, health,
           drinking water, waste water, digital infrastructure (IXPs, DNS, TLDs,
-          cloud computing, data center services, CDN, trust services,
-          electronic communications), ICT service management (B2B, including
-          MSPs and MSSPs), and public administration.{" "}
+          cloud computing, data center services, CDN, trust services, electronic
+          communications), ICT service management (B2B, including MSPs and
+          MSSPs), and public administration.{" "}
           <em>Annex II (important, &ldquo;other critical&rdquo;)</em> covers
           postal &amp; courier, waste management, manufacture and distribution
           of chemicals, food production/processing/distribution, manufacturing
@@ -539,45 +546,45 @@ export default function Page() {
         </li>
         <li>
           <strong>You meet the size threshold</strong> &mdash; medium-sized or
-          larger per the EU 2003/361 SME definition: <strong>&ge; 50 staff</strong>{" "}
-          or <strong>&gt; &euro;10 million</strong> annual turnover{" "}
-          <em>or</em> balance sheet. Smaller entities can also be pulled in
-          regardless of size when they are a sole provider in a member state,
-          when a disruption would have a significant impact on public safety /
-          security / health, when they are a qualified trust service provider,
-          TLD name registry, DNS service provider, or public electronic
-          communications provider, or when the member state has designated
-          them as critical under Article 2(2). Public administration entities
-          are in scope under separate Article 2(2)(f) rules.
+          larger per the EU 2003/361 SME definition:{" "}
+          <strong>&ge; 50 staff</strong> or{" "}
+          <strong>&gt; &euro;10 million</strong> annual turnover <em>or</em>{" "}
+          balance sheet. Smaller entities can also be pulled in regardless of
+          size when they are a sole provider in a member state, when a
+          disruption would have a significant impact on public safety / security
+          / health, when they are a qualified trust service provider, TLD name
+          registry, DNS service provider, or public electronic communications
+          provider, or when the member state has designated them as critical
+          under Article 2(2). Public administration entities are in scope under
+          separate Article 2(2)(f) rules.
         </li>
       </ol>
       <p>
         The two tiers carry different penalty caps and supervisory regimes:{" "}
-        <strong>essential entities</strong> face up to <strong>&euro;10 M or
-        2% of global annual turnover</strong> (whichever is higher) and
-        ex-ante supervision; <strong>important entities</strong> face up to{" "}
-        <strong>&euro;7 M or 1.4% of global annual turnover</strong> and
-        ex-post supervision. Article 20 also makes <strong>management
-        bodies personally accountable</strong> for approving the risk-management
-        measures and undergoing cybersecurity training &mdash; that is the
-        clause that has been generating the most attention, because the
-        responsibility cannot be delegated to the security team. Member-state
-        transposition deadline was <strong>17 October 2024</strong>; most
-        member states have since published national laws with their own
+        <strong>essential entities</strong> face up to{" "}
+        <strong>&euro;10 M or 2% of global annual turnover</strong> (whichever
+        is higher) and ex-ante supervision; <strong>important entities</strong>{" "}
+        face up to <strong>&euro;7 M or 1.4% of global annual turnover</strong>{" "}
+        and ex-post supervision. Article 20 also makes{" "}
+        <strong>management bodies personally accountable</strong> for approving
+        the risk-management measures and undergoing cybersecurity training
+        &mdash; that is the clause that has been generating the most attention,
+        because the responsibility cannot be delegated to the security team.
+        Member-state transposition deadline was <strong>17 October 2024</strong>
+        ; most member states have since published national laws with their own
         registration and reporting portals (the national CSIRT and the
         single-entry point under Article 23(4)).
       </p>
       <p>
         If you concluded you are in scope, the Article 21 measure list below
-        plus the EU CRA evidence pack further down are what you point your
-        own auditor at for the framework layer. Most workloads built on Daloy
-        land in Annex I &ldquo;digital infrastructure&rdquo; (cloud / data
-        center / CDN), Annex I &ldquo;ICT service management&rdquo; (MSP /
-        MSSP), or Annex II &ldquo;digital providers&rdquo; (online
-        marketplace / search / social network) &mdash; the technical
-        controls in this page were built specifically so a team in those
-        sectors does not have to reconstruct the framework-layer evidence
-        from scratch.
+        plus the EU CRA evidence pack further down are what you point your own
+        auditor at for the framework layer. Most workloads built on Daloy land
+        in Annex I &ldquo;digital infrastructure&rdquo; (cloud / data center /
+        CDN), Annex I &ldquo;ICT service management&rdquo; (MSP / MSSP), or
+        Annex II &ldquo;digital providers&rdquo; (online marketplace / search /
+        social network) &mdash; the technical controls in this page were built
+        specifically so a team in those sectors does not have to reconstruct the
+        framework-layer evidence from scratch.
       </p>
 
       <h3>Article 21 risk-management measures (framework-layer mapping)</h3>
@@ -589,10 +596,10 @@ export default function Page() {
           </strong>{" "}
           &mdash; an organizational obligation on the consumer (cannot be
           delegated to the security team). The framework layer makes the
-          underlying evidence reviewable: every guardrail listed below lives
-          in source and is enforced by{" "}
-          <code>pnpm verify:*</code>, so the management body can be shown
-          version-pinned, auditable proof rather than a slide deck.
+          underlying evidence reviewable: every guardrail listed below lives in
+          source and is enforced by <code>pnpm verify:*</code>, so the
+          management body can be shown version-pinned, auditable proof rather
+          than a slide deck.
         </li>
         <li>
           <strong>
@@ -643,8 +650,7 @@ export default function Page() {
           correlated request IDs, OpenTelemetry-shaped spans, and plugin
           lifecycle hooks (rate-limit, auth-failure, SSRF-block, body-limit,
           timeout, <code>onShutdown</code>) suitable for feeding the
-          regulator-facing notification pipeline within the statutory
-          window.
+          regulator-facing notification pipeline within the statutory window.
         </li>
         <li>
           <strong>EU CRA upstream patch SLA</strong> &mdash; the CVSS-keyed

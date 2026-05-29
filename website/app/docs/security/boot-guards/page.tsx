@@ -22,6 +22,15 @@ export default function Page() {
   return (
     <>
       <h1>Boot guards</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> the engine check that won&apos;t let
+        your car start if the parking brake is on, the doors aren&apos;t shut,
+        or a seatbelt isn&apos;t buckled. It is much better to fail loudly in
+        the driveway than to discover the problem at the first intersection
+        under load. Boot guards turn the most common misconfigurations (wildcard
+        CORS with credentials, weak session secrets, unconfigured proxy headers)
+        into refuse-to-start errors.
+      </blockquote>
       <p>
         Daloy ships the boot-guards slice of the secure-by-default initiative:
         four refuse-to-boot / first-request guards that turn the most common

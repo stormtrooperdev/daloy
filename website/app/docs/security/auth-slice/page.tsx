@@ -28,6 +28,15 @@ export default function Page() {
   return (
     <>
       <h1>Auth-cohesive slice</h1>
+      <blockquote>
+        <strong>Think of it like…</strong> a building lobby that does three
+        things most don&apos;t. It checks not just your badge but who issued it
+        (JWKS lookup by <code>kid</code>), revalidates that you still work here
+        on every request (the <code>verify</code> hook), and refuses to cache
+        the &quot;denied&quot; answer at the elevator — so a fired employee
+        can&apos;t ride up tomorrow on a stale 401 (
+        <code>Cache-Control: no-store</code>).
+      </blockquote>
       <p>
         Daloy closes the auth-cohesive subset of the leftover items from the
         secure-by-default initiative. Each one is additive and opt-in:
