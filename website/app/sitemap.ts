@@ -167,6 +167,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/scaffolder", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/cli", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/getting-started", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/docs/where-to-use", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/routing", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/validation", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/validation/zod", changeFrequency: "monthly", priority: 0.7 },

@@ -12,6 +12,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Scaffold a project", href: "/docs/scaffolder" },
       { title: "CLI inspector", href: "/docs/cli" },
       { title: "Getting started", href: "/docs/getting-started" },
+      { title: "Where to use DaloyJS", href: "/docs/where-to-use" as Route },
     ],
   },
   {
