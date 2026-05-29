@@ -177,7 +177,7 @@ export function auditSecurityContactsText(
         message:
           `Disclosure exercise is ${age} days old; the fail ` +
           `threshold is ${EXERCISE_FAIL_DAYS} days. Run a fresh ` +
-          "simulated exercise, record it in PROJECT_HISTORY.md, and bump " +
+          "simulated exercise, and bump " +
           "the `<!-- last-exercise: -->` marker.",
       });
     } else if (age > EXERCISE_WARN_DAYS) {

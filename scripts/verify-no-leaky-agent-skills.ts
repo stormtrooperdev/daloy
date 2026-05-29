@@ -86,7 +86,6 @@ const ALLOWLIST: ReadonlySet<string> = new Set([
   "scripts/verify-no-leaky-agent-skills.ts",
   "tests/verify-no-leaky-agent-skills.test.ts",
   "SECURITY.md",
-  "PROJECT_HISTORY.md",
   "CONTRIBUTING.md",
   "CODE_REVIEW.md",
   "README.md",

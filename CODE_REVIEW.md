@@ -48,8 +48,7 @@ line", not "trust CI".
   was called? Prefer black-box assertions against the HTTP boundary.
 - Did `pnpm typecheck` and `pnpm coverage` actually run, and are
   coverage numbers above the gate (90% lines, 90% functions, 90%
-  branches on the compiled-JS run) — or, if not, is the deviation
-  justified in `PROJECT_HISTORY.md` per the AGENTS.md guidance?
+  branches on the compiled-JS run)?
 
 ### 2. Security review (highest priority)
 

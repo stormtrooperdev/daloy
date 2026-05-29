@@ -65,7 +65,7 @@
  *   - `tests/**` — the gate's own test fixtures must contain the IOCs.
  *   - `otherdocs/**` — internal security-research notes that quote
  *     ToxicSkills attack samples verbatim.
- *   - `SECURITY.md`, `PROJECT_HISTORY.md`, `ROADMAP.md`, `CODE_REVIEW.md`
+ *   - `SECURITY.md`, `ROADMAP.md`, `CODE_REVIEW.md`
  *     — disclosure / release documentation that names the campaign and
  *     may reproduce payload examples.
  *   - The verify script itself and its compiled `.js` twin.
@@ -210,7 +210,6 @@ const SKIP_PATH_PREFIXES: readonly string[] = [
 /** Repo-relative exact paths that are skipped. */
 const SKIP_EXACT_PATHS: ReadonlySet<string> = new Set([
   "SECURITY.md",
-  "PROJECT_HISTORY.md",
   "ROADMAP.md",
   "CODE_REVIEW.md",
   "scripts/verify-no-toxic-skills.ts",

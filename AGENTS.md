@@ -52,7 +52,7 @@ That risk exists for human contributors and AI coding agents alike. When a test 
 - Never silently delete or weaken: `secureHeaders`, `requestId`, `rateLimit`, `bodyLimitBytes`, `requestTimeoutMs`, `fetchGuard`, `isForbiddenObjectKey`, JWT algorithm allowlists, `timingSafeEqual` credential comparisons, schema `.strict()`, response-body schema validation, `except()` path normalization, prod-mode error redaction, or the `_gitignore` / `_npmrc` defaults in templates.
 - Changes to `src/security.ts`, `src/hashing.ts`, `src/jwt.ts`, `src/fetch-guard.ts`, `src/jwk.ts`, the verify-* scripts, or `.github/` workflows must keep the existing CI gates green (`pnpm verify:parity-audits`, `verify:governance-audits`, `verify:runtime-parity-audits`, `verify:routing-hardening-audits`, `verify:secret-comparisons`, `verify:no-remote-exec`, `verify:no-registry-exfiltration`, `verify:no-encoded-payloads`, `verify:no-invisible-unicode`, `verify:no-weak-random`, `verify:no-unsafe-buffer`, `verify:no-leaked-credentials`, `verify:no-vulnerable-sandboxes`, `verify:no-lifecycle-scripts`, `verify:lockfile-sources`, `verify:no-runtime-deps`, `verify:dep-licenses`, `verify:known-dep-names`, `verify:sbom`). These gates exist precisely so an "easy" weakening cannot land silently.
 - Every change that touches an auth, header, parsing, or crypto code path ships with an **unhappy-path test** that proves the guard still rejects what it should — not just that the new happy path works.
-- Do not add runtime dependencies to `@daloyjs/core`; `verify:no-runtime-deps` is the floor. Do not bypass the 24h `minimum-release-age` cooldown without recording the reason in `PROJECT_HISTORY.md`.
+- Do not add runtime dependencies to `@daloyjs/core`; `verify:no-runtime-deps` is the floor.
 
 If a guardrail blocks a legitimate use case, raise it in the PR description and add a scoped knob — do not delete the guardrail to ship faster.
 
@@ -76,6 +76,6 @@ If a task involves writing or editing a blog post, treat `website/AGENTS.md` as 
   - Update `@daloyjs/core` peer/dependency in every `packages/create-daloy/templates/*/package.json` and `packages/create-daloy/templates/deno-basic/deno.json` to the new core version (use `^X.Y.Z`)
   - Update the matching assertions in `packages/create-daloy/test/templates.test.mjs`
   - Update the hardcoded `FALLBACK_CORE_PACKAGE_VERSION` in `website/next.config.mjs` and the fallback in `website/lib/seo.ts`
-- Run `pnpm coverage` (not just `pnpm test`) before tagging — the 90% line/function gate in CI blocks publish silently if missed. If a security-heavy slice can't reach 90% without contortions, lower the threshold in `package.json` rather than write throwaway tests, and note the reason in `PROJECT_HISTORY.md`.
+- Run `pnpm coverage` (not just `pnpm test`) before tagging — the 90% line/function gate in CI blocks publish silently if missed. If a security-heavy slice can't reach 90% without contortions, lower the threshold in `package.json` rather than write throwaway tests.
 - Publish flow: tag `vX.Y.Z` (push tag) triggers `@daloyjs/core` publish; then `gh workflow run release.yml -f package=create-daloy --ref main` for the companion
 - Both runs require approval on the `npm-publish` GitHub Environment

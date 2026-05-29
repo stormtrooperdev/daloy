@@ -74,7 +74,6 @@
  *   - `otherdocs/**`       — internal security-research notes that
  *                            cite the campaign by name.
  *   - `SECURITY.md`,
- *     `PROJECT_HISTORY.md`,
  *     `ROADMAP.md`,
  *     `CODE_REVIEW.md`     — security-disclosure / release-notes
  *                            documentation that names the campaign by
@@ -245,7 +244,6 @@ const SKIP_PATH_PREFIXES: readonly string[] = [
 /** Repo-relative exact paths that are skipped. */
 const SKIP_EXACT_PATHS: ReadonlySet<string> = new Set([
   "SECURITY.md",
-  "PROJECT_HISTORY.md",
   "ROADMAP.md",
   "CODE_REVIEW.md",
   "pnpm-lock.yaml",

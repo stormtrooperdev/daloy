@@ -4,8 +4,7 @@ This file is the **single source of truth** for who is allowed to:
 
 1. Approve the protected `npm-publish` GitHub Environment for a release.
 2. Coordinate response to a privately reported vulnerability.
-3. Run the quarterly disclosure exercise (tracked in [ROADMAP](./ROADMAP.md)
-   and recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md)).
+3. Run the quarterly disclosure exercise (tracked in [ROADMAP](./ROADMAP.md)).
 
 It is machine-readable by [`scripts/verify-governance-audits.ts`](./scripts/verify-governance-audits.ts).
 A change to this file requires CODEOWNERS approval. The CI gate refuses to
@@ -67,17 +66,15 @@ at least once per quarter with a simulated report. The exercise verifies that:
    compromised by re-registering the lapsed domain of their npm recovery
    email and triggering a standard password reset. A lapsed-domain finding
    blocks the next publish until the affected contact rotates their
-   recovery address and the change is recorded in `PROJECT_HISTORY.md`.
+   recovery address.
 
-The most recent exercise must be recorded as a one-line bullet in
-[PROJECT_HISTORY.md](./PROJECT_HISTORY.md) using the form:
 
 > `_<date>_ — quarterly disclosure exercise completed. Findings: <short summary>.`
 
 The audit script reads the `<!-- last-exercise: YYYY-MM-DD -->` marker below,
 warns when the date is older than 90 days, and refuses with a non-zero exit
 when older than 180 days so a missed quarter fails CI loud instead of silently
-aging out. `PROJECT_HISTORY.md` remains the human-readable exercise log.
+aging out.
 
 <!-- last-exercise: 2026-05-20 -->
 
@@ -92,8 +89,7 @@ Adding:
    exercise.
 2. The PR requires CODEOWNERS approval (`.github/CODEOWNERS` already protects
    this file).
-3. After merge, run a fresh disclosure exercise and record it in
-   `PROJECT_HISTORY.md`.
+3. After merge, run a fresh disclosure exercise.
 
 Removing (off-boarding):
 
