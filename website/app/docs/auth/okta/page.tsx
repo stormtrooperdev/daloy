@@ -193,13 +193,13 @@ app.route({
         <code>jose</code>&apos;s <code>createRemoteJWKSet</code> +{" "}
         <code>jwtVerify</code> against the same issuer (the{" "}
         <Link href="/docs/auth/auth0">Auth0</Link> page shows that exact
-        pattern — only the issuer URL changes).
+        pattern, only the issuer URL changes).
       </p>
 
       <h2>Org server vs Custom Authorization Server</h2>
       <p>
         Only tokens from a <strong>Custom Authorization Server</strong> are
-        meant to be verified by your app — those issuers look like{" "}
+        meant to be verified by your app, those issuers look like{" "}
         <code>https://&#123;domain&#125;/oauth2/&#123;asId&#125;</code>. The
         Org Authorization Server (<code>https://&#123;domain&#125;</code>)
         issues opaque tokens that only Okta should consume; validate those via

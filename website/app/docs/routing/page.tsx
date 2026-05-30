@@ -49,7 +49,7 @@ export default function Page() {
       <CodeBlock code={`app.route({
   method: "GET",
   path: "/orgs/:org/repos/:repo",
-  // params is { org: string, repo: string } — inferred from the path
+  // params is { org: string, repo: string } - inferred from the path
 });`} />
       <p>Conflicting parameter names (e.g. <code>/a/:x</code> and <code>/a/:y</code>) throw at registration. Path traversal segments (<code>..</code>) and empty segments <code>{"//"}</code> are rejected by the router before your handler sees them.</p>
 
@@ -64,17 +64,17 @@ export default function Page() {
   });
 });
 // final path: /api/v1/health`} />
-      <p>Groups merge prefixes, tags, and hooks. They are encapsulated — middleware added inside a group does not leak out.</p>
+      <p>Groups merge prefixes, tags, and hooks. They are encapsulated, middleware added inside a group does not leak out.</p>
 
       <h2>Hooks</h2>
       <p>Hooks attach behavior at fixed lifecycle points:</p>
       <ul>
-        <li><code>onRequest</code> — earliest, before parsing.</li>
-        <li><code>beforeHandle</code> — after validation, before your handler. Return a Response to short-circuit.</li>
-        <li><code>afterHandle</code> — wrap or transform the handler result.</li>
-        <li><code>onError</code> — observe or replace the error response.</li>
-        <li><code>onSend</code> — symmetric to <code>beforeHandle</code>, but for outgoing responses. Mutate headers in place or return a brand-new <code>Response</code> to replace it. Runs on success, error, and OPTIONS preflight paths.</li>
-        <li><code>onResponse</code> — final hook, always runs. Use for observability; do not mutate the response here.</li>
+        <li><code>onRequest</code>: earliest, before parsing.</li>
+        <li><code>beforeHandle</code>: after validation, before your handler. Return a Response to short-circuit.</li>
+        <li><code>afterHandle</code>: wrap or transform the handler result.</li>
+        <li><code>onError</code>: observe or replace the error response.</li>
+        <li><code>onSend</code>: symmetric to <code>beforeHandle</code>, but for outgoing responses. Mutate headers in place or return a brand-new <code>Response</code> to replace it. Runs on success, error, and OPTIONS preflight paths.</li>
+        <li><code>onResponse</code>: final hook, always runs. Use for observability; do not mutate the response here.</li>
       </ul>
       <CodeBlock code={`app.route({
   method: "POST",
@@ -87,7 +87,7 @@ export default function Page() {
 
       <h2>Transforming responses with <code>onSend</code></h2>
       <p>
-        Use <code>onSend</code> when you need to rewrite the outgoing response — for
+        Use <code>onSend</code> when you need to rewrite the outgoing response, for
         example, to attach an envelope, strip a sensitive header, or compress the body.
         Mutate <code>res.headers</code> in place, or return a brand-new <code>Response</code> to
         replace the current one entirely. Returning <code>void</code> keeps the existing response.
@@ -128,7 +128,7 @@ app.route({
       <h2>405 Method Not Allowed</h2>
       <p>
         If a path is registered for one method but called with another, the router returns{" "}
-        <strong>405</strong> with a correct <code>Allow</code> header — never a misleading 404.
+        <strong>405</strong> with a correct <code>Allow</code> header, never a misleading 404.
       </p>
 
       <h2>Performance</h2>

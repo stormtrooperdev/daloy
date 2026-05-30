@@ -38,7 +38,7 @@ export default function Page() {
           <code>express-oauth2-jwt-bearer</code>
         </a>
         , which is Express-only. DaloyJS isn&apos;t Express, so we use the
-        same primitive — JWT verification against Auth0&apos;s JWKS — through{" "}
+        same primitive, JWT verification against Auth0&apos;s JWKS, through{" "}
         <a href="https://github.com/panva/jose" target="_blank" rel="noreferrer">
           <code>jose</code>
         </a>
@@ -51,7 +51,7 @@ export default function Page() {
         <li>
           In the Auth0 dashboard, go to <strong>Applications → APIs → Create
           API</strong>. Pick an <strong>identifier</strong> (e.g.{" "}
-          <code>https://api.acme.example.com</code>) — this becomes the{" "}
+          <code>https://api.acme.example.com</code>), this becomes the{" "}
           <code>aud</code> claim on issued tokens.
         </li>
         <li>
@@ -186,7 +186,7 @@ app.route({
           Action on the Login flow
         </a>
         . Namespace them (e.g. <code>https://acme.example.com/tenant</code>)
-        per Auth0&apos;s rules — that prevents collisions with standard claims
+        per Auth0&apos;s rules, that prevents collisions with standard claims
         and is required for non-reserved claims to be included.
       </p>
 
@@ -205,7 +205,7 @@ app.route({
           slash) is a common cause of validation failures.
         </li>
         <li>
-          Set a non-empty <strong>audience</strong> on the API — without it
+          Set a non-empty <strong>audience</strong> on the API, without it
           Auth0 returns an opaque token that you can&apos;t verify locally.
         </li>
         <li>

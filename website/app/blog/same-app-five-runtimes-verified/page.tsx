@@ -9,9 +9,9 @@ import { buildMetadata, serializeJsonLd, SITE_URL } from "@/lib/seo";
 const POST = {
   slug: "same-app-five-runtimes-verified",
   title:
-    "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge — Verified",
+    "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge, Verified",
   description:
-    "One Bookstore app, five entry files, five deployments. The Node serve(), the Bun handle.url, the Deno onListen, the Workers ctx.waitUntil, and Vercel's toWebHandler / toRouteHandlers / toFetchHandler — with receipts.",
+    "One Bookstore app, five entry files, five deployments. The Node serve(), the Bun handle.url, the Deno onListen, the Workers ctx.waitUntil, and Vercel's toWebHandler / toRouteHandlers / toFetchHandler, with receipts.",
   date: "2026-05-18",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
@@ -45,7 +45,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const SHARED_APP = `// apps/bookstore/src/app.ts — shared by all five runtimes
+const SHARED_APP = `// apps/bookstore/src/app.ts, shared by all five runtimes
 import { z } from "zod";
 import { App, requestId, secureHeaders } from "@daloyjs/core";
 
@@ -169,18 +169,18 @@ app.use(async (ctx, next) => {
 
 export default toFetchHandler<MyEnv>(app);`;
 
-const VERCEL_THREE = `// 1) Vercel Edge function — runtime: "edge"
+const VERCEL_THREE = `// 1) Vercel Edge function, runtime: "edge"
 // apps/bookstore/api/[...path].ts
 import { toWebHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/app";
 
 export const config = { runtime: "edge" };
 
-// toWebHandler returns a bare (req: Request) => Response — Edge default export.
+// toWebHandler returns a bare (req: Request) => Response - Edge default export.
 export default toWebHandler(app);
 
 
-// 2) Vercel Node.js function — default runtime
+// 2) Vercel Node.js function - default runtime
 // apps/bookstore/api/[...path].ts
 import { toFetchHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/app";
@@ -189,7 +189,7 @@ import { app } from "../src/app";
 export default toFetchHandler(app);
 
 
-// 3) Next.js App Router — route handlers
+// 3) Next.js App Router - route handlers
 // apps/web/app/api/[...slug]/route.ts
 import { toRouteHandlers } from "@daloyjs/core/vercel";
 import { app } from "@/lib/api/app";
@@ -215,7 +215,7 @@ $ curl -s https://cf.example.dev/health      | jq .
 $ curl -s https://vercel.example.dev/health  | jq .
 { "status": "ok" }
 
-# And the spec — generated from the same routes, byte-identical across runtimes:
+# And the spec - generated from the same routes, byte-identical across runtimes:
 $ for host in node bun deno cf vercel; do
     curl -s "https://$host.example.dev/openapi.json" | sha256sum
   done | sort -u | wc -l
@@ -253,7 +253,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — purely visual "VS Code-ish" chrome around a code sample.
+ * EditorFrame - purely visual "VS Code-ish" chrome around a code sample.
  * Kept local to each post so individual posts stay self-contained.
  */
 function EditorFrame({
@@ -316,7 +316,7 @@ function EditorFrame({
 }
 
 /**
- * RuntimeCard — fixed-shape summary box for each runtime tour section.
+ * RuntimeCard - fixed-shape summary box for each runtime tour section.
  * Helps the reader scan the per-runtime tradeoffs at a glance.
  */
 function RuntimeCard({
@@ -428,7 +428,7 @@ export default function BlogPostPage() {
 
           <p>
             The plan: one Bookstore app, one <code>src/app.ts</code> shared
-            across every runtime, and five entry files — one per platform. For
+            across every runtime, and five entry files, one per platform. For
             each runtime we&apos;ll look at the adapter, the platform-specific
             options it handles for you (graceful shutdown, idle timeouts,{" "}
             <code>ctx.waitUntil</code>, the three Vercel shapes), and the sharp
@@ -436,7 +436,7 @@ export default function BlogPostPage() {
             will bite you if you ignore them.
           </p>
 
-          <h2>The shared app — note what&apos;s missing</h2>
+          <h2>The shared app: note what&apos;s missing</h2>
 
           <p>
             Before the adapters, look at what the application file does{" "}
@@ -460,7 +460,7 @@ export default function BlogPostPage() {
             is what we&apos;re going to deploy five times.
           </p>
 
-          <h2>1. Node — the boring grown-up of the family</h2>
+          <h2>1. Node: the boring grown-up of the family</h2>
 
           <RuntimeCard
             name="Node.js"
@@ -475,7 +475,7 @@ export default function BlogPostPage() {
             gotchas={[
               "Set shutdownTimeoutMs ≥ your slowest request",
               "Only set trustProxy: true behind a sanitizing proxy",
-              "PORT bound by your platform (Heroku, Fly, etc.) — read it",
+              "PORT bound by your platform (Heroku, Fly, etc.), read it",
             ]}
           />
 
@@ -488,8 +488,8 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            <code>serve()</code> returns a small handle —{" "}
-            <code>{`{ server, port, close }`}</code> — so your tests can{" "}
+            <code>serve()</code> returns a small handle, {" "}
+            <code>{`{ server, port, close }`}</code>: so your tests can{" "}
             <code>await handle.close()</code> without doing the SIGTERM dance
             themselves. The auto-wired signals are what make Node deploys feel
             grown-up: hit <code>Ctrl-C</code> twice in dev and you get the same
@@ -497,19 +497,19 @@ export default function BlogPostPage() {
             stranded client.
           </p>
 
-          <h2>2. Bun — the fast one with a friendly handle</h2>
+          <h2>2. Bun: the fast one with a friendly handle</h2>
 
           <RuntimeCard
             name="Bun"
             importPath="@daloyjs/core/bun"
             handles={[
-              "handle.url — the resolved URL Bun is listening on",
+              "handle.url, the resolved URL Bun is listening on",
               "Pass-through to Bun's native serve options (tls, unix, idleTimeout)",
               "WebSocket upgrade via server.upgrade() when routes exist",
               "Dev error pages with development: true",
             ]}
             gotchas={[
-              "No auto SIGTERM hook — Bun handles process lifecycle itself",
+              "No auto SIGTERM hook, Bun handles process lifecycle itself",
               "idleTimeout is in seconds, not milliseconds",
               "Bun's process.env polyfill is great; resist the urge to import bun:*",
             ]}
@@ -530,7 +530,7 @@ export default function BlogPostPage() {
             One field, you&apos;re done. Small luxury, big quality-of-life.
           </p>
 
-          <h2>3. Deno — permissions are not a chore, they&apos;re a feature</h2>
+          <h2>3. Deno: permissions are not a chore, they&apos;re a feature</h2>
 
           <RuntimeCard
             name="Deno"
@@ -559,26 +559,26 @@ export default function BlogPostPage() {
           <p>
             Deno&apos;s permission model is the bit I miss the moment I&apos;m
             back on Node. <code>--allow-net</code> by itself means &quot;this
-            process can open sockets&quot; — it cannot read your home directory,
+            process can open sockets&quot;, it cannot read your home directory,
             your env vars, or your camera (yes, really). Pair it with{" "}
             <code>--allow-env</code> if your app reads any env vars and stop
             there. If a transitive dependency tries to escalate later, Deno
             tells you.
           </p>
 
-          <h2>4. Cloudflare Workers — the real edge, with ctx.waitUntil</h2>
+          <h2>4. Cloudflare Workers: the real edge, with ctx.waitUntil</h2>
 
           <RuntimeCard
             name="Cloudflare Workers"
             importPath="@daloyjs/core/cloudflare"
             handles={[
-              "Returns the { fetch } object Workers want — export default it",
+              "Returns the { fetch } object Workers want, export default it",
               "Generic over your Env bindings: toFetchHandler<MyEnv>(app)",
               "Surfaces ctx.waitUntil / passThroughOnException through ctx.platform",
-              "No process to crash — errors are returned as Response objects",
+              "No process to crash, errors are returned as Response objects",
             ]}
             gotchas={[
-              "No node:* imports — your shared code must stay portable",
+              "No node:* imports, your shared code must stay portable",
               "Workers' CPU limits are real; mind the 50ms cap on free plans",
               "Use waitUntil for fire-and-forget; don't fire-and-forget without it",
             ]}
@@ -603,7 +603,7 @@ export default function BlogPostPage() {
             isolate alive just long enough to land.
           </p>
 
-          <h2>5. Vercel — same app, three shapes</h2>
+          <h2>5. Vercel: same app, three shapes</h2>
 
           <p>
             Vercel is the runtime where &quot;which export do I use&quot; is
@@ -616,14 +616,14 @@ export default function BlogPostPage() {
             name="Vercel (Edge + Node Functions + Next.js App Router)"
             importPath="@daloyjs/core/vercel"
             handles={[
-              "toWebHandler — bare (req: Request) => Response, ideal for Edge",
-              "toFetchHandler — { fetch } object for Vercel Node.js Functions",
-              "toRouteHandlers — { GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD } for App Router",
+              "toWebHandler, bare (req: Request) => Response, ideal for Edge",
+              "toFetchHandler, { fetch } object for Vercel Node.js Functions",
+              "toRouteHandlers, { GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD } for App Router",
             ]}
             gotchas={[
-              "Edge runtime has no node:* — keep middleware portable",
+              "Edge runtime has no node:*, keep middleware portable",
               "Node functions can use process.env freely; Edge bundles secrets at build time",
-              "App Router route.ts files want named exports, not default — use toRouteHandlers",
+              "App Router route.ts files want named exports, not default, use toRouteHandlers",
             ]}
           />
 
@@ -666,8 +666,8 @@ export default function BlogPostPage() {
           <h2>The one rule that makes this work: read env the native way</h2>
 
           <p>
-            The most common cross-runtime bug I&apos;ve had to debug — in my own
-            code, painfully — is reaching for <code>process.env</code> in the
+            The most common cross-runtime bug I&apos;ve had to debug, in my own
+            code, painfully, is reaching for <code>process.env</code> in the
             shared app file. Don&apos;t. Read env in the entry file instead,
             using the native API of each runtime, and pass values <em>into</em>{" "}
             the app:
@@ -761,7 +761,7 @@ export default function BlogPostPage() {
           <p>
             Runtime portability is not magic, and it&apos;s not free. It works
             because the shared application file is disciplined about two things
-            — it never imports a runtime, and it never reads global state that
+, it never imports a runtime, and it never reads global state that
             is shaped differently per runtime. The adapter at the edge does the
             platform-shaped work, and the application in the middle does the
             application-shaped work. As long as you respect that boundary, the
@@ -791,7 +791,7 @@ export default function BlogPostPage() {
             run against five deployments to make sure this blog post stays true.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

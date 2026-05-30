@@ -155,7 +155,7 @@ CMD ["node", "dist/server.js"]`}
           <Link href="/docs/adapters">Adapters overview</Link>
         </li>
         <li>
-          <Link href="/docs/adapters/netlify">Netlify Functions</Link> &mdash;
+          <Link href="/docs/adapters/netlify">Netlify Functions</Link>: 
           v1 still uses the same Lambda event shape if you need it.
         </li>
         <li>

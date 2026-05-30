@@ -27,7 +27,7 @@ export default function Page() {
         <a href="https://www.mollie.com/" target="_blank" rel="noreferrer">
           Mollie
         </a>{" "}
-        is the dominant European payment platform — strong on iDEAL, Bancontact, SEPA, Klarna,
+        is the dominant European payment platform, strong on iDEAL, Bancontact, SEPA, Klarna,
         and a deep catalogue of local methods alongside cards and wallets. This guide uses
         the official{" "}
         <a
@@ -47,14 +47,14 @@ export default function Page() {
           <strong>Right package, please.</strong> The new SDK is{" "}
           <code>mollie-api-typescript</code> (Speakeasy-generated, Fetch-based,
           tree-shakable, edge-runtime friendly). The older{" "}
-          <code>@mollie/api-client</code> still works but is the previous generation — new
+          <code>@mollie/api-client</code> still works but is the previous generation, new
           projects should use the TypeScript-first one.
         </li>
         <li>
           <strong>It&apos;s a redirect flow.</strong> You create a payment, Mollie returns a{" "}
           <code>_links.checkout.href</code>, you redirect the customer there. They come back
           to your <code>redirectUrl</code> (browser) and your <code>webhookUrl</code> gets
-          POSTed (server). The redirect is a UX signal only — the webhook is the source of
+          POSTed (server). The redirect is a UX signal only, the webhook is the source of
           truth.
         </li>
         <li>
@@ -65,7 +65,7 @@ export default function Page() {
         </li>
         <li>
           <strong>Amounts are decimal strings.</strong> Unlike most providers, Mollie wants{" "}
-          <code>{`{ currency: "EUR", value: "10.00" }`}</code> — a string with exactly two
+          <code>{`{ currency: "EUR", value: "10.00" }`}</code>: a string with exactly two
           decimals for EUR. Pass <code>1000</code> as a number and you&apos;ll get a 422.
         </li>
         <li>
@@ -91,7 +91,7 @@ export default function Page() {
         </li>
         <li>
           In Developers → Webhooks, create a webhook subscription pointing at your DaloyJS
-          endpoint. Save the <strong>signing secret</strong> — you&apos;ll only see it once.
+          endpoint. Save the <strong>signing secret</strong>: you&apos;ll only see it once.
         </li>
         <li>
           Enable the payment methods you want under Settings → Website profile → Payment
@@ -195,7 +195,7 @@ declare module "@daloyjs/core" {
       />
       <p>
         <code>SignatureValidator</code> uses HMAC-SHA256 over the raw request body. The{" "}
-        <em>raw</em> body is non-negotiable — re-serialising parsed JSON will reorder fields
+        <em>raw</em> body is non-negotiable, re-serialising parsed JSON will reorder fields
         and break the signature.
       </p>
 
@@ -257,7 +257,7 @@ app.route({
         Mollie&apos;s webhook payload is famously minimalist: a form-encoded body of{" "}
         <code>id=tr_xxx</code>. You take that <code>id</code>, fetch the full payment from
         the API, and react to its current status. Always 200 OK quickly, even on
-        not-interesting events — Mollie retries non-200 responses.
+        not-interesting events, Mollie retries non-200 responses.
       </p>
       <CodeBlock
         code={`import { readRawBody } from "@daloyjs/core/raw";
@@ -322,7 +322,7 @@ await state.mollie.raw.payments.cancel({ paymentId: "tr_xxx" });`}
 
       <h2>Pagination</h2>
       <p>
-        List endpoints return async iterables — let <code>for await</code> walk the pages for
+        List endpoints return async iterables, let <code>for await</code> walk the pages for
         you:
       </p>
       <CodeBlock
@@ -377,12 +377,12 @@ try {
         </li>
         <li>
           <strong>Idempotency keys on every create.</strong> The SDK accepts{" "}
-          <code>idempotencyKey</code> alongside the request body — pass one derived from your
+          <code>idempotencyKey</code> alongside the request body, pass one derived from your
           order id so a network retry doesn&apos;t spawn duplicate payments.
         </li>
         <li>
           <strong>Don&apos;t trust the redirect.</strong> The <code>redirectUrl</code> only
-          tells you the user came back — they could close the tab mid-iDEAL. The webhook +
+          tells you the user came back, they could close the tab mid-iDEAL. The webhook +
           a follow-up <code>payments.get</code> is what flips an order to paid.
         </li>
       </ul>

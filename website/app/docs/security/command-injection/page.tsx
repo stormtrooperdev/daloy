@@ -29,7 +29,7 @@ export default function Page() {
         omelette, eggs: 2&quot;) versus shouting an order through a megaphone
         the cook reads literally. With the ticket (<code>execFile</code> + argv
         array), &quot;burn down the restaurant&quot; ends up in the
-        &quot;dish&quot; field — meaningless. With the megaphone (
+        &quot;dish&quot; field, meaningless. With the megaphone (
         <code>exec(`cmd ${"${input}"}`)</code>), a stray semicolon turns one
         order into two, and the second one is whatever the attacker wanted.
       </blockquote>
@@ -161,7 +161,7 @@ const app = new App();
 
 const ConvertBody = z.object({
   // 1) Constrain the input at the HTTP boundary. An enum, a tight regex, or
-  //    a UUID is almost always enough — shell metacharacters can't survive
+  //    a UUID is almost always enough - shell metacharacters can't survive
   //    a Zod schema that doesn't allow them.
   format: z.enum(["png", "jpeg", "webp"]),
   sourcePath: z
@@ -177,7 +177,7 @@ app.route({
   body: ConvertBody,
   responses: { 200: { description: "ok" } },
   handler: async ({ body }) => {
-    // 2) execFile with an argv array — no shell, no interpolation.
+    // 2) execFile with an argv array - no shell, no interpolation.
     const { stdout } = await execFileAsync(
       "ffmpeg",
       ["-i", body.sourcePath, "-f", body.format, "pipe:1"],

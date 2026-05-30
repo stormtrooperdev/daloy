@@ -139,12 +139,12 @@ const FEATURES = [
   {
     icon: CubeIcon,
     title: "Runtime-portable",
-    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel Edge — same app, same tests, five runtimes.",
+    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel Edge - same app, same tests, five runtimes.",
   },
   {
     icon: RocketLaunchIcon,
     title: "Hey API typed clients",
-    body: "Run pnpm gen and get a fully typed fetch SDK — for any consumer, in any TS project — generated from your real spec. Or skip codegen with the in-process typed client.",
+    body: "Run pnpm gen and get a fully typed fetch SDK, for any consumer, in any TS project, generated from your real spec. Or skip codegen with the in-process typed client.",
   },
   {
     icon: LightningIcon,
@@ -252,8 +252,8 @@ export default function HomePage() {
               with Hey API typed client codegen, streaming and OpenTelemetry
               tracing, edge-friendly sessions, a security-focused runtime by
               default, and a supply-chain-hardened release pipeline for the
-              framework itself. One line on the <code>App</code> constructor —{" "}
-              <code>docs: true</code> — auto-mounts a Scalar API reference at{" "}
+              framework itself. One line on the <code>App</code> constructor, {" "}
+              <code>docs: true</code>: auto-mounts a Scalar API reference at{" "}
               <code>/docs</code> and the live OpenAPI 3.1 spec at{" "}
               <code>/openapi.json</code>, the same DX as FastAPI.
             </p>
@@ -361,7 +361,7 @@ export default function HomePage() {
               Hello, contract
             </h2>
             <p className="mt-3 leading-8 text-muted-foreground">
-              One route — types, validation, OpenAPI, and the typed client all
+              One route, types, validation, OpenAPI, and the typed client all
               generated from it.
             </p>
           </div>
@@ -382,7 +382,7 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold tracking-tight">Why DaloyJS</h2>
             <p className="mx-auto mt-3 max-w-2xl leading-8 text-muted-foreground">
               The JS framework that is <strong>secure by default</strong> at the
-              runtime layer — and ships <code>create-daloy</code> with pnpm
+              runtime layer, and ships <code>create-daloy</code> with pnpm
               install-time hardening and an optional hardened GitHub Actions
               bundle, so the app-safe pieces of the LLM-era supply-chain defense
               are on the happy path without giving up OpenAPI ergonomics,
@@ -489,13 +489,13 @@ export default function HomePage() {
       <section>
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight">
-            Ready to ship — secure by default?
+            Ready to ship, secure by default?
           </h2>
           <p className="mb-8 leading-8 text-muted-foreground">
             Scaffold a project in seconds with pnpm hardening when you choose
             pnpm, generated CI that blocks install scripts, pinned GitHub
             Actions, Dependabot, CODEOWNERS, and lockfile source verification.
-            Then keep the contract as the app grows — the same app runs on Node,
+            Then keep the contract as the app grows, the same app runs on Node,
             Bun, Deno, Cloudflare Workers, and Vercel Edge.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">

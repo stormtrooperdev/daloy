@@ -105,8 +105,8 @@ export default function Page() {
       <h1>Adapters &amp; runtimes</h1>
       <p>
         DaloyJS is a REST API backend framework. The core only ever sees{" "}
-        <code>Request &rarr; Response</code>. Runtime-specific concerns &mdash;
-        sockets, signals, edge handlers, Lambda event shapes &mdash; live in
+        <code>Request &rarr; Response</code>. Runtime-specific concerns, 
+        sockets, signals, edge handlers, Lambda event shapes, live in
         thin adapters at the edge. Choose the adapter for the place you want to
         deploy your API.
       </p>
@@ -123,7 +123,7 @@ export default function Page() {
       <p>
         If your runtime exposes the web-standard <code>Request / Response</code>{" "}
         contract and isn&apos;t listed above, you don&apos;t need an adapter at
-        all &mdash; pass the incoming request straight to <code>app.fetch</code>
+        all, pass the incoming request straight to <code>app.fetch</code>
         :
       </p>
       <CodeBlock
@@ -139,12 +139,12 @@ export default {
       <h2>See also</h2>
       <ul>
         <li>
-          <Link href="/docs/deployment">Deployment</Link> &mdash; Docker,
+          <Link href="/docs/deployment">Deployment</Link>: Docker,
           reverse proxies, health checks, and Node platform guides (Fly.io,
           Render, Railway, Heroku).
         </li>
         <li>
-          <Link href="/docs/scaffolder">Scaffolder</Link> &mdash;{" "}
+          <Link href="/docs/scaffolder">Scaffolder</Link>: {" "}
           <code>pnpm create daloy</code> ships runtime-specific templates.
         </li>
       </ul>

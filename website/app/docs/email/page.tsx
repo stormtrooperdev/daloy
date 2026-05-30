@@ -36,33 +36,33 @@ export default function Page() {
       <h2>Supported providers</h2>
       <ul>
         <li>
-          <Link href="/docs/email/aws-ses">AWS SES (SESv2)</Link> —
+          <Link href="/docs/email/aws-ses">AWS SES (SESv2)</Link>: 
           pay-as-you-go SMTP/HTTP at AWS scale via{" "}
           <code>@aws-sdk/client-sesv2</code>. Best fit when you already run on
           AWS or need the cheapest per-message price.
         </li>
         <li>
-          <Link href="/docs/email/sendgrid">SendGrid</Link> — Twilio&apos;s
+          <Link href="/docs/email/sendgrid">SendGrid</Link>: Twilio&apos;s
           established sender via <code>@sendgrid/mail</code>. Good for
           high-volume marketing plus transactional.
         </li>
         <li>
-          <Link href="/docs/email/resend">Resend</Link> — modern,
+          <Link href="/docs/email/resend">Resend</Link>: modern,
           developer-first API via the <code>resend</code> SDK. Great DX, React
           Email templating, edge-friendly.
         </li>
         <li>
-          <Link href="/docs/email/postmark">Postmark</Link> —
+          <Link href="/docs/email/postmark">Postmark</Link>: 
           transactional-first delivery via the <code>postmark</code> SDK. Known
           for very high inbox placement.
         </li>
         <li>
-          <Link href="/docs/email/mailgun">Mailgun</Link> — Sinch-backed sender
+          <Link href="/docs/email/mailgun">Mailgun</Link>: Sinch-backed sender
           via <code>mailgun.js</code>. Strong validation, routing, and EU/US
           regions.
         </li>
         <li>
-          <Link href="/docs/email/mailtrap">Mailtrap</Link> — sandbox +
+          <Link href="/docs/email/mailtrap">Mailtrap</Link>: sandbox +
           production sending via the <code>mailtrap</code> SDK. Switch between a
           test inbox and live sending with a single flag.
         </li>
@@ -219,7 +219,7 @@ declare module "@daloyjs/core" {
         <code>{`// src/schemas/email.ts
 import { z } from "zod";
 
-// Reject CR, LF, NUL — the SMTP / email header injection trio.
+// Reject CR, LF, NUL - the SMTP / email header injection trio.
 const headerSafe = z
   .string()
   .max(998) // RFC 5322 line length
@@ -242,8 +242,8 @@ export const SendEmailBody = z
           CRLF-in-SMTP-command class of bug (<code>smtp-client</code>,{" "}
           <code>smtp-channel</code>, <code>aiosmtplib</code>{" "}
           <code>source_address</code>) doesn&apos;t reach the wire. If you must
-          use a raw SMTP client, validate every field — including hostname and
-          source address — with the schema above.
+          use a raw SMTP client, validate every field, including hostname and
+          source address, with the schema above.
         </li>
         <li>
           <strong>Rate-limit the send route.</strong> Use the built-in{" "}

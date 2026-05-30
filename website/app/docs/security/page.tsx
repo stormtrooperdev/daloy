@@ -32,7 +32,7 @@ export default function Page() {
         guardrails). The route the driver takes, who&apos;s allowed in the
         passenger seat, and whether you need a child seat are decisions you make
         per trip (first-party middleware). You don&apos;t have to wire the
-        airbag yourself — but you do have to pick a destination.
+        airbag yourself, but you do have to pick a destination.
       </blockquote>
 
       <h2>Plain-English analogies for every protection</h2>
@@ -52,7 +52,7 @@ export default function Page() {
           <tr>
             <td>Body-size limit</td>
             <td>
-              A weight limit on a parcel before the post office accepts it — so
+              A weight limit on a parcel before the post office accepts it, so
               one oversized package can&apos;t jam the whole sorting room.
             </td>
           </tr>
@@ -76,7 +76,7 @@ export default function Page() {
             <td>Path-traversal rejection</td>
             <td>
               A library check-out desk that refuses any call number containing
-              &quot;..&quot; — you can borrow books, not walk into the
+              &quot;..&quot;, you can borrow books, not walk into the
               staff-only basement.
             </td>
           </tr>
@@ -124,7 +124,7 @@ export default function Page() {
             <td>cors (explicit allowlist)</td>
             <td>
               A guest list at the door. &quot;Everyone, including
-              credentials&quot; is the same as no guest list — the guard refuses
+              credentials&quot; is the same as no guest list, the guard refuses
               to enforce it.
             </td>
           </tr>
@@ -141,7 +141,7 @@ export default function Page() {
             <td>
               The doorman just asks &quot;did you come in through my front
               door?&quot; The browser answers truthfully via{" "}
-              <code>Sec-Fetch-Site</code> — no ticket needed.
+              <code>Sec-Fetch-Site</code>: no ticket needed.
             </td>
           </tr>
           <tr>
@@ -173,7 +173,7 @@ export default function Page() {
             <td>ipRestriction (CIDR allow/deny)</td>
             <td>
               A gated community guard list of which addresses can drive in or
-              out — only the ranges you wrote down.
+              out, only the ranges you wrote down.
             </td>
           </tr>
           <tr>
@@ -188,7 +188,7 @@ export default function Page() {
             <td>bearerAuth / basicAuth</td>
             <td>
               An ID badge swiped at the door. <code>timingSafeEqual</code> means
-              the guard reads the whole badge before deciding — even an attacker
+              the guard reads the whole badge before deciding, even an attacker
               timing the response can&apos;t tell which digit was wrong.
             </td>
           </tr>
@@ -227,14 +227,14 @@ export default function Page() {
             <td>fetchGuard (SSRF defense)</td>
             <td>
               A corporate firewall that won&apos;t let your office laptop dial
-              internal admin servers — even if a phishing email tries to trick
+              internal admin servers, even if a phishing email tries to trick
               it into hitting the cloud metadata endpoint.
             </td>
           </tr>
           <tr>
             <td>compression (BREACH-aware)</td>
             <td>
-              Vacuum-sealing parcels for shipping — but never vacuum-sealing
+              Vacuum-sealing parcels for shipping, but never vacuum-sealing
               anything with a return address visible through the wrap, because a
               thief watching the truck could measure the bulge and figure out
               what&apos;s inside.
@@ -262,7 +262,7 @@ export default function Page() {
             <td>
               Taking off your raincoat indoors. CSRF and same-origin checks are
               raincoats for the public street; inside a private building (your
-              service mesh) they&apos;re useless — but you still lock the safe.
+              service mesh) they&apos;re useless, but you still lock the safe.
             </td>
           </tr>
           <tr>
@@ -300,7 +300,7 @@ export default function Page() {
               <code>minimum-release-age=1440</code>
             </td>
             <td>
-              A 24-hour fridge quarantine on freshly delivered groceries — long
+              A 24-hour fridge quarantine on freshly delivered groceries, long
               enough that an obviously-poisoned batch gets recalled before
               it&apos;s served.
             </td>
@@ -375,7 +375,7 @@ export default function Page() {
           <tr>
             <td>Method confusion</td>
             <td>
-              Real <strong>405</strong> with <code>Allow</code> header — never a
+              Real <strong>405</strong> with <code>Allow</code> header, never a
               misleading 404.
             </td>
           </tr>
@@ -664,50 +664,50 @@ app.use(basicAuth({
       </p>
       <ul>
         <li>
-          <strong>Strict isolation</strong> — packages cannot reach phantom
+          <strong>Strict isolation</strong>: packages cannot reach phantom
           dependencies.
         </li>
         <li>
-          <strong>Content-addressable store</strong> — every byte is hashed and
+          <strong>Content-addressable store</strong>: every byte is hashed and
           verified.
         </li>
         <li>
           <strong>Frozen lockfile in CI</strong> with{" "}
-          <code>--ignore-scripts</code> — reproducible installs without
+          <code>--ignore-scripts</code>: reproducible installs without
           transitive lifecycle execution.
         </li>
         <li>
           <strong>
             <code>verify-store-integrity</code>
           </strong>{" "}
-          — corruption-detecting reads.
+, corruption-detecting reads.
         </li>
         <li>
           <strong>
             <code>strict-peer-dependencies</code>
           </strong>{" "}
-          — no silent peer mismatches.
+, no silent peer mismatches.
         </li>
         <li>
           <strong>
             <code>minimum-release-age=1440</code>
           </strong>{" "}
-          — wait 24h before installing fresh releases.
+, wait 24h before installing fresh releases.
         </li>
         <li>
           <strong>
             <code>ignore-scripts=true</code>
           </strong>{" "}
-          with explicit <code>pnpm.onlyBuiltDependencies</code> — reviewed
+          with explicit <code>pnpm.onlyBuiltDependencies</code>: reviewed
           allowlist for native install scripts.
         </li>
         <li>
-          <strong>SHA-pinned GitHub Actions</strong> — the optional generated
+          <strong>SHA-pinned GitHub Actions</strong>: the optional generated
           GitHub workflows pin third-party actions to immutable commits, not
           mutable tags.
         </li>
         <li>
-          <strong>Protected DaloyJS npm publishing</strong> — the
+          <strong>Protected DaloyJS npm publishing</strong>: the
           framework&apos;s own packages use a tag-only release workflow,
           protected environment approval, OIDC trusted publishing, and{" "}
           <code>--provenance</code>.

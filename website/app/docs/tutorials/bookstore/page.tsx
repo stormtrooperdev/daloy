@@ -27,7 +27,7 @@ pnpm init
 pnpm add @daloyjs/core zod
 pnpm add -D typescript tsx @types/node @hey-api/openapi-ts`} />
 
-      <CodeBlock language="json" code={`// package.json — replace with this
+      <CodeBlock language="json" code={`// package.json, replace with this
 {
   "name": "bookstore",
   "type": "module",
@@ -173,7 +173,7 @@ import { getBookById, createBook } from "../generated/client/sdk.gen";
 client.setConfig({ baseUrl: "http://localhost:3000" });
 
 const { data } = await getBookById({ path: { id: "1" } });
-console.log(data?.title); // string | undefined — fully typed`} />
+console.log(data?.title); // string | undefined - fully typed`} />
 
       <h2>7. Add tests</h2>
       <CodeBlock code={`// tests/books.test.ts
@@ -206,7 +206,7 @@ test("POST /books rejects without token", async () => {
       <h2>What you built</h2>
       <ul>
         <li>A typed, validated, secured HTTP API.</li>
-        <li>A real OpenAPI 3.1 document and a generated typed SDK — both staying in sync forever.</li>
+        <li>A real OpenAPI 3.1 document and a generated typed SDK, both staying in sync forever.</li>
         <li>Contract tests guarding against drift in CI.</li>
         <li>A hardened install pipeline using pnpm plus a locked-down <code>.npmrc</code>.</li>
       </ul>

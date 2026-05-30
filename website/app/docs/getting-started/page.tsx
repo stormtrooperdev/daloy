@@ -25,7 +25,7 @@ export default function Page() {
       <h1>Getting started</h1>
       <p>
         Build a tiny DaloyJS server, hit it with the typed client, and inspect
-        the OpenAPI spec — in five minutes.
+        the OpenAPI spec, in five minutes.
       </p>
 
       <h2>1. Scaffold</h2>
@@ -39,7 +39,7 @@ pnpm add -D typescript tsx @types/node`}
 
       <CodeBlock
         language="json"
-        code={`// package.json — add these
+        code={`// package.json, add these
 {
   "type": "module",
   "scripts": {
@@ -59,7 +59,7 @@ pnpm add -D typescript tsx @types/node`}
       <p>
         We use <code>src/index.ts</code> and <code>--watch</code> here so the
         layout matches what <Link href="/docs/scaffolder">create-daloy</Link>{" "}
-        emits — copy/paste between this guide and a scaffolded project without
+        emits, copy/paste between this guide and a scaffolded project without
         renaming files.
       </p>
 
@@ -101,7 +101,7 @@ console.log(\`listening on http://localhost:\${port}\`);`}
         Prefer the colorized startup panel you get from{" "}
         <code>create-daloy</code> templates? Swap the plain{" "}
         <code>console.log</code> for <code>printStartupBanner()</code> from{" "}
-        <code>@daloyjs/core/banner</code> — it renders a TTY-aware,
+        <code>@daloyjs/core/banner</code>: it renders a TTY-aware,
         ASCII-fallback boxed banner with your app name, URL, and any extra links
         (API docs, health check, etc.):
       </p>
@@ -135,7 +135,7 @@ curl http://localhost:3000/greet/world
         Don&apos;t want to spin up a real server? Every <code>App</code> exposes{" "}
         <code>app.request(input, init?)</code>, an in-process test client that
         takes a URL or <code>Request</code> and returns a <code>Response</code>{" "}
-        — no network stack, no port, no second terminal. It&apos;s the same
+, no network stack, no port, no second terminal. It&apos;s the same
         entrypoint the typed client and{" "}
         <Link href="/docs/testing">testing guide</Link> use:
       </p>
@@ -190,8 +190,8 @@ const app = createApp({ docs: true });`}
       <h3>Prefer the classic Swagger UI?</h3>
       <p>
         Scalar is the default because it&apos;s faster, prettier, and friendlier
-        on mobile, but if your team is used to Swagger UI — or you have existing
-        screenshots, runbooks, or muscle memory built around it — DaloyJS ships
+        on mobile, but if your team is used to Swagger UI, or you have existing
+        screenshots, runbooks, or muscle memory built around it, DaloyJS ships
         it out of the box. Flip the <code>ui</code> field on the object form of{" "}
         <code>docs</code> and you&apos;re back to the familiar green UI:
       </p>
@@ -206,7 +206,7 @@ const app = createApp({ docs: true });`}
       />
       <p>
         Same URL (<code>GET /docs</code>), same live <code>/openapi.json</code>{" "}
-        and <code>/openapi.yaml</code> endpoints, same CSP handling — only the
+        and <code>/openapi.yaml</code> endpoints, same CSP handling, only the
         rendered HTML changes. You can also keep both: leave the auto-mounted
         route on Scalar and expose a second Swagger route yourself with{" "}
         <code>swaggerUiHtml()</code> (see the{" "}
@@ -216,11 +216,11 @@ const app = createApp({ docs: true });`}
       <p>
         Want a custom path? Use the object form:{" "}
         <code>{`docs: { ui: "swagger", path: "/reference" }`}</code>. Want it
-        only in development? Use <code>{`docs: "auto"`}</code> — it skips the
+        only in development? Use <code>{`docs: "auto"`}</code>: it skips the
         mount when <code>production: true</code>. Need full control? Set{" "}
         <code>docs: false</code> and mount your own routes with{" "}
         <code>generateOpenAPI()</code> and{" "}
-        <code>swaggerUiHtml() / scalarHtml()</code> — see the{" "}
+        <code>swaggerUiHtml() / scalarHtml()</code>: see the{" "}
         <Link href="/docs/openapi">OpenAPI guide</Link>.
       </p>
 

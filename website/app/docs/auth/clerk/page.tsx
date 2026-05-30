@@ -45,7 +45,7 @@ export default function Page() {
           <code>authenticateRequest()</code>
         </a>
         , which takes a standard <code>Request</code> and returns an{" "}
-        <code>Auth</code> object — a perfect fit for DaloyJS&apos;s
+        <code>Auth</code> object, a perfect fit for DaloyJS&apos;s
         Web-standard handlers.
       </p>
 
@@ -81,7 +81,7 @@ export default function Page() {
         code={`# .env
 CLERK_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Optional — enables networkless JWT verification (no Clerk API call per request)
+# Optional - enables networkless JWT verification (no Clerk API call per request)
 # Get it from API Keys → Show JWT public key → PEM Public Key
 CLERK_JWT_KEY="-----BEGIN PUBLIC KEY-----\\n...\\n-----END PUBLIC KEY-----"`}
       />
@@ -147,7 +147,7 @@ declare module "@daloyjs/core" {
       />
       <p>
         Setting <strong><code>authorizedParties</code></strong> is strongly
-        recommended — it pins the origins allowed to make requests and
+        recommended, it pins the origins allowed to make requests and
         protects against the subdomain-cookie-leaking attack described in
         Clerk&apos;s docs. Setting <code>jwtKey</code> turns verification into
         a pure crypto check (no network), which is ideal for edge runtimes.
@@ -227,7 +227,7 @@ middleware: [
       <p>
         Clerk delivers user, organization, and session events via Svix-signed
         webhooks. Use <code>clerk.verifyWebhook(request)</code> to validate
-        the signature before processing the payload — never trust an
+        the signature before processing the payload, never trust an
         unverified webhook body.
       </p>
 

@@ -235,7 +235,7 @@ console.log(result?.accessToken);`}
           inspected by your app.
         </li>
         <li>
-          Entra ID rotates signing keys regularly — never pin keys, always
+          Entra ID rotates signing keys regularly, never pin keys, always
           resolve them through the JWKS endpoint.
         </li>
       </ul>

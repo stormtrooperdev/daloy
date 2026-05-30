@@ -11,7 +11,7 @@ const POST = {
   title:
     "Contract-First Without the Codegen Dance: OpenAPI, Typed Client, and Contract Tests From One Definition",
   description:
-    "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app) — plus pnpm gen for a Hey API typed fetch SDK your frontend can import. With pictures.",
+    "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app), plus pnpm gen for a Hey API typed fetch SDK your frontend can import. With pictures.",
   date: "2026-05-18",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
@@ -124,7 +124,7 @@ const client = createClient(app, {
   fetch: (req) => app.fetch(new Request(req)),
 });
 
-test("getBookById — 200 has a typed body", async () => {
+test("getBookById - 200 has a typed body", async () => {
   const res = await client.getBookById({ params: { id: "42" } });
   assert.equal(res.status, 200);
   if (res.status === 200) {
@@ -133,12 +133,12 @@ test("getBookById — 200 has a typed body", async () => {
   }
 });
 
-test("getBookById — 404 has the Problem body", async () => {
+test("getBookById - 404 has the Problem body", async () => {
   const res = await client.getBookById({ params: { id: "missing" } });
   assert.equal(res.status, 404);
   if (res.status === 404) {
     assert.equal(res.body.status, 404);
-    // @ts-expect-error — title belongs to Book, not Problem
+    // @ts-expect-error - title belongs to Book, not Problem
     res.body.title;
   }
 });`;
@@ -255,7 +255,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — a purely visual "VS Code-ish" chrome around a code sample.
+ * EditorFrame - a purely visual "VS Code-ish" chrome around a code sample.
  * Kept local to each post so individual posts stay self-contained.
  */
 function EditorFrame({
@@ -318,7 +318,7 @@ function EditorFrame({
 }
 
 /**
- * ProjectionStep — numbered card with arrow-like header used to walk the
+ * ProjectionStep - numbered card with arrow-like header used to walk the
  * reader through "the route projects into N things". Adds a bit of visual
  * structure to the long middle section.
  */
@@ -429,14 +429,14 @@ export default function BlogPostPage() {
             Here is the entire input. Everything that follows in this post is
             derived from this file. If it changes, everything else changes with
             it. If it doesn&apos;t, nothing else does. That is what &quot;single
-            source of truth&quot; actually has to mean — not &quot;we have a
+            source of truth&quot; actually has to mean, not &quot;we have a
             wiki page about it&quot;.
           </p>
 
           <EditorFrame
             files={["apps/api/src/routes/books.ts", "apps/api/src/app.ts"]}
             activeFile="apps/api/src/routes/books.ts"
-            status="● apps/api/src/routes/books.ts — saved"
+            status="● apps/api/src/routes/books.ts, saved"
           >
             <CodeBlock language="ts" code={ROUTE_FILE} />
           </EditorFrame>
@@ -444,14 +444,14 @@ export default function BlogPostPage() {
           <p>
             One route, two declared responses (<code>200</code> and{" "}
             <code>404</code>), each with a real Zod schema. Hold that file in
-            your head — we&apos;ll come back to it three times.
+            your head, we&apos;ll come back to it three times.
           </p>
 
           <h2>Three projections, one input</h2>
 
           <ProjectionStep
             index={1}
-            title="generateOpenAPI(app) — the spec is a function of the routes"
+            title="generateOpenAPI(app), the spec is a function of the routes"
             from="app.route({...})"
             to="generated/openapi.json"
           >
@@ -486,7 +486,7 @@ export default function BlogPostPage() {
 
           <ProjectionStep
             index={2}
-            title="createClient(app) — the typed client lives in the same monorepo"
+            title="createClient(app), the typed client lives in the same monorepo"
             from="app.route({...})"
             to="ClientFor<App>"
           >
@@ -494,7 +494,7 @@ export default function BlogPostPage() {
               <code>createClient&lt;A extends App&gt;(app, opts)</code> returns
               an object keyed by every <code>operationId</code> you defined,
               with full input/output type narrowing per status. The classic use
-              for it is &quot;in-process integration tests&quot; — point its{" "}
+              for it is &quot;in-process integration tests&quot;, point its{" "}
               <code>fetch</code> at <code>app.fetch</code> and you get a real
               end-to-end test without a socket:
             </p>
@@ -505,7 +505,7 @@ export default function BlogPostPage() {
                 "apps/api/src/routes/books.ts",
               ]}
               activeFile="apps/api/tests/books.in-process.test.ts"
-              status="✓ node --test — 2 passing"
+              status="✓ node --test, 2 passing"
             >
               <CodeBlock language="ts" code={PROJECTION_CLIENT} />
             </EditorFrame>
@@ -514,7 +514,7 @@ export default function BlogPostPage() {
               The two things I want you to notice in that snippet are also the
               two things I quietly celebrate every time I see them at work.
               First, the <code>res.body</code> inside the <code>200</code>{" "}
-              branch is narrowed to the <code>Book</code> shape — not the union
+              branch is narrowed to the <code>Book</code> shape, not the union
               of every declared response, the actual <code>200</code> one.
               Second, the <code>@ts-expect-error</code> comment in the
               <code>404</code> branch <em>passes</em>: trying to read{" "}
@@ -525,7 +525,7 @@ export default function BlogPostPage() {
 
           <ProjectionStep
             index={3}
-            title="runContractTests(app) — the guardrails you forgot to write"
+            title="runContractTests(app), the guardrails you forgot to write"
             from="app.route({...})"
             to="{ ok, checked, issues }"
           >
@@ -541,7 +541,7 @@ export default function BlogPostPage() {
             <EditorFrame
               files={["apps/api/tests/contract.test.ts"]}
               activeFile="apps/api/tests/contract.test.ts"
-              status="✓ 12 routes checked — all clean"
+              status="✓ 12 routes checked, all clean"
             >
               <CodeBlock language="ts" code={PROJECTION_CONTRACT} />
             </EditorFrame>
@@ -558,7 +558,7 @@ export default function BlogPostPage() {
           <h2>The codegen dance, but the dance is one command</h2>
 
           <p>
-            All right — the three projections above never leave your repo. What
+            All right, the three projections above never leave your repo. What
             about the <em>other</em> consumer of your API, the one written in a
             different repo, possibly by a different team, possibly in a
             different language than yours? That&apos;s where{" "}
@@ -608,9 +608,9 @@ export default function BlogPostPage() {
           <p>
             Here is the part that closes the loop. The frontend lives in a
             different app (<code>apps/web</code> in a monorepo, or a totally
-            separate repo with the client published to a registry — your call).
+            separate repo with the client published to a registry, your call).
             It imports the generated SDK and calls it like any other module. Pay
-            attention to the call shape — <code>path</code> for path params,{" "}
+            attention to the call shape, <code>path</code> for path params,{" "}
             <code>{`{ data, error, response }`}</code> destructure for results:
           </p>
 
@@ -633,7 +633,7 @@ export default function BlogPostPage() {
             <code>number | undefined</code>. If the backend renames{" "}
             <code>title</code> to <code>name</code>, this file refuses to
             compile, and the frontend developer finds out before the PR even
-            opens — not after the user complains.
+            opens, not after the user complains.
           </p>
 
           <h2>The diff that doesn&apos;t exist</h2>
@@ -646,7 +646,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["apps/api/src/routes/books.ts"]}
             activeFile="apps/api/src/routes/books.ts"
-            status="◐ src/routes/books.ts — modified"
+            status="◐ src/routes/books.ts, modified"
           >
             <CodeBlock language="diff" code={DIFF_DEMO} />
           </EditorFrame>
@@ -696,7 +696,7 @@ export default function BlogPostPage() {
 
           <p>
             Code generation has had a bad reputation in the JS world for a long
-            time, and honestly it earned that reputation — most pipelines were
+            time, and honestly it earned that reputation, most pipelines were
             brittle, slow, and produced types that looked like they were
             translated from another language by someone who didn&apos;t want to
             be there. The reason the workflow above works is not that we&apos;re
@@ -723,7 +723,7 @@ export default function BlogPostPage() {
             be the best part of your week.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

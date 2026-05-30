@@ -77,10 +77,10 @@ export default function Page() {
 
 const app = new App({ env: "production" });
 
-// Throws at boot — secret is >= 16 chars, but < 32 bytes.
+// Throws at boot - secret is >= 16 chars, but < 32 bytes.
 app.use(session({ secret: "sixteen-chars-ok" }));
 
-// Also throws — known weak placeholder.
+// Also throws - known weak placeholder.
 app.use(session({ secret: "your-session-secret-for-production" }));
 
 // Generate one with: openssl rand -base64 48
@@ -187,7 +187,7 @@ app.use(session({ secret: process.env.SESSION_SECRET! }));
 // (a) Running behind a trusted reverse proxy (nginx, ALB, Cloudflare):
 const app = new App({ env: "production", trustProxy: true });
 
-// (b) Direct-to-process — ignore forwarded headers:
+// (b) Direct-to-process - ignore forwarded headers:
 const app = new App({ env: "production", trustProxy: false });
 
 // (c) Disable every boot guard (escape hatch):
@@ -206,7 +206,7 @@ const app = new App({ env: "production", secureDefaults: false });`}
           <code>
             session({"{"} secret {"}"})
           </code>{" "}
-          call — regenerate any secret shorter than 32 bytes with{" "}
+          call, regenerate any secret shorter than 32 bytes with{" "}
           <code>openssl rand -base64 48</code>.
         </li>
         <li>

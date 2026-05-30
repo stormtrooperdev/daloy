@@ -54,11 +54,11 @@ const THE_PROBLEM = `# A representative API contract circa "we'll figure it out 
 # - "When you create the payment, give us a callback URL. We'll POST 'something'
 #    back when it's done. Generated SDK? Nope. Contract test? Nope. Vibes? Yes."
 #
-# Three things every grown-up API has — webhooks, callbacks, and polymorphic
-# payloads — and three things the average OpenAPI spec quietly skips.
+# Three things every grown-up API has - webhooks, callbacks, and polymorphic
+# payloads - and three things the average OpenAPI spec quietly skips.
 # That's the gap this post fills.`;
 
-const WEBHOOKS_TOP_LEVEL = `// src/index.ts — top-level webhooks describe events YOU send to consumers.
+const WEBHOOKS_TOP_LEVEL = `// src/index.ts, top-level webhooks describe events YOU send to consumers.
 // They never become a route on your server. They show up in the OpenAPI
 // document and, more importantly, in every generated client SDK.
 import { App, generateOpenAPI } from "@daloyjs/core";
@@ -95,7 +95,7 @@ const app = new App({
             body: z.object({ received: z.literal(true) }),
           },
           410: {
-            description: "Consumer endpoint no longer exists — we stop retrying.",
+            description: "Consumer endpoint no longer exists - we stop retrying.",
           },
         },
       },
@@ -121,7 +121,7 @@ const WEBHOOK_CLIENT_USAGE = `// On the CONSUMER's side, the generated SDK conta
 // "webhooks" key (OpenAPI 3.1 feature; not available in 3.0). Scalar
 // renders it in your /docs UI alongside paths and components.`;
 
-const CALLBACK_PAYMENT = `// src/routes/payments.ts — callbacks describe out-of-band requests YOUR
+const CALLBACK_PAYMENT = `// src/routes/payments.ts, callbacks describe out-of-band requests YOUR
 // API will make back to the consumer. The canonical example: create a
 // payment, get notified later when it settles.
 import { z } from "zod";
@@ -134,9 +134,9 @@ const PaymentCreate = z.object({
 });
 
 const paymentCallbacks: CallbackMap = {
-  // Callback name — appears in the generated client SDK.
+  // Callback name - appears in the generated client SDK.
   paymentSettled: {
-    // Runtime expression — the spec value. Tells consumers WHERE we'll POST.
+    // Runtime expression - the spec value. Tells consumers WHERE we'll POST.
     "{$request.body#/callbackUrl}": {
       method: "POST",
       operationId: "paymentSettledCallback",
@@ -166,7 +166,7 @@ app.route({
   request: { body: PaymentCreate },
   responses: {
     202: {
-      description: "Accepted — payment is pending. Watch for the callback.",
+      description: "Accepted - payment is pending. Watch for the callback.",
       body: z.object({ paymentId: z.string().uuid() }),
     },
   },
@@ -182,7 +182,7 @@ const CALLBACK_WHY = `// Why bother spelling this out in the spec?
 //
 // 2. The request/response bodies attached to the callback are validated
 //    types in the generated SDK. The consumer's endpoint receives
-//    "PaymentSettledCallbackBody" — never "unknown" — and gets to use the
+//    "PaymentSettledCallbackBody" - never "unknown" - and gets to use the
 //    framework's response helpers for the 200 ack.
 //
 // 3. Contract tests on the consumer side can pin the EXACT shape they'll
@@ -193,7 +193,7 @@ const CALLBACK_WHY = `// Why bother spelling this out in the spec?
 //    POST /payments, with its own example payload and response. Onboarding
 //    docs basically write themselves.`;
 
-const DISCRIMINATOR_SIMPLE = `// src/schemas/animal.ts — the bare discriminator() helper.
+const DISCRIMINATOR_SIMPLE = `// src/schemas/animal.ts, the bare discriminator() helper.
 // Use when you already have a hand-rolled JSON schema and want to attach
 // the OpenAPI discriminator object cleanly:
 import { discriminator } from "@daloyjs/core";
@@ -211,7 +211,7 @@ export const Animal = {
   }),
 };`;
 
-const DISCRIMINATED_UNION = `// src/schemas/booking-event.ts — the everyday case: runtime validator +
+const DISCRIMINATED_UNION = `// src/schemas/booking-event.ts, the everyday case: runtime validator +
 // OpenAPI emitter in one. Drop-in for any route's request or response body.
 import { z } from "zod";
 import { discriminatedUnion } from "@daloyjs/core";
@@ -261,7 +261,7 @@ app.route({
   },
 });`;
 
-const JSON_SCHEMA_OUTPUT = `// What \`BookingEvent\` emits into your OpenAPI spec — the part the generated
+const JSON_SCHEMA_OUTPUT = `// What \`BookingEvent\` emits into your OpenAPI spec, the part the generated
 // client SDK reads to produce a real TypeScript tagged union:
 {
   "oneOf": [
@@ -285,7 +285,7 @@ export type BookingEvent =
   | { type: "booking.cancelled"; bookingId: string; reason: "user_requested" | "payment_failed" | "fraud"; refundCents: number }
   | { type: "booking.shipped";   bookingId: string; carrier: "posten" | "bring" | "dhl"; trackingNumber: string };
 
-// apps/web/components/event-feed.tsx — react consumer.
+// apps/web/components/event-feed.tsx - react consumer.
 function EventRow({ event }: { event: BookingEvent }) {
   switch (event.type) {
     case "booking.created":
@@ -549,7 +549,7 @@ export default function BlogPostPage() {
           <p>
             OpenAPI 3.0 had no native concept of &quot;the things this API posts
             to you&quot;. People worked around it by inventing companion specs,
-            prose docs, or — most often — nothing at all. OpenAPI 3.1 added a
+            prose docs, or, most often, nothing at all. OpenAPI 3.1 added a
             top-level <code>webhooks</code> map, which is the spec saying{" "}
             <em>
               here are the requests this API will send, and here is their exact
@@ -567,7 +567,7 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            The webhook is never bound to a path on <em>your</em> server —
+            The webhook is never bound to a path on <em>your</em> server, 
             it&apos;s a contract for consumers. What changes is what falls out
             of <code>pnpm gen</code> on the consumer&apos;s side:
           </p>
@@ -589,7 +589,7 @@ export default function BlogPostPage() {
           <h2>Callbacks: the events YOU make in response to a request</h2>
 
           <p>
-            Webhooks are subscriptions — you set them up out-of-band and they
+            Webhooks are subscriptions, you set them up out-of-band and they
             fire whenever an event happens. Callbacks are different: they are
             out-of-band requests <em>tied to a specific operation</em>. The
             canonical example is payments. The consumer creates a payment with a{" "}
@@ -600,7 +600,7 @@ export default function BlogPostPage() {
           <p>
             The OpenAPI <em>runtime expression</em>{" "}
             <code>{"{$request.body#/callbackUrl}"}</code> tells the spec
-            consumer <em>where the callback URL comes from</em> — which field of
+            consumer <em>where the callback URL comes from</em>: which field of
             which message. That&apos;s the difference between a tool being able
             to generate a mock callback server and a sentence in a README saying
             &quot;put the URL in callbackUrl&quot;.
@@ -675,7 +675,7 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            And the client SDK — the one Hey API generates for you — picks it up
+            And the client SDK, the one Hey API generates for you, picks it up
             as a real tagged union, with <em>exhaustive switch</em> protection
             on the consumer side. This is the bit your future self will thank
             you for:
@@ -694,7 +694,7 @@ export default function BlogPostPage() {
           <p>
             Here is the pattern I keep recommending in design reviews:
             <em> one</em> webhook entry whose body is a discriminated union over
-            every event type. The alternative — one webhook per event type —
+            every event type. The alternative, one webhook per event type, 
             produces an SDK with N near-identical handlers, N opportunities to
             forget signature verification, and N opportunities to disagree with
             yourself about retry semantics. The combo collapses all of that to
@@ -752,7 +752,7 @@ export default function BlogPostPage() {
                 Discriminator mapping is required by some generators.
               </strong>{" "}
               A few SDK generators won&apos;t build proper tagged unions without
-              an explicit mapping. The helpers in DaloyJS emit one by default —
+              an explicit mapping. The helpers in DaloyJS emit one by default, 
               keep it.
             </li>
             <li>
@@ -772,7 +772,7 @@ export default function BlogPostPage() {
             <Link href="/blog/contract-first-without-the-codegen-dance">
               Contract-First Without the Codegen Dance
             </Link>{" "}
-            — same philosophy, different feature surface. For the recipient side
+, same philosophy, different feature surface. For the recipient side
             of any of this, the{" "}
             <Link href="/blog/problem-details-done-right-rfc-9457-errors">
               RFC 9457 errors post
@@ -796,7 +796,7 @@ export default function BlogPostPage() {
             unreasonably grateful.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

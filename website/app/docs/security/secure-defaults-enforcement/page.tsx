@@ -74,7 +74,7 @@ new App({
       <p>
         Any time the flag is off, a once-per-process <code>error</code> log is
         emitted with <code>{`event: "secure_defaults.disabled"`}</code>{" "}
-        enumerating every default it disabled — so the blast radius is loud at
+        enumerating every default it disabled, so the blast radius is loud at
         boot even when the option was set deep in shared configuration:
       </p>
       <ul>
@@ -102,7 +102,7 @@ new App({
         <code>corsCrossOriginGuard: false</code>,{" "}
         <code>crashOnUnhandledRejection: false</code>,{" "}
         <code>trustProxy: false</code>, <code>csrf: &quot;off&quot;</code>)
-        remain available without the production refusal — prefer those when you
+        remain available without the production refusal, prefer those when you
         only need to disable one default rather than the whole surface. Tests
         can reset the audit-log latch via the exported{" "}
         <code>_resetInsecureDefaultsLogForTests()</code> helper, mirroring the
@@ -114,7 +114,7 @@ new App({
         <code>createJwtSigner()</code> and <code>createJwtVerifier()</code> now
         refuse <code>Uint8Array</code> HS-shaped secrets shorter than{" "}
         <strong>32 bytes</strong> at construction time. RFC 7518 §3.2 sets the
-        floor at the hash output size (32 bytes for HS256) — and Daloy applies
+        floor at the hash output size (32 bytes for HS256), and Daloy applies
         the same floor to HS384 and HS512 because a shorter key does not buy a
         stronger HMAC, it only reduces the effective entropy.
       </p>
@@ -123,7 +123,7 @@ new App({
         code={`// ❌ refuses at construction
 createJwtSigner({
   alg: "HS256",
-  key: new Uint8Array(16),        // 16 bytes — too short
+  key: new Uint8Array(16),        // 16 bytes - too short
   maxLifetimeSeconds: 60,
 });
 // JwtError [weak_hs_secret]: jwt(): HS256 secret must be at least 32 bytes
@@ -131,7 +131,7 @@ createJwtSigner({
 
 createJwtVerifier({
   algorithms: ["HS384"],
-  key: new Uint8Array(20),        // 20 bytes — too short
+  key: new Uint8Array(20),        // 20 bytes - too short
 });
 // JwtError [weak_hs_secret]: jwt(): HS* secret must be at least 32 bytes
 // (RFC 7518 §3.2); got 20.
@@ -150,7 +150,7 @@ createJwtSigner({ alg: "HS256", key, maxLifetimeSeconds: 60 });`}
         clickjacking: the <code>X-Frame-Options</code> header (legacy browsers)
         and a CSP <code>frame-ancestors</code> directive (modern spec). The
         helper now refuses to construct when <em>both</em> are disabled
-        simultaneously — that combination silently re-opens the clickjacking
+        simultaneously, that combination silently re-opens the clickjacking
         surface the helper exists to close:
       </p>
       <CodeBlock
@@ -161,7 +161,7 @@ secureHeaders({
   contentSecurityPolicy: false,
 });
 // Error: secureHeaders(): refusing to construct with both frameOptions: false
-// AND no CSP frame-ancestors directive — that disables every clickjacking
+// AND no CSP frame-ancestors directive - that disables every clickjacking
 // defense the helper provides.
 
 // ❌ refuses (CSP string without frame-ancestors directive)
@@ -187,7 +187,7 @@ secureHeaders({
       />
       <p>
         If you only want to disable one of the two defenses, keep the other one
-        on — the helper&apos;s defaults already wire both layers, so the common
+        on, the helper&apos;s defaults already wire both layers, so the common
         case (no options passed) needs no changes.
       </p>
 
@@ -206,7 +206,7 @@ secureHeaders({
             authentication
           </code>{" "}
           is enforced on the <code>@daloyjs</code> org; every account with write
-          access must have a hardware-backed factor (passkey or security key —
+          access must have a hardware-backed factor (passkey or security key, 
           TOTP-only accounts are off-boarded).
         </li>
         <li>

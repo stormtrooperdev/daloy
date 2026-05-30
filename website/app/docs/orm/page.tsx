@@ -90,23 +90,23 @@ app.route({
       <h2>Pick your ORM</h2>
       <ul>
         <li>
-          <Link href="/docs/orm/prisma">Prisma</Link> — schema-first, mature
+          <Link href="/docs/orm/prisma">Prisma</Link>: schema-first, mature
           migrations, great DX.
         </li>
         <li>
-          <Link href="/docs/orm/drizzle">Drizzle ORM</Link> — TypeScript-first,
+          <Link href="/docs/orm/drizzle">Drizzle ORM</Link>: TypeScript-first,
           edge-friendly, SQL-like API.
         </li>
         <li>
-          <Link href="/docs/orm/typeorm">TypeORM</Link> — decorator-based
+          <Link href="/docs/orm/typeorm">TypeORM</Link>: decorator-based
           entities for object-oriented teams.
         </li>
         <li>
-          <Link href="/docs/orm/mikro-orm">MikroORM</Link> — Data Mapper, Unit
+          <Link href="/docs/orm/mikro-orm">MikroORM</Link>: Data Mapper, Unit
           of Work, and Identity Map with first-class TypeScript.
         </li>
         <li>
-          <Link href="/docs/orm/sequelize">Sequelize</Link> — mature Active
+          <Link href="/docs/orm/sequelize">Sequelize</Link>: mature Active
           Record style models with broad SQL dialect support.
         </li>
       </ul>
@@ -121,7 +121,7 @@ app.route({
 
       <ul>
         <li>
-          <Link href="/docs/orm/supabase">Supabase</Link> — platform client for
+          <Link href="/docs/orm/supabase">Supabase</Link>: platform client for
           hosted Postgres + auth via <code>@supabase/supabase-js</code>.
         </li>
       </ul>

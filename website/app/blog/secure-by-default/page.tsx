@@ -11,7 +11,7 @@ const POST = {
   title:
     "Secure by Default: The Defaults DaloyJS Ships So You Don't Have To Remember Them",
   description:
-    "A tour of the always-on defenses in the DaloyJS request path — bounded body reads, prototype-pollution-safe JSON, CRLF sanitization, path-traversal rejection, request timeouts, problem+json with prod redaction — plus the opt-in upgrades worth turning on today.",
+    "A tour of the always-on defenses in the DaloyJS request path, bounded body reads, prototype-pollution-safe JSON, CRLF sanitization, path-traversal rejection, request timeouts, problem+json with prod redaction, plus the opt-in upgrades worth turning on today.",
   date: "2026-05-18",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
@@ -99,7 +99,7 @@ const dangerous = '{ "user": "alice", "__proto__": { "isAdmin": true } }';
 const safe = safeJsonParse(dangerous) as { user: string };
 
 console.log(safe.user);                 // "alice"
-// @ts-expect-error — isAdmin never made it through the reviver
+// @ts-expect-error - isAdmin never made it through the reviver
 console.log(({} as any).isAdmin);       // undefined`;
 
 const RATE_LIMIT_REDIS = `// src/app.ts
@@ -135,7 +135,7 @@ export const app = new App();
 
 app.use(
   secureHeaders({
-    // CSP with a per-request nonce — generated for every response.
+    // CSP with a per-request nonce - generated for every response.
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
@@ -186,7 +186,7 @@ app.route({
 const BASIC_AUTH = `// src/admin.ts
 import { basicAuth, timingSafeEqual } from "@daloyjs/core";
 
-// Use timingSafeEqual — never raw string ===.
+// Use timingSafeEqual - never raw string ===.
 app.use(
   "/admin",
   basicAuth({
@@ -245,7 +245,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — purely visual "VS Code-ish" chrome around a code sample.
+ * EditorFrame - purely visual "VS Code-ish" chrome around a code sample.
  * Same component used in the launch post, kept local to the page so each
  * post stays self-contained and easy to delete if it ages badly.
  */
@@ -309,7 +309,7 @@ function EditorFrame({
 }
 
 /**
- * DefenseCard — compact, scannable summary box used between sections so a
+ * DefenseCard - compact, scannable summary box used between sections so a
  * security-minded reader can skim. Uses Tailwind + the same tokens as the
  * rest of the site.
  */
@@ -406,7 +406,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            This post is the tour. Part one is the always-on stuff — the
+            This post is the tour. Part one is the always-on stuff, the
             defenses the framework enforces whether you remembered to ask for
             them or not. Part two is the opt-in upgrades that are worth turning
             on today, in five lines each. Coffee in Oslo is expensive, so
@@ -423,18 +423,18 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/app.ts"]}
             activeFile="src/app.ts"
-            status="● src/app.ts — secure-by-default"
+            status="● src/app.ts, secure-by-default"
           >
             <CodeBlock language="ts" code={APP_CONSTRUCTOR} />
           </EditorFrame>
 
           <p>
-            Two named arguments. The rest is invisible — and intentional. The
+            Two named arguments. The rest is invisible, and intentional. The
             framework is, at this point, already enforcing six different things
             for you. Let&apos;s walk them.
           </p>
 
-          <h2>Part 1 — Always on, no flag required</h2>
+          <h2>Part 1: Always on, no flag required</h2>
 
           <h3>1. Bounded body reads</h3>
 
@@ -457,7 +457,7 @@ export default function BlogPostPage() {
           <p>
             DaloyJS caps every body at <code>bodyLimitBytes</code> (default 1
             MiB), and the response when you go over is an{" "}
-            <code>application/problem+json</code> document — not a stack trace,
+            <code>application/problem+json</code> document, not a stack trace,
             not an HTML page, not a string with the literal word{" "}
             <code>undefined</code> in it:
           </p>
@@ -485,7 +485,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/security.ts", "scripts/proto-test.ts"]}
             activeFile="scripts/proto-test.ts"
-            status="✓ node --test — 1 passing (proto-pollution blocked)"
+            status="✓ node --test, 1 passing (proto-pollution blocked)"
           >
             <CodeBlock language="ts" code={PROTO_POLLUTION} />
           </EditorFrame>
@@ -504,16 +504,16 @@ export default function BlogPostPage() {
             name="sanitizeHeaderName / sanitizeHeaderValue"
             on="always"
             status="throws at middleware construction"
-            trigger="CR, LF, and NUL bytes cannot enter a response header. The check runs when you build middleware like basicAuth(), csrf(), or session() — so injection attempts fail loudly at boot, not silently in prod."
+            trigger="CR, LF, and NUL bytes cannot enter a response header. The check runs when you build middleware like basicAuth(), csrf(), or session(), so injection attempts fail loudly at boot, not silently in prod."
           />
 
           <p>
             Response-splitting attacks aren&apos;t the front page of OWASP
-            anymore because frameworks finally started sanitizing headers — but
+            anymore because frameworks finally started sanitizing headers, but
             only some frameworks, and only on some paths. We do it everywhere a
             header is constructed from configuration: cookie names, realms,
             paths, domains. If your config contains <code>\\r\\n</code> by
-            accident — say, because a yaml file was pasted weird — your app
+            accident, say, because a yaml file was pasted weird, your app
             refuses to start. That&apos;s a feature.
           </p>
 
@@ -528,7 +528,7 @@ export default function BlogPostPage() {
 
           <p>
             You can argue all day whether your framework should be normalizing
-            paths or whether your reverse proxy should — but in practice both of
+            paths or whether your reverse proxy should, but in practice both of
             you should, because you don&apos;t know which one of you is going to
             be misconfigured next quarter. We reject the obvious traversal
             shapes at routing time. It costs you nothing and removes a whole
@@ -541,7 +541,7 @@ export default function BlogPostPage() {
             name="requestTimeoutMs"
             on="always"
             status="408 Request Timeout"
-            trigger="Default 30s. Set 0 to disable (please don't). Handlers can read ctx.request.signal — a real AbortSignal — to cancel downstream fetches and DB queries cleanly."
+            trigger="Default 30s. Set 0 to disable (please don't). Handlers can read ctx.request.signal, a real AbortSignal, to cancel downstream fetches and DB queries cleanly."
           />
 
           <p>
@@ -577,7 +577,7 @@ export default function BlogPostPage() {
             dev you wants to know. Prod you doesn&apos;t leak.
           </p>
 
-          <h2>Part 2 — Opt-in upgrades worth turning on today</h2>
+          <h2>Part 2: Opt-in upgrades worth turning on today</h2>
 
           <p>
             These don&apos;t live in the default constructor because they are
@@ -586,7 +586,7 @@ export default function BlogPostPage() {
             to.
           </p>
 
-          <h3>secureHeaders() — CSP nonce + Trusted Types</h3>
+          <h3>secureHeaders(): CSP nonce + Trusted Types</h3>
 
           <DefenseCard
             name="secureHeaders()"
@@ -596,8 +596,8 @@ export default function BlogPostPage() {
           />
 
           <p>
-            If your app renders any HTML at all — even one server-rendered
-            template, even one error page — you want CSP, and you want it with a
+            If your app renders any HTML at all, even one server-rendered
+            template, even one error page, you want CSP, and you want it with a
             real nonce, not the <code>unsafe-inline</code> escape hatch that
             half the internet runs on. Here&apos;s how you get the strict
             version, with Trusted Types on top to harden DOM sinks against XSS:
@@ -619,7 +619,7 @@ export default function BlogPostPage() {
             <em>for</em>.
           </p>
 
-          <h3>csrf() — double-submit and Fetch-Metadata, together</h3>
+          <h3>csrf(): double-submit and Fetch-Metadata, together</h3>
 
           <DefenseCard
             name="csrf()"
@@ -648,12 +648,12 @@ export default function BlogPostPage() {
           <p>
             The cookie name uses the <code>__Host-</code> prefix on purpose. It
             forces <code>Secure</code>, no <code>Domain=</code>, and{" "}
-            <code>Path=/</code> — three rules that the browser enforces for you
+            <code>Path=/</code>: three rules that the browser enforces for you
             instead of trusting you to remember. We like making the browser do
             our job.
           </p>
 
-          <h3>basicAuth() — when you just need a wall in front of /admin</h3>
+          <h3>basicAuth(): when you just need a wall in front of /admin</h3>
 
           <DefenseCard
             name="basicAuth()"
@@ -679,7 +679,7 @@ export default function BlogPostPage() {
           <p>
             The two important details are the order of operations and the
             comparison function. <strong>Always</strong> run both comparisons,
-            and <strong>always</strong> use <code>timingSafeEqual</code> — not
+            and <strong>always</strong> use <code>timingSafeEqual</code>: not
             because someone is going to time-attack your admin panel from across
             the planet, but because writing security code with <code>===</code>{" "}
             is how you develop unfortunate habits that follow you into other
@@ -687,7 +687,7 @@ export default function BlogPostPage() {
           </p>
 
           <h3>
-            session() — signed cookies, key rotation, GDPR-friendly defaults
+            session(), signed cookies, key rotation, GDPR-friendly defaults
           </h3>
 
           <DefenseCard
@@ -698,8 +698,8 @@ export default function BlogPostPage() {
           />
 
           <p>
-            The session middleware has one parameter you must provide — a
-            signing secret — and it accepts an array so you can rotate without a
+            The session middleware has one parameter you must provide, a
+            signing secret, and it accepts an array so you can rotate without a
             flag day. The default cookie shape is opinionated, in the way I wish
             more frameworks were:
           </p>
@@ -720,7 +720,7 @@ export default function BlogPostPage() {
             <code>SessionStore</code> interface.
           </p>
 
-          <h3>rateLimit() — with a real Redis store for multi-instance apps</h3>
+          <h3>rateLimit(): with a real Redis store for multi-instance apps</h3>
 
           <DefenseCard
             name="rateLimit() + redisRateLimitStore"
@@ -746,7 +746,7 @@ export default function BlogPostPage() {
 
           <p>
             Two details worth pausing on. First, <code>trustProxyHeaders</code>{" "}
-            is <code>false</code> by default — because if you turn it on without
+            is <code>false</code> by default, because if you turn it on without
             a sanitizing proxy in front, an attacker can spoof{" "}
             <code>x-forwarded-for</code> and rate-limit themselves into
             invisibility. Second, the Redis adapter is <em>fail-open</em> by
@@ -815,7 +815,7 @@ export default function BlogPostPage() {
                   <td className="px-4 py-2 font-mono">secureHeaders()</td>
                   <td className="px-4 py-2">opt-in</td>
                   <td className="px-4 py-2">strict CSP + HSTS + COOP/CORP</td>
-                  <td className="px-4 py-2">—</td>
+                  <td className="px-4 py-2">-</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2 font-mono">csrf()</td>
@@ -837,7 +837,7 @@ export default function BlogPostPage() {
                   <td className="px-4 py-2">
                     __Host- cookie, HMAC-SHA256, key rotation
                   </td>
-                  <td className="px-4 py-2">—</td>
+                  <td className="px-4 py-2">-</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2 font-mono">rateLimit() + Redis</td>
@@ -856,10 +856,10 @@ export default function BlogPostPage() {
             argument for &quot;please make my business logic correct&quot;, and
             if there was, I&apos;d have shipped one to my younger self by
             registered mail. What these defaults <em>do</em> get you is the
-            comfort of knowing that the <strong>boring</strong> bugs — the ones
+            comfort of knowing that the <strong>boring</strong> bugs, the ones
             we have collectively known about for fifteen years, the ones that
             show up on every pentest report under &quot;Medium&quot; because the
-            auditor is tired — those are already handled. Your brain is free to
+            auditor is tired, those are already handled. Your brain is free to
             spend its limited budget on the actually-hard parts of your product.
           </p>
 
@@ -867,7 +867,7 @@ export default function BlogPostPage() {
             If you want to go deeper, the{" "}
             <Link href="/docs/security">security docs</Link> have the full
             surface area and the threat-model notes. And if you find a gap,
-            please tell us — <code>SECURITY.md</code> in the repo has a real
+            please tell us, <code>SECURITY.md</code> in the repo has a real
             disclosure address, not a contact form that forwards to{" "}
             <code>/dev/null</code>.
           </p>
@@ -877,7 +877,7 @@ export default function BlogPostPage() {
             staging and watch your error responses get politely quiet.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

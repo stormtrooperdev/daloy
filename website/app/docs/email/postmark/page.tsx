@@ -52,10 +52,10 @@ export default function Page() {
           Decide which <strong>Message Stream</strong> you&apos;ll use:
           <ul>
             <li>
-              <code>outbound</code> — default transactional stream
+              <code>outbound</code>: default transactional stream
             </li>
             <li>
-              <code>broadcast</code> — bulk/marketing (must be enabled on the server)
+              <code>broadcast</code>: bulk/marketing (must be enabled on the server)
             </li>
           </ul>
         </li>
@@ -177,7 +177,7 @@ app.route({
       <p>
         Use <code>client.sendEmailBatch([...])</code> or{" "}
         <code>client.sendEmailBatchWithTemplates([...])</code> to send up to 500 messages per
-        request — the response is an array with one result per message so you can inspect
+        request, the response is an array with one result per message so you can inspect
         per-recipient errors.
       </p>
 

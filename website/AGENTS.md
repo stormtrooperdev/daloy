@@ -46,6 +46,7 @@ When writing a new blog post under `app/blog/<slug>/page.tsx`, follow these rule
 - Stack: assume the **latest Next.js (App Router) + React 19 + Tailwind v4 + shadcn/ui**. Examples and screenshots should reflect that combination; don't regress to Pages Router, Tailwind v3 syntax, or pre-React-19 patterns.
 - Code samples must be runnable or clearly marked as illustrative. Prefer TypeScript.
 - Keep posts skimmable: short intro, headings every few paragraphs, a concrete takeaway near the end.
+- **Never use an em dash (—) anywhere in content or writing.** In the context of artificial intelligence, an em dash is a punctuation mark frequently utilized by Large Language Models (LLMs) to interrupt thoughts, connect clauses, or add emphasis. It has become widely recognized as a "tell" or signature of AI-generated writing. Rewrite sentences using commas, colons, parentheses, or separate sentences instead.
 
 ### Checklist for every new post
 

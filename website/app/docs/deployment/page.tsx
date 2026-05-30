@@ -115,7 +115,7 @@ export default function Page() {
           Wire your structured logger and propagate <code>request-id</code> to
           downstream calls.
         </li>
-        <li>Run contract tests in CI — fail the build if the spec drifts.</li>
+        <li>Run contract tests in CI, fail the build if the spec drifts.</li>
         <li>
           Use <code>pnpm install --frozen-lockfile</code> in CI; never{" "}
           <code>pnpm install</code>.
@@ -165,7 +165,7 @@ CMD ["dist/server.js"]`}
         >
           Sigstore Cosign
         </a>{" "}
-        (keyless / OIDC — no long-lived signing key), generates an SPDX SBOM for
+        (keyless / OIDC, no long-lived signing key), generates an SPDX SBOM for
         the image, and uploads it as a Cosign attestation (
         <code>--type spdxjson</code>). The job grants{" "}
         <code>id-token: write</code> alongside <code>packages: write</code>; the
@@ -230,7 +230,7 @@ await app.shutdown(15_000);`}
         </li>
         <li>
           Make DaloyJS&apos;s <code>keepAliveTimeout</code>{" "}
-          <strong>greater</strong> than the LB&apos;s — Node adapter does this
+          <strong>greater</strong> than the LB&apos;s, Node adapter does this
           for you.
         </li>
       </ul>

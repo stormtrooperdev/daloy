@@ -29,7 +29,7 @@ export default function Page() {
         requests), turn off the burners safely (graceful shutdown with
         <code>Connection: close</code>), and put a &quot;closed&quot; sign on
         the door (<code>healthcheck</code>/<code>readinesscheck</code>) so the
-        next courier knows to come back later — not to hammer on the locked
+        next courier knows to come back later, not to hammer on the locked
         door.
       </blockquote>
       <p>
@@ -58,7 +58,7 @@ export default function Page() {
       <CodeBlock
         code={`const app = new App({ env: "production" });
 
-// Trigger a graceful shutdown — drain in-flight for up to 10s, then run onClose hooks.
+// Trigger a graceful shutdown - drain in-flight for up to 10s, then run onClose hooks.
 await app.close(10_000, "SIGTERM");
 
 // New requests during the drain window:
@@ -70,7 +70,7 @@ await app.close(10_000, "SIGTERM");
       <p>
         On the Node adapter, <code>serve(app)</code> registers an
         idle-connection close hook that calls{" "}
-        <code>server.closeIdleConnections()</code> the moment draining begins —
+        <code>server.closeIdleConnections()</code> the moment draining begins, 
         keep-alive sockets without an in-flight request are killed immediately,
         without affecting sockets that are still serving a request. Custom
         adapters can register the same hook via{" "}
@@ -87,7 +87,7 @@ await app.close(10_000, "SIGTERM");
         <code>unhandledRejection</code> and <code>uncaughtException</code> that
         log <code>fatal</code> through the pluggable logger and call{" "}
         <code>process.exit(1)</code>. The framework deliberately avoids the
-        &quot;swallow and keep running&quot; anti-pattern — a crashed process is
+        &quot;swallow and keep running&quot; anti-pattern, a crashed process is
         easier to reason about than a zombie one. Defaults:
       </p>
       <ul>
@@ -161,7 +161,7 @@ app.readinesscheck({
         <code>
           new App({"{"} crashOnUnhandledRejection: false {"}"})
         </code>
-        . Health and readiness routes are opt-in — no auto-registration happens,
+        . Health and readiness routes are opt-in, no auto-registration happens,
         the framework only flips behaviour when you call{" "}
         <code>app.healthcheck()</code> / <code>app.readinesscheck()</code>{" "}
         explicitly.

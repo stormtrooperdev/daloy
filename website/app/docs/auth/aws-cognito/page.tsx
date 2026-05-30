@@ -32,7 +32,7 @@ export default function Page() {
         <a href="https://github.com/awslabs/aws-jwt-verify" target="_blank" rel="noreferrer">
           <code>aws-jwt-verify</code>
         </a>{" "}
-        library — pure TypeScript, zero runtime dependencies, and edge-runtime
+        library, pure TypeScript, zero runtime dependencies, and edge-runtime
         compatible via Web Crypto.
       </p>
 
@@ -52,7 +52,7 @@ export default function Page() {
         <li>
           Enable a hosted UI domain or use the OAuth 2.0 authorization-code
           flow from your client app. Your DaloyJS API only needs to verify the
-          resulting access token — it never sees passwords.
+          resulting access token, it never sees passwords.
         </li>
       </ol>
 
@@ -161,7 +161,7 @@ app.route({
       <ul>
         <li>
           <strong>Access tokens</strong> carry <code>scope</code> (space-separated
-          string) and <code>cognito:groups</code> — use them for API
+          string) and <code>cognito:groups</code>: use them for API
           authorization.
         </li>
         <li>

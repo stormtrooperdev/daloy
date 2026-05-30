@@ -10,13 +10,13 @@ const POST = {
   slug: "problem-details-done-right-rfc-9457-errors",
   title: "Problem Details Done Right: RFC 9457 Errors in DaloyJS",
   description:
-    "Why every framework needs a predictable error contract — and how DaloyJS uses RFC 9457 application/problem+json for HttpError, ValidationError, UnauthorizedError, TooManyRequestsError, and the rest, with automatic 5xx redaction in production and a Retry-After story that just works.",
+    "Why every framework needs a predictable error contract, and how DaloyJS uses RFC 9457 application/problem+json for HttpError, ValidationError, UnauthorizedError, TooManyRequestsError, and the rest, with automatic 5xx redaction in production and a Retry-After story that just works.",
   date: "2026-05-28",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
   authorBio:
-    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has spent more of his career parsing other people's error responses than writing his own — would prefer to fix that, for everyone.",
+    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has spent more of his career parsing other people's error responses than writing his own, would prefer to fix that, for everyone.",
 };
 
 export const metadata = buildMetadata({
@@ -63,7 +63,7 @@ const BAD_OLD_WAY = `// What most JSON APIs ship today. Sound familiar?
 // just to know where to grab the message from. The mobile app skips that
 // and renders "Something went wrong" for every 4xx. Everyone is sad.`;
 
-const PROBLEM_DETAILS_SHAPE = `// RFC 9457 — Problem Details for HTTP APIs.
+const PROBLEM_DETAILS_SHAPE = `// RFC 9457, Problem Details for HTTP APIs.
 // (The successor to RFC 7807, same shape, clearer language.)
 //
 // One Content-Type: application/problem+json
@@ -75,11 +75,11 @@ interface ProblemDetails {
   status:   number;   // HTTP status code, mirrored from the response line
   detail?:  string;   // Optional human-readable explanation for THIS occurrence
   instance?: string;  // Optional URI identifying THIS specific occurrence
-  // Plus any number of extension members — like \`errors\` for field-level issues.
+  // Plus any number of extension members - like \`errors\` for field-level issues.
   [extension: string]: unknown;
 }`;
 
-const HTTP_ERROR_BASIC = `// src/routes/books.ts — throw, don't return.
+const HTTP_ERROR_BASIC = `// src/routes/books.ts, throw, don't return.
 import {
   NotFoundError,
   BadRequestError,
@@ -115,7 +115,7 @@ Content-Type: application/problem+json
   "detail": "No book with id 0192a8b3-9c5f-71d7-9a07-e0c0baa3f97e"
 }`;
 
-const VALIDATION_ON_WIRE = `// Schema validation failure — automatic, no handler involvement.
+const VALIDATION_ON_WIRE = `// Schema validation failure, automatic, no handler involvement.
 HTTP/1.1 422 Unprocessable Entity
 Content-Type: application/problem+json
 
@@ -131,7 +131,7 @@ Content-Type: application/problem+json
   ]
 }`;
 
-const VALIDATION_FRONTEND = `// apps/web/lib/api.ts — one helper, all errors.
+const VALIDATION_FRONTEND = `// apps/web/lib/api.ts, one helper, all errors.
 import type { ProblemDetails } from "@daloyjs/core";
 
 export async function api<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -169,7 +169,7 @@ export class ApiError extends Error {
   }
 }`;
 
-const VALIDATION_FORM_USAGE = `// apps/web/components/book-form.tsx — react-hook-form, one render path.
+const VALIDATION_FORM_USAGE = `// apps/web/components/book-form.tsx, react-hook-form, one render path.
 async function onSubmit(values: BookFormValues) {
   try {
     await api("/books", { method: "POST", body: JSON.stringify(values) });
@@ -182,14 +182,14 @@ async function onSubmit(values: BookFormValues) {
       return;
     }
     if (err instanceof ApiError && err.isRateLimited()) {
-      toast.warn("Slow down a little — try again in a moment.");
+      toast.warn("Slow down a little - try again in a moment.");
       return;
     }
     toast.error(err instanceof Error ? err.message : "Unknown error");
   }
 }`;
 
-const RATE_LIMIT_HEADER = `// Rate-limit example — note the response header, not just the body.
+const RATE_LIMIT_HEADER = `// Rate-limit example, note the response header, not just the body.
 HTTP/1.1 429 Too Many Requests
 Content-Type: application/problem+json
 Retry-After: 30
@@ -206,7 +206,7 @@ Retry-After: 30
 //
 //   throw new TooManyRequestsError(30);`;
 
-const UNAUTHORIZED = `// Unauthorized vs Forbidden — the distinction nobody bothers with.
+const UNAUTHORIZED = `// Unauthorized vs Forbidden, the distinction nobody bothers with.
 // The framework picks the right one; you just throw it.
 
 // Endpoint behind bearerAuth, no token attached:
@@ -261,10 +261,10 @@ Content-Type: application/problem+json
   "status": 500,
   "instance": "urn:request:01J2X3K6V0H8YEHMV7M2WD5XYJ"
 }
-# The detail is gone from the response. It's NOT gone from your logs —
+# The detail is gone from the response. It's NOT gone from your logs -
 # it's still there, correlated to the same urn:request: instance.`;
 
-const LOG_CORRELATION = `// src/app.ts — the logger redacts NOTHING.
+const LOG_CORRELATION = `// src/app.ts, the logger redacts NOTHING.
 app.useOnError(async (err, ctx) => {
   if (err instanceof HttpError) {
     ctx.log.warn(
@@ -288,11 +288,11 @@ app.useOnError(async (err, ctx) => {
 });
 
 // In Datadog / Loki / Honeycomb you filter on requestId. The user gave you
-// a screenshot of "Internal Server Error · urn:request:01J2X3..." — you
+// a screenshot of "Internal Server Error · urn:request:01J2X3..." - you
 // paste that ULID into the log query and the full \`detail\` is right there.
 // No more "can you reproduce it?".`;
 
-const CUSTOM_ERROR_TYPE = `// src/errors/seat-unavailable.ts — your own domain error.
+const CUSTOM_ERROR_TYPE = `// src/errors/seat-unavailable.ts, your own domain error.
 import { HttpError } from "@daloyjs/core";
 
 export class SeatUnavailableError extends HttpError {
@@ -324,7 +324,7 @@ export class SeatUnavailableError extends HttpError {
 // The frontend can branch on type === "https://booking.example.com/errors/seat-unavailable"
 // and trigger the "pick a different seat" flow. No new code in the framework.`;
 
-const CONTRACT_TEST = `// tests/books.contract.test.ts — RFC 9457 makes contract tests trivial.
+const CONTRACT_TEST = `// tests/books.contract.test.ts, RFC 9457 makes contract tests trivial.
 import { describe, it, expect } from "vitest";
 import { runContractTests } from "@daloyjs/core/testing";
 import { app } from "../src/app";
@@ -346,7 +346,7 @@ it("getBook returns RFC 9457 on missing id", async () => {
 // generated OpenAPI document, so a new error response in your handler
 // can't escape into prod without showing up in the contract first.`;
 
-const OPENAPI_HINT = `// generated/openapi.json — every response slot inherits the same schema.
+const OPENAPI_HINT = `// generated/openapi.json, every response slot inherits the same schema.
 {
   "components": {
     "responses": {
@@ -455,7 +455,7 @@ function EditorFrame({
 }
 
 /**
- * ErrorRow — single row of the built-in error catalogue.
+ * ErrorRow - single row of the built-in error catalogue.
  */
 function ErrorRow({
   name,
@@ -541,8 +541,8 @@ export default function BlogPostPage() {
             freshly-renamed successor to RFC 7807). One Content-Type, one
             document shape, one set of optional fields, and you can build
             <em> one</em> client-side error helper that works for every
-            endpoint. DaloyJS uses it for every error response — not sometimes,
-            every time — and this post is the tour.
+            endpoint. DaloyJS uses it for every error response, not sometimes,
+            every time, and this post is the tour.
           </p>
 
           <h2>Why the &quot;everyone invents their own&quot; pattern hurts</h2>
@@ -570,14 +570,14 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["@daloyjs/core · errors.ts"]}
             activeFile="@daloyjs/core · errors.ts"
-            status="ProblemDetails — required core + open-ended extensions"
+            status="ProblemDetails, required core + open-ended extensions"
           >
             <CodeBlock language="ts" code={PROBLEM_DETAILS_SHAPE} />
           </EditorFrame>
 
           <p>
             That&apos;s it. Three required fields. Two optional. Anything else
-            is an extension member you define yourself — and the framework uses{" "}
+            is an extension member you define yourself, and the framework uses{" "}
             <code>errors</code> as the conventional spot for field-level
             validation issues. The Content-Type{" "}
             <code>application/problem+json</code> tells the client (and any
@@ -596,7 +596,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/routes/books.ts"]}
             activeFile="src/routes/books.ts"
-            status="throw NotFoundError(...) — never return a 404 by hand"
+            status="throw NotFoundError(...), never return a 404 by hand"
           >
             <CodeBlock language="ts" code={HTTP_ERROR_BASIC} />
           </EditorFrame>
@@ -614,13 +614,13 @@ export default function BlogPostPage() {
           <p>
             The framework ships an HttpError subclass for every status code you
             actually use. You import the one you want and throw it. Status,
-            title, type URI, and headers — handled.
+            title, type URI, and headers, handled.
           </p>
 
           <ErrorRow
             name="HttpError"
             status={0}
-            detail="Base class — instantiate directly only for unusual status codes or fully-custom problem documents."
+            detail="Base class, instantiate directly only for unusual status codes or fully-custom problem documents."
           />
           <ErrorRow
             name="BadRequestError"
@@ -682,7 +682,7 @@ export default function BlogPostPage() {
 
           <p>
             You don&apos;t throw <code>ValidationError</code> by hand most of
-            the time — the framework throws it for you the moment a request
+            the time, the framework throws it for you the moment a request
             body, params, query, or headers fail their declared schema. It
             carries an <code>errors</code> array of{" "}
             <code>&#123; path, message &#125;</code> records, which is the shape
@@ -723,7 +723,7 @@ export default function BlogPostPage() {
           <p>
             <code>TooManyRequestsError</code> takes an optional{" "}
             <code>retryAfterSeconds</code> argument. The framework turns it into
-            a real <code>Retry-After</code> header on the response — so your
+            a real <code>Retry-After</code> header on the response, so your
             retry-after-aware fetch helper doesn&apos;t need to re-parse the
             body to figure out how long to back off:
           </p>
@@ -731,7 +731,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["HTTP/1.1 429 · response"]}
             activeFile="HTTP/1.1 429 · response"
-            status="Retry-After header + problem+json body — both correct"
+            status="Retry-After header + problem+json body, both correct"
           >
             <CodeBlock language="http" code={RATE_LIMIT_HEADER} />
           </EditorFrame>
@@ -764,7 +764,7 @@ export default function BlogPostPage() {
             with status ≥ 500 has its <code>detail</code> field{" "}
             <em>stripped from the response</em> before it leaves the server. The
             user gets the type, the title, the status, and a request-id-shaped{" "}
-            <code>instance</code> — enough to file a support ticket. The server
+            <code>instance</code>: enough to file a support ticket. The server
             logs keep the full detail.
           </p>
 
@@ -835,7 +835,7 @@ export default function BlogPostPage() {
             TypeScript type. The frontend autocompletes{" "}
             <code>problem.type</code>, <code>problem.detail</code>,{" "}
             <code>problem.errors</code>. No drift between the docs, the wire
-            format, and the types — they are literally the same source.
+            format, and the types, they are literally the same source.
           </p>
 
           <EditorFrame
@@ -849,13 +849,13 @@ export default function BlogPostPage() {
           <h2>One paragraph of honest caveats</h2>
 
           <p>
-            Problem Details isn&apos;t a magic protocol — it&apos;s a promise
+            Problem Details isn&apos;t a magic protocol, it&apos;s a promise
             about response shape. It does nothing if you bypass it and return
             your own ad-hoc JSON from a handler (please don&apos;t). It does
             nothing for non-JSON error pages from upstream proxies (your
             CDN&apos;s 502 HTML is still HTML; deal with it in the client). And
             the <code>type</code> URI is a <em>stable identifier</em>, not a
-            link the client necessarily dereferences — treat it like an enum
+            link the client necessarily dereferences, treat it like an enum
             value. Beyond those: it&apos;s the closest thing to a free lunch the
             HTTP standards world has given us in years.
           </p>
@@ -865,8 +865,8 @@ export default function BlogPostPage() {
           <p>
             The full reference for every built-in error class is in the{" "}
             <Link href="/docs/errors">errors docs</Link>. If you&apos;re still
-            wiring up the surrounding pieces — typed client, sessions, rate
-            limiting — the{" "}
+            wiring up the surrounding pieces, typed client, sessions, rate
+            limiting, the{" "}
             <Link href="/blog/contract-first-without-the-codegen-dance">
               contract-first
             </Link>{" "}
@@ -880,7 +880,7 @@ export default function BlogPostPage() {
             Whatever the number is, the target is one.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

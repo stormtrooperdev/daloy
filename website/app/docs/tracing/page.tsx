@@ -144,7 +144,7 @@ otelTracing({
         <li>
           <strong>No global side effects.</strong> The hook never touches{" "}
           <code>globalThis</code>, never installs a propagator, and never
-          imports an OTel SDK — it stays adapter-portable.
+          imports an OTel SDK, it stays adapter-portable.
         </li>
         <li>
           <strong>Single end.</strong> If a handler throws, the same span is
@@ -155,7 +155,7 @@ otelTracing({
         <li>
           <strong>Composes with other hooks.</strong> Combine{" "}
           <code>otelTracing(...)</code> with <code>requestId(...)</code>,{" "}
-          <code>secureHeaders(...)</code>, etc. — DaloyJS merges global, group,
+          <code>secureHeaders(...)</code>, etc., DaloyJS merges global, group,
           and per-route hooks pipeline-style.
         </li>
       </ul>

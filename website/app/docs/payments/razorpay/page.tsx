@@ -28,7 +28,7 @@ export default function Page() {
         <a href="https://razorpay.com/" target="_blank" rel="noreferrer">
           Razorpay
         </a>{" "}
-        is the default payment stack for India — <strong>UPI</strong>, cards, netbanking,
+        is the default payment stack for India, <strong>UPI</strong>, cards, netbanking,
         wallets, EMI, and BNPL through one API. This guide uses the official{" "}
         <a
           href="https://github.com/razorpay/razorpay-node"
@@ -46,9 +46,9 @@ export default function Page() {
       <ul>
         <li>
           <strong>Two signatures, not one.</strong> Razorpay signs two different things:
-          (1) the client-side checkout result — verify with{" "}
+          (1) the client-side checkout result, verify with{" "}
           <code>validatePaymentVerification</code> using your <em>key secret</em>; (2) the
-          server-side webhook — verify with <code>validateWebhookSignature</code> using
+          server-side webhook, verify with <code>validateWebhookSignature</code> using
           your <em>webhook secret</em>. They&apos;re different secrets and different
           payloads.
         </li>
@@ -60,7 +60,7 @@ export default function Page() {
         </li>
         <li>
           <strong>Amounts are paise.</strong> ₹500.00 →{" "}
-          <code>{`{ amount: 50000, currency: "INR" }`}</code>. Don&apos;t pass floats — the
+          <code>{`{ amount: 50000, currency: "INR" }`}</code>. Don&apos;t pass floats, the
           API rejects them.
         </li>
         <li>
@@ -86,7 +86,7 @@ export default function Page() {
         </li>
         <li>
           Account &amp; Settings → API Keys → Generate Test Key. Save the{" "}
-          <code>key_id</code> and <code>key_secret</code> — the secret is shown once.
+          <code>key_id</code> and <code>key_secret</code>: the secret is shown once.
         </li>
         <li>
           Account &amp; Settings → Webhooks → Add new. Point it at your DaloyJS endpoint and
@@ -223,7 +223,7 @@ declare module "@daloyjs/core" {
       />
       <p>
         The verifier helpers live at <code>razorpay/dist/utils/razorpay-utils</code> in the
-        published bundle — Razorpay&apos;s own README points there. They&apos;re plain
+        published bundle, Razorpay&apos;s own README points there. They&apos;re plain
         functions over <code>node:crypto</code>; no SDK instance needed.
       </p>
 
@@ -383,7 +383,7 @@ app.route({
 });`}
       />
       <p>
-        Always return 200 once the signature checks out — even for events you don&apos;t
+        Always return 200 once the signature checks out, even for events you don&apos;t
         handle. Razorpay retries non-2xx responses with exponential backoff for up to 24
         hours.
       </p>
@@ -405,7 +405,7 @@ await state.razorpay.refund({
       <h2>Runtimes</h2>
       <p>
         The <code>razorpay</code> SDK ships CJS and depends on Node&apos;s{" "}
-        <code>https</code> module — it runs on Node 18+ but is not edge-runtime compatible.
+        <code>https</code> module, it runs on Node 18+ but is not edge-runtime compatible.
         For Cloudflare Workers or Vercel Edge, hit{" "}
         <code>https://api.razorpay.com/v1</code> directly with <code>fetch</code> and Basic
         auth (<code>Authorization: Basic base64(key_id:key_secret)</code>). The two

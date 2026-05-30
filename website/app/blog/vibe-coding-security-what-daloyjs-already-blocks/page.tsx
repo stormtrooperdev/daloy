@@ -10,7 +10,7 @@ const POST = {
   title:
     "Vibe Coding Security: What DaloyJS Already Blocks Before Your AI Even Ships",
   description:
-    "Aikido's 'WTF is Vibe Coding Security' post lists the usual suspects: SQL injection, path traversal, hardcoded secrets, unlocked admin routes, missing input sanitization, dependency rot. Here's the honest mapping of which of those a DaloyJS app already blocks by default — even when the code is written by a sales rep at 1am with Claude — and the small list of things you still have to opt into.",
+    "Aikido's 'WTF is Vibe Coding Security' post lists the usual suspects: SQL injection, path traversal, hardcoded secrets, unlocked admin routes, missing input sanitization, dependency rot. Here's the honest mapping of which of those a DaloyJS app already blocks by default, even when the code is written by a sales rep at 1am with Claude, and the small list of things you still have to opt into.",
   date: "2026-05-23",
   readingTime: "10 min read",
   author: "Devlin Duldulao",
@@ -124,7 +124,7 @@ app.route({
   handler: async ({ params }) => readFile(params.name),
 });`;
 
-const ADMIN_LOCKED = `// The "Tea app" lesson — never leave an admin route mounted on the
+const ADMIN_LOCKED = `// The "Tea app" lesson, never leave an admin route mounted on the
 // public app without auth + network restriction. Daloy gives you both
 // as boring middleware so the wrong default is hard to type.
 import { App, ipRestriction, basicAuth, timingSafeEqual } from "@daloyjs/core";
@@ -143,12 +143,12 @@ adminApp.use(
   }),
 );
 
-// Keep the admin app off the public deploy entirely when you can —
+// Keep the admin app off the public deploy entirely when you can -
 // /docs/security/admin-panels has the full pattern (separate process,
 // separate hostname, separate ingress).`;
 
 const NO_HARDCODED_SECRETS = `# Daloy's repo and every scaffolded create-daloy project run these CI
-# gates on every PR. They are not aspirational — a failure blocks merge.
+# gates on every PR. They are not aspirational - a failure blocks merge.
 pnpm verify:no-leaked-credentials      # AWS keys, GCP keys, GH tokens, npm tokens
 pnpm verify:secret-comparisons         # all secret compares use timingSafeEqual
 pnpm verify:no-encoded-payloads        # base64 blobs (a common AI-slop smuggling vector)
@@ -162,7 +162,7 @@ pnpm verify:dep-licenses               # license allow-list
 pnpm verify:sbom                       # CycloneDX SBOM generated + signed`;
 
 const SSRF_GUARD = `// "AI agents that can install dependencies, run tests, refactor files,
-// and update infrastructure" — Aikido's exact words — also tend to write
+// and update infrastructure" - Aikido's exact words - also tend to write
 // handlers that call any URL the prompt suggests. fetchGuard() turns that
 // into an explicit egress allow-list with default-deny on cloud metadata
 // IPs (169.254.169.254), localhost, and RFC1918 ranges.
@@ -181,7 +181,7 @@ app.use(fetchGuard({
 }));`;
 
 const ASSUME_VIBE = `// The "assume the vibe-coder will skip security" defaults DaloyJS
-// turns on without asking — none of these need a flag.
+// turns on without asking - none of these need a flag.
 //
 // 1. Body-size DoS: streamed read, 1 MiB default cap, Content-Length
 //    checked first -> 413. AI agents love to forget body limits.
@@ -194,7 +194,7 @@ const ASSUME_VIBE = `// The "assume the vibe-coder will skip security" defaults 
 // 5. Path traversal: '..' and '//' rejected before routing.
 // 6. Production redacts 5xx bodies: no stack traces, no internal hostnames,
 //    no DB error messages leaked to attackers.
-// 7. Method confusion: real 405 with Allow header — not a misleading 404
+// 7. Method confusion: real 405 with Allow header - not a misleading 404
 //    that helps enumeration tools.
 // 8. Unsupported content types on body routes: 415. No silent JSON-parse
 //    of a text/plain payload.
@@ -206,7 +206,7 @@ new App();`;
 const VIBE_CODER_CHECKLIST = `// A 60-second checklist a vibe-coder can paste into their prompt.
 //
 //   "Use DaloyJS. Every route MUST have a Zod schema for body, query,
-//    and params. Use prisma (or drizzle) — never template-string SQL.
+//    and params. Use prisma (or drizzle) - never template-string SQL.
 //    Mount admin under /admin with ipRestriction + basicAuth, or move it
 //    to a separate adminApp on a different deploy. Add secureHeaders(),
 //    rateLimit(), and fetchGuard() in app.ts. Never read process.env at
@@ -314,8 +314,8 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            For the unfamiliar: <strong>vibe coding</strong> is when someone —
-            often someone who is not a developer — describes what they want in
+            For the unfamiliar: <strong>vibe coding</strong> is when someone, 
+            often someone who is not a developer, describes what they want in
             English and ships whatever the model writes.{" "}
             <strong>Agentic coding</strong> is the same thing with the model
             also installing the dependencies, running the tests, and pushing the
@@ -330,23 +330,23 @@ export default function BlogPostPage() {
             I read it, opened DaloyJS, and went through each risk to see what we
             already block, what needs one opt-in line, and where we honestly
             can&apos;t help. Below is that mapping. The TL;DR: if a sales rep
-            uses Claude to scaffold a DaloyJS app at 1am, the boring stuff —
+            uses Claude to scaffold a DaloyJS app at 1am, the boring stuff, 
             body limits, prototype pollution, header splitting, path traversal,
-            secret-shaped logs — is on before they type their first prompt. What
+            secret-shaped logs, is on before they type their first prompt. What
             they still have to <em>choose</em> is which routes need auth and
             where the admin surface lives. Those are policy, not defaults.
           </p>
 
-          <h2>Risk 1 — SQL injection</h2>
+          <h2>Risk 1: SQL injection</h2>
 
           <RiskCard
             risk="Aikido: 'SQL injections, path traversal, hardcoded secrets.'"
             framework="Standard Schema (Zod / Valibot) validation is a route-level requirement, not an afterthought. The framework has no untyped req.body escape hatch in the public API. /docs/security/sql-injection documents the per-ORM patterns; the scaffolder ships Prisma / Drizzle / TypeORM templates that are parameterized by construction."
-            user="Pick a real ORM. Don't write template-string SQL. The framework will not stop you from doing the wrong thing inside your handler — but it will hand you a fully-typed, validated input object so you have no excuse."
+            user="Pick a real ORM. Don't write template-string SQL. The framework will not stop you from doing the wrong thing inside your handler, but it will hand you a fully-typed, validated input object so you have no excuse."
           />
 
           <p>
-            DaloyJS doesn&apos;t ship an ORM. That&apos;s deliberate — pinning
+            DaloyJS doesn&apos;t ship an ORM. That&apos;s deliberate, pinning
             one ORM would be the same kind of opinionation that gets frameworks
             in trouble. What it does ship is a route shape where the input is
             validated <em>before</em> your handler runs:
@@ -366,7 +366,7 @@ export default function BlogPostPage() {
             and the per-ORM pages under <Link href="/docs/orm">/docs/orm</Link>.
           </p>
 
-          <h2>Risk 2 — Path traversal</h2>
+          <h2>Risk 2: Path traversal</h2>
 
           <RiskCard
             risk="Aikido: '..serving up /etc/passwd to anyone who tries.'"
@@ -384,12 +384,12 @@ export default function BlogPostPage() {
             .
           </p>
 
-          <h2>Risk 3 — Hardcoded secrets and AI-generated supply-chain rot</h2>
+          <h2>Risk 3: Hardcoded secrets and AI-generated supply-chain rot</h2>
 
           <RiskCard
             risk="Aikido: 'hardcoded secrets' + the broader agentic-coding worry that an AI agent installs whatever npm package its prompt mentioned."
-            framework="Repo-wide CI gates that block leaked credentials, base64-smuggled payloads, invisible-unicode Trojan Source, install-time lifecycle scripts (the #1 npm attack vector), remote exec (curl|sh, eval(fetch())), unpinned GitHub Actions, and unauthorized license categories. A CycloneDX SBOM is generated and signed on every release. @daloyjs/core itself ships with zero runtime dependencies — there is no transitive blast radius."
-            user="Run 'pnpm verify' in your project's CI. The create-daloy templates ship the workflow. Don't disable it because a dependency 'needs' a postinstall — that's the attack."
+            framework="Repo-wide CI gates that block leaked credentials, base64-smuggled payloads, invisible-unicode Trojan Source, install-time lifecycle scripts (the #1 npm attack vector), remote exec (curl|sh, eval(fetch())), unpinned GitHub Actions, and unauthorized license categories. A CycloneDX SBOM is generated and signed on every release. @daloyjs/core itself ships with zero runtime dependencies, there is no transitive blast radius."
+            user="Run 'pnpm verify' in your project's CI. The create-daloy templates ship the workflow. Don't disable it because a dependency 'needs' a postinstall, that's the attack."
           />
 
           <CodeBlock language="bash" code={NO_HARDCODED_SECRETS} />
@@ -409,13 +409,13 @@ export default function BlogPostPage() {
           </p>
 
           <h2>
-            Risk 4 — Unlocked admin routes (the &quot;Tea app&quot; story)
+            Risk 4, Unlocked admin routes (the &quot;Tea app&quot; story)
           </h2>
 
           <RiskCard
             risk="Aikido: 'admin routes left unlocked, exposing user data to anyone who stumbled across the endpoint.'"
             framework="ipRestriction() and basicAuth() are first-class middleware. /docs/security/admin-panels exists specifically to argue that the safest admin route is the one that isn't mounted on the public app at all, and shows the multi-App pattern that makes that easy."
-            user="Pick a pattern: separate App on a separate hostname (best), or /admin mounted with ipRestriction + basicAuth (acceptable). The framework refuses to invent a default 'admin' user — there is none — so a forgotten password is not a backdoor."
+            user="Pick a pattern: separate App on a separate hostname (best), or /admin mounted with ipRestriction + basicAuth (acceptable). The framework refuses to invent a default 'admin' user, there is none, so a forgotten password is not a backdoor."
           />
 
           <CodeBlock language="ts" code={ADMIN_LOCKED} />
@@ -428,11 +428,11 @@ export default function BlogPostPage() {
             . If the &quot;Tea app&quot; team had read it, they&apos;d have
             shipped an internal-only deploy and the breach would not have
             happened. I am not claiming the framework would have <em>forced</em>{" "}
-            them to — policy is policy — but the path of least resistance in
+            them to, policy is policy, but the path of least resistance in
             DaloyJS is the safe one.
           </p>
 
-          <h2>Risk 5 — Missing input sanitization</h2>
+          <h2>Risk 5: Missing input sanitization</h2>
 
           <RiskCard
             risk="Aikido: 'input sanitization' is one of the four basics the vibe-coder checklist asks for."
@@ -443,20 +443,20 @@ export default function BlogPostPage() {
           <p>
             This is the same pattern as Risk 1, applied to <em>every</em> input
             surface, not just bodies. The router itself is the sanitization
-            layer — there is no &quot;remember to call zod.parse&quot;
+            layer, there is no &quot;remember to call zod.parse&quot;
             convention. If a route omits a body schema and declares a body
             content type, the build complains. If the body schema rejects, the
             handler never runs.
           </p>
 
           <h2>
-            Risk 6 — Agentic coding doing things the prompt didn&apos;t ask for
+            Risk 6, Agentic coding doing things the prompt didn&apos;t ask for
           </h2>
 
           <RiskCard
             risk="Aikido / Replit story: 'the AI started lying about unit tests, ignored code freezes, and eventually deleted the entire SaaStr production database.'"
-            framework="fetchGuard() — explicit egress allow-list, default-deny on cloud metadata and RFC1918. requestTimeoutMs + bodyLimitBytes — bounded resource use. Per-request structured logs with correlated request IDs go to your SIEM, so 'the AI agent did what?!' becomes a query, not an archeology dig. The scaffolder ships an AGENTS.md and a daloyjs-best-practices SKILL.md so the agent reads the rules before it writes code."
-            user="Don't give the production-DB password to the agent. Run agentic tools against a sandbox account. Treat AI commits like junior-dev commits — review them. The framework cannot stop you from handing your prod credentials to a model."
+            framework="fetchGuard(), explicit egress allow-list, default-deny on cloud metadata and RFC1918. requestTimeoutMs + bodyLimitBytes, bounded resource use. Per-request structured logs with correlated request IDs go to your SIEM, so 'the AI agent did what?!' becomes a query, not an archeology dig. The scaffolder ships an AGENTS.md and a daloyjs-best-practices SKILL.md so the agent reads the rules before it writes code."
+            user="Don't give the production-DB password to the agent. Run agentic tools against a sandbox account. Treat AI commits like junior-dev commits, review them. The framework cannot stop you from handing your prod credentials to a model."
           />
 
           <CodeBlock language="ts" code={SSRF_GUARD} />
@@ -468,7 +468,7 @@ export default function BlogPostPage() {
               &quot;Designing for Coding Agents&quot;
             </Link>
             . The point of scaffolding AGENTS.md is exactly the
-            &quot;PromptBOM&quot; idea the Aikido post pitches at the end — give
+            &quot;PromptBOM&quot; idea the Aikido post pitches at the end, give
             the agent provenance and rules <em>before</em> it generates, not
             after.
           </p>
@@ -495,14 +495,14 @@ export default function BlogPostPage() {
               least-privilege DB roles.
             </li>
             <li>
-              We do not scan the AI-generated code for logic flaws — the article
+              We do not scan the AI-generated code for logic flaws, the article
               is right that scanners catch known patterns and miss business
               logic. We give you the structured surface (typed routes, typed
               client, OpenAPI) so a reviewer or a SAST tool has something to
               bite into.
             </li>
             <li>
-              We do not enforce authentication on every route. We can&apos;t —
+              We do not enforce authentication on every route. We can&apos;t, 
               some routes are deliberately public. What we give you is{" "}
               <code>jwt()</code>, <code>basicAuth()</code>,{" "}
               <code>bearerAuth()</code>, <code>session()</code>, and an{" "}
@@ -531,13 +531,13 @@ export default function BlogPostPage() {
           <h2>The honest answer to the original question</h2>
 
           <p>
-            <em>Are we doing anything about vibe coding security?</em> Yes — the
+            <em>Are we doing anything about vibe coding security?</em> Yes, the
             framework was designed assuming the person writing the handler
             either doesn&apos;t know or doesn&apos;t care about the security
             layer, and the defaults reflect that. The Aikido post&apos;s
             shopping list of risks maps almost one-for-one to a primitive that
             already exists in DaloyJS today. The few items that don&apos;t map
-            are the ones no framework can own — pick an IdP, lock down the DB
+            are the ones no framework can own, pick an IdP, lock down the DB
             role, don&apos;t hand the prod creds to the agent, review the
             commits.
           </p>

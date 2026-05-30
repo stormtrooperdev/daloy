@@ -9,7 +9,7 @@ const POST = {
   slug: "secure-sdlc-five-pillars-mapped-to-daloyjs",
   title: "The 5 Pillars of a Secure SDLC, Mapped to DaloyJS",
   description:
-    "Aikido's 'Secure SDLC Explained' lists the five pillars every engineering team needs — Visibility, Early Feedback, Developer Adoption, Consistency, Actionability. Here's the honest per-pillar mapping of what a DaloyJS app and its create-daloy scaffold already give you on day one, what you still configure, and the few items no framework can own.",
+    "Aikido's 'Secure SDLC Explained' lists the five pillars every engineering team needs, Visibility, Early Feedback, Developer Adoption, Consistency, Actionability. Here's the honest per-pillar mapping of what a DaloyJS app and its create-daloy scaffold already give you on day one, what you still configure, and the few items no framework can own.",
   date: "2026-05-24",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -46,11 +46,11 @@ const SBOM_SCRIPT = `# Generated on every release of @daloyjs/core, and shipped 
 pnpm sbom            # writes a CycloneDX SBOM (sbom.cdx.json)
 pnpm verify:sbom     # fails CI if the SBOM is missing or stale
 pnpm osv-scan        # runs OSV-Scanner against the lockfile (CI)
-pnpm vuln-scan       # daily scheduled — surfaces newly disclosed CVEs
+pnpm vuln-scan       # daily scheduled - surfaces newly disclosed CVEs
                      # even when no PR is open (SOC 2 CC7.1 evidence)`;
 
 const VERIFY_GATES = `# Repo-wide CI gates DaloyJS runs on every PR and ships into every
-# scaffolded create-daloy project. None of these are aspirational —
+# scaffolded create-daloy project. None of these are aspirational -
 # a failure blocks the merge button.
 pnpm verify:no-leaked-credentials       # AWS / GCP / GH / npm tokens
 pnpm verify:secret-comparisons          # all secret compares use timingSafeEqual
@@ -93,7 +93,7 @@ container-scan.yml  # Trivy + hadolint on Dockerfile + image
 
 const SECURE_BY_DEFAULT_CTOR = `// The "developer adoption" win: the safest configuration is the
 // default constructor. There is no "production hardening" checklist
-// to remember on launch day — the dangerous knobs are off until you
+// to remember on launch day - the dangerous knobs are off until you
 // explicitly turn them on.
 import { App } from "@daloyjs/core";
 
@@ -108,7 +108,7 @@ export const app = new App({
 // secureHeaders(), requestId(), problem+json error mapping, prototype-
 // pollution-safe JSON parse, CRLF/header-splitting refusal, path-traversal
 // rejection, method-confusion 405 (not 404), 415 on unsupported content
-// types, __Host-/Secure/HttpOnly/SameSite=Lax cookies — all on by default.`;
+// types, __Host-/Secure/HttpOnly/SameSite=Lax cookies - all on by default.`;
 
 const AGENT_FILES = `# The scaffolder ships the rules the agent reads BEFORE generating code.
 # This is the "PromptBOM" idea applied to the agent's own context window.
@@ -138,7 +138,7 @@ content-type: application/problem+json
 // Every 4xx / 5xx is RFC 9457 problem+json. The requestId correlates to
 // the structured log line your SIEM already indexed, so a finding goes
 // from "something failed in prod" to a one-click drill-down in seconds.
-// In production, 5xx bodies are redacted by default — no stack traces,
+// In production, 5xx bodies are redacted by default - no stack traces,
 // no internal hostnames, no DB error messages reach the attacker.`;
 
 const SCAFFOLD_SHELL = `# The end-to-end "give my team a Secure SDLC starter kit" command.
@@ -261,11 +261,11 @@ export default function BlogPostPage() {
           <p>
             The piece is a fine high-level checklist for CTOs and engineering
             leaders. It groups everything a Secure SDLC needs into five pillars
-            —{" "}
+, {" "}
             <strong>
               Visibility, Early Feedback, Developer Adoption, Consistency,
             </strong>{" "}
-            and <strong>Actionability</strong> — and argues, correctly, that
+            and <strong>Actionability</strong>: and argues, correctly, that
             &quot;framework alone cannot guarantee security&quot;: culture,
             tools, and consistent processes have to line up. Fair. But a
             framework can absolutely make the right process the path of least
@@ -274,20 +274,20 @@ export default function BlogPostPage() {
 
           <p>
             Below is the honest per-pillar mapping of what an app built on
-            DaloyJS — and scaffolded with{" "}
-            <code>pnpm create daloy@latest --with-ci</code> — already gives you
+            DaloyJS, and scaffolded with{" "}
+            <code>pnpm create daloy@latest --with-ci</code>: already gives you
             on day one, what you still configure yourself, and the few items no
             framework can own. The TL;DR: if you ship the scaffold, you get
             four-and-a-half of the five pillars wired into a brand-new repo
             before the first commit. The half you still drive is the cultural
-            piece — but the tools don&apos;t fight you on it.
+            piece, but the tools don&apos;t fight you on it.
           </p>
 
-          <h2>Pillar 1 — Visibility</h2>
+          <h2>Pillar 1: Visibility</h2>
 
           <PillarCard
             pillar="Aikido: 'You can't manage security if you can't see it.'"
-            framework="CycloneDX SBOM generated and signed on every release. OSV-Scanner against the lockfile in CI. A daily scheduled vuln-scan.yml that runs the package manager's audit against the committed lockfile — so newly-disclosed CVEs are surfaced even when no PR or push has run CI (SOC 2 CC7.1 continuous-vulnerability-management evidence). Per-request structured logs with correlated requestId go to your SIEM. RFC 9457 problem+json error bodies carry the same requestId for one-click drill-down."
+            framework="CycloneDX SBOM generated and signed on every release. OSV-Scanner against the lockfile in CI. A daily scheduled vuln-scan.yml that runs the package manager's audit against the committed lockfile, so newly-disclosed CVEs are surfaced even when no PR or push has run CI (SOC 2 CC7.1 continuous-vulnerability-management evidence). Per-request structured logs with correlated requestId go to your SIEM. RFC 9457 problem+json error bodies carry the same requestId for one-click drill-down."
             user="Pick the SIEM (Datadog, CloudWatch, Loki, whatever) and wire the structured log stream to it. Decide which alerts page humans and which don't. The framework gives you the structured event surface; the dashboard is yours."
           />
 
@@ -297,7 +297,7 @@ export default function BlogPostPage() {
             The &quot;can you immediately tell whether a new CVE affects
             you?&quot; question is the whole point of the SBOM. Daloy&apos;s
             <code> verify:sbom</code> gate fails the build if the SBOM is
-            missing or stale — there is no &quot;we&apos;ll generate one for the
+            missing or stale, there is no &quot;we&apos;ll generate one for the
             audit&quot; mode. Every release carries one. Every scaffolded
             project gets the same workflow.
           </p>
@@ -318,12 +318,12 @@ export default function BlogPostPage() {
             and <Link href="/docs/tracing">/docs/tracing</Link>.
           </p>
 
-          <h2>Pillar 2 — Early Feedback</h2>
+          <h2>Pillar 2: Early Feedback</h2>
 
           <PillarCard
-            pillar="Aikido: 'Deliver security findings at the point of code creation — in IDEs, pull requests, and CI/CD — not after deployment.'"
+            pillar="Aikido: 'Deliver security findings at the point of code creation, in IDEs, pull requests, and CI/CD, not after deployment.'"
             framework="14+ verify:* CI gates run on every PR and block the merge button on failure. CodeQL + Opengrep run two SAST engines (different bug classes). OSV-Scanner runs against the lockfile. gitleaks scans the diff on PR. The TypeScript compiler + Zod / Valibot / ArkType schemas catch entire vulnerability classes (mass assignment, missing input validation, wrong-type body) at edit time, in the IDE, before the PR is even opened."
-            user="Read the PR comments. Don't merge a red build. Don't paste 'allow: ['*']' into fetchGuard() because a test fails — the AGENTS.md asks you not to, but the framework can't physically stop you from disabling a check you wrote."
+            user="Read the PR comments. Don't merge a red build. Don't paste 'allow: ['*']' into fetchGuard() because a test fails, the AGENTS.md asks you not to, but the framework can't physically stop you from disabling a check you wrote."
           />
 
           <CodeBlock language="bash" code={VERIFY_GATES} />
@@ -344,7 +344,7 @@ export default function BlogPostPage() {
             </a>
             : different engines catch different bug classes. Running both is the
             recommended layered posture, and the scaffolder gives you both with
-            neither sitting in your supply chain as a third-party action —
+            neither sitting in your supply chain as a third-party action, 
             Opengrep&apos;s binary is downloaded from a pinned release and
             verified by its sigstore cosign signature before it runs.
           </p>
@@ -364,12 +364,12 @@ export default function BlogPostPage() {
             for why you need both.
           </p>
 
-          <h2>Pillar 3 — Developer Adoption</h2>
+          <h2>Pillar 3: Developer Adoption</h2>
 
           <PillarCard
             pillar="Aikido: 'A Secure SDLC is only effective if developers engage with security tools consistently. Tools that disrupt workflows are ignored or bypassed.'"
-            framework="The safest configuration is the default constructor. There is no 'production hardening checklist' to remember on launch day — secureHeaders(), problem+json, body limits, request timeouts, prototype-pollution-safe JSON, CRLF refusal, path-traversal rejection, prod-mode redaction, and __Host-/Secure/HttpOnly/SameSite=Lax cookies are all on by default. Schema validation is a route-level requirement, not an afterthought. The scaffolder ships AGENTS.md + a SKILL.md so coding agents (Copilot, Claude, Cursor, GPT) read the rules before generating code."
-            user="Use the scaffolder. Don't manually delete the verify:* gates from ci.yml because a postinstall script 'needs' to run. Treat the secure default as the boring one — because it is."
+            framework="The safest configuration is the default constructor. There is no 'production hardening checklist' to remember on launch day, secureHeaders(), problem+json, body limits, request timeouts, prototype-pollution-safe JSON, CRLF refusal, path-traversal rejection, prod-mode redaction, and __Host-/Secure/HttpOnly/SameSite=Lax cookies are all on by default. Schema validation is a route-level requirement, not an afterthought. The scaffolder ships AGENTS.md + a SKILL.md so coding agents (Copilot, Claude, Cursor, GPT) read the rules before generating code."
+            user="Use the scaffolder. Don't manually delete the verify:* gates from ci.yml because a postinstall script 'needs' to run. Treat the secure default as the boring one, because it is."
           />
 
           <CodeBlock language="ts" code={SECURE_BY_DEFAULT_CTOR} />
@@ -384,27 +384,27 @@ export default function BlogPostPage() {
           <p>
             Aikido&apos;s point is that adoption fails when tooling switches
             context. Daloy&apos;s answer is to put the rules in the file the
-            agent already loads into its context window —{" "}
+            agent already loads into its context window, {" "}
             <Link href="/blog/designing-for-coding-agents-why-daloyjs-scaffolds-agents-md-and-skills">
               the AGENTS.md scaffold pattern
             </Link>{" "}
-            — and to make the secure default the{" "}
+, and to make the secure default the{" "}
             <em>shortest line of code you can type</em>.
           </p>
 
-          <h2>Pillar 4 — Consistency</h2>
+          <h2>Pillar 4: Consistency</h2>
 
           <PillarCard
             pillar="Aikido: 'Apply uniform security standards, policies, and enforcement across all teams, repositories, and languages.'"
-            framework="The same verify:* gate set ships in every create-daloy template. The same secure-by-default constructor runs on every supported runtime — Node, Bun, Deno, Cloudflare Workers, Vercel Edge. verify:runtime-parity-audits and verify:parity-audits make sure no adapter quietly drops a security guard. verify:governance-audits keeps the security docs in sync with the code. The whole posture travels with the framework; a new service started this week gets the same gates as a service started last quarter."
-            user="Run the scaffolder for every new service. Don't fork the templates and then forget to merge upstream security fixes — the Dependabot config that ships in the scaffold updates @daloyjs/core for you, and a new version usually re-syncs the templates."
+            framework="The same verify:* gate set ships in every create-daloy template. The same secure-by-default constructor runs on every supported runtime, Node, Bun, Deno, Cloudflare Workers, Vercel Edge. verify:runtime-parity-audits and verify:parity-audits make sure no adapter quietly drops a security guard. verify:governance-audits keeps the security docs in sync with the code. The whole posture travels with the framework; a new service started this week gets the same gates as a service started last quarter."
+            user="Run the scaffolder for every new service. Don't fork the templates and then forget to merge upstream security fixes, the Dependabot config that ships in the scaffold updates @daloyjs/core for you, and a new version usually re-syncs the templates."
           />
 
           <p>
             The reason this works is the audit framing. Daloy&apos;s
             <code> verify:parity-audits</code>,{" "}
             <code>verify:runtime-parity-audits</code>, and{" "}
-            <code>verify:routing-hardening-audits</code> are not documentation —
+            <code>verify:routing-hardening-audits</code> are not documentation, 
             they are scripts in <code>scripts/</code> that fail the build if a
             defense exists in one path but not another. The framework cannot
             ship a release where the JWT algorithm allowlist is enforced on Node
@@ -420,11 +420,11 @@ export default function BlogPostPage() {
             directory listing, not an interview.
           </p>
 
-          <h2>Pillar 5 — Actionability</h2>
+          <h2>Pillar 5: Actionability</h2>
 
           <PillarCard
             pillar="Aikido: 'Turn security findings into clear next steps. Prioritize actionable findings over raw vulnerability data.'"
-            framework="problem+json on every 4xx / 5xx — the type URL is a documented page on this site, the requestId correlates to the SIEM log line, the message tells the caller what to fix. For published CVEs in the framework, every advisory is a GitHub Security Advisory with a CVE through GitHub's CNA — and SECURITY.md publishes a CVSS-keyed patch SLA (Critical 48h, High 7d, Medium 30d, Low 90d, measured from triage) so downstream NIS2 / EU CRA procurement clauses have something concrete to point at."
+            framework="problem+json on every 4xx / 5xx, the type URL is a documented page on this site, the requestId correlates to the SIEM log line, the message tells the caller what to fix. For published CVEs in the framework, every advisory is a GitHub Security Advisory with a CVE through GitHub's CNA, and SECURITY.md publishes a CVSS-keyed patch SLA (Critical 48h, High 7d, Medium 30d, Low 90d, measured from triage) so downstream NIS2 / EU CRA procurement clauses have something concrete to point at."
             user="Read the advisories you're subscribed to. Apply the patch within your own deploy window. The framework's SLA covers the upstream release; the consumer's pnpm install is the consumer's deploy event."
           />
 
@@ -433,8 +433,8 @@ export default function BlogPostPage() {
             context&quot; means developers either ignore the alerts or fix
             things at random. Daloy&apos;s answer at the framework level is to
             be parsimonious about what it reports. The router does not log a
-            warning for every path-traversal attempt — it returns 400 and moves
-            on. The body-limit guard does not page anyone — it returns 413. The
+            warning for every path-traversal attempt, it returns 400 and moves
+            on. The body-limit guard does not page anyone, it returns 413. The
             findings that <em>do</em> bubble up to a human come from the verify
             gates (which are binary: red build or green) and the DAST / SAST
             workflows (which are scored). Every one comes with a documented fix.
@@ -468,8 +468,8 @@ export default function BlogPostPage() {
             <li>
               We do not run the ASPM dashboard. Aikido (and Snyk, and Wiz, and
               Semgrep, and a dozen others) sell that piece, and they do it well.
-              Daloy gives you the structured signal — SBOMs, SARIF, problem+json
-              with requestId, OpenAPI 3.1 — that an ASPM tool ingests. Pick one
+              Daloy gives you the structured signal, SBOMs, SARIF, problem+json
+              with requestId, OpenAPI 3.1, that an ASPM tool ingests. Pick one
               and point it at the repo.
             </li>
             <li>
@@ -493,7 +493,7 @@ export default function BlogPostPage() {
               We do not stop you from disabling a guard in your own app. The
               verify gates run in <em>your</em> CI; if you remove the workflow
               file, they don&apos;t run. The framework&apos;s job is to ship the
-              safe defaults and the agent-readable rules — the merge-button
+              safe defaults and the agent-readable rules, the merge-button
               discipline is on the team.
             </li>
           </ul>
@@ -502,7 +502,7 @@ export default function BlogPostPage() {
 
           <p>
             <em>Are we doing anything about the Secure SDLC five pillars?</em>{" "}
-            Yes — the framework, the scaffolder, and the templates were designed
+            Yes, the framework, the scaffolder, and the templates were designed
             against this exact shape of checklist. Aikido&apos;s five-pillar
             framing maps one-for-one onto primitives that already ship today:
             SBOM + vuln-scan for Visibility, the verify:* family + DAST + dual
@@ -513,7 +513,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            What the framework cannot do is the culture — but the framework also
+            What the framework cannot do is the culture, but the framework also
             stops being the bottleneck. The team can spend its security
             attention on threat modeling and review, not on remembering to set{" "}
             <code>SameSite=Lax</code> or chasing the next <code>chalk</code>

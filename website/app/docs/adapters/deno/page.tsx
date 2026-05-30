@@ -24,7 +24,7 @@ export default function Page() {
     <>
       <h1>Deno</h1>
       <p>
-        The Deno adapter wraps <code>Deno.serve</code> — the stable, modern
+        The Deno adapter wraps <code>Deno.serve</code>: the stable, modern
         entry point that replaced the old <code>Deno.serveHttp</code>. Graceful
         shutdown uses an <code>AbortController</code>, which is the pattern Deno
         itself recommends.
@@ -136,7 +136,7 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Don&apos;t use <code>Deno.serveHttp</code> — it&apos;s deprecated. The
+          Don&apos;t use <code>Deno.serveHttp</code>: it&apos;s deprecated. The
           DaloyJS adapter uses <code>Deno.serve</code> exclusively.
         </li>
         <li>
@@ -145,7 +145,7 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
           self-hosted Deno only.
         </li>
         <li>
-          Use <code>--allow-net</code> (and others) explicitly — Deno&apos;s
+          Use <code>--allow-net</code> (and others) explicitly, Deno&apos;s
           default-deny permissions are the point.
         </li>
       </ul>
@@ -156,7 +156,7 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
           <Link href="/docs/adapters">Adapters overview</Link>
         </li>
         <li>
-          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link> —
+          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link>: 
           also Deno-based.
         </li>
       </ul>

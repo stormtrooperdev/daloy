@@ -87,7 +87,7 @@ const api = createClient({ baseUrl: "http://localhost:3000" });
 const result = await api.getBookById({ params: { id: "42" } });
 
 if (result.status === 200) {
-  console.log(result.body.title); // string — typed.
+  console.log(result.body.title); // string - typed.
 } else {
   console.log("not found"); // 404 branch, also typed.
 }`;
@@ -172,7 +172,7 @@ export default function BlogPostPage() {
 
         <div className="docs-prose max-w-full">
           <p>
-            I&apos;m Devlin — a Filipino developer who has been writing
+            I&apos;m Devlin, a Filipino developer who has been writing
             fullstack web apps for a little over ten years, and who now does it
             from a small flat in Norway where the sun, depending on the season,
             either refuses to set or refuses to show up. I drink a lot of
@@ -216,7 +216,7 @@ export default function BlogPostPage() {
             <li>
               <strong>Security defaults are opt-in.</strong> Body limits,
               request timeouts, prototype-pollution-safe JSON, path-traversal
-              rejection, 5xx redaction in prod — all of these are &quot;just add
+              rejection, 5xx redaction in prod, all of these are &quot;just add
               this middleware&quot;. Which means in real codebases, under
               deadline, with three Jira tickets open, they are just&hellip; not
               there.
@@ -231,7 +231,7 @@ export default function BlogPostPage() {
 
           <p>
             None of these are new complaints. What&apos;s new is that the
-            JavaScript ecosystem finally has the pieces to fix them properly —
+            JavaScript ecosystem finally has the pieces to fix them properly, 
             Standard Schema, OpenAPI 3.1, the Web Fetch API as a portable
             runtime contract, OpenTelemetry semantic conventions, pnpm with
             proper supply-chain controls. The pieces exist. They just
@@ -246,8 +246,8 @@ export default function BlogPostPage() {
           </h2>
 
           <p>
-            Here&apos;s the shape of code I&apos;ve been writing — and reading
-            in PRs — for years. You will recognize it. You probably wrote some
+            Here&apos;s the shape of code I&apos;ve been writing, and reading
+            in PRs, for years. You will recognize it. You probably wrote some
             this week.
           </p>
 
@@ -392,7 +392,7 @@ export default function BlogPostPage() {
             <li>
               It is not trying to replace your ORM, your queue, your auth
               provider, or your email vendor. We have{" "}
-              <Link href="/docs/orm">adapters and guides</Link> for those —
+              <Link href="/docs/orm">adapters and guides</Link> for those, 
               because in real life you&apos;re going to use Prisma, or Drizzle,
               or whatever your team already loves.
             </li>
@@ -454,7 +454,7 @@ pnpm dev`}
             a normal thing.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

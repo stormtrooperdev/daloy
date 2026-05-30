@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Use PlanetScale with DaloyJS",
   description:
-    "Connect a DaloyJS API to PlanetScale MySQL using @planetscale/database — an HTTP driver that works on Cloudflare Workers, Vercel Edge, Node.js, Bun, and Deno.",
+    "Connect a DaloyJS API to PlanetScale MySQL using @planetscale/database, an HTTP driver that works on Cloudflare Workers, Vercel Edge, Node.js, Bun, and Deno.",
   path: "/docs/databases/planetscale",
   keywords: [
     "PlanetScale DaloyJS",
@@ -29,7 +29,7 @@ export default function Page() {
         </a>{" "}
         is a managed MySQL host built around Vitess, branching, deploy requests, and a fetch-based
         HTTP driver. Because <code>@planetscale/database</code> uses plain <code>fetch</code>, it runs on
-        every runtime DaloyJS supports — including Cloudflare Workers and Vercel Edge. If you are using
+        every runtime DaloyJS supports, including Cloudflare Workers and Vercel Edge. If you are using
         PlanetScale Postgres, follow the <Link href="/docs/databases/neon">Neon</Link> driver pattern
         instead.
       </p>
@@ -182,7 +182,7 @@ export const prisma = new PrismaClient({ adapter });`}
         PlanetScale&apos;s schema workflow uses branches and deploy requests rather than ad-hoc{" "}
         <code>ALTER TABLE</code>. Pair this with your CI: run migrations against a development branch,
         open a deploy request, and merge to <code>main</code>. The same Daloy app code works against any
-        branch — just swap the host.
+        branch, just swap the host.
       </p>
 
       <p>

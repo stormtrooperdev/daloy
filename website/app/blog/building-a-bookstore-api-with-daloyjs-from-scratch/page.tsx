@@ -10,13 +10,13 @@ const POST = {
   slug: "building-a-bookstore-api-with-daloyjs-from-scratch",
   title: "Building a Bookstore API with DaloyJS From Scratch",
   description:
-    "A route-by-route walkthrough: create the project with create-daloy, model a Book with Zod, add list / create / fetch-by-id endpoints, watch validation errors arrive as RFC 9457 problem+json automatically, emit OpenAPI, generate a typed client, and write the whole test suite with app.request() — no HTTP server required.",
+    "A route-by-route walkthrough: create the project with create-daloy, model a Book with Zod, add list / create / fetch-by-id endpoints, watch validation errors arrive as RFC 9457 problem+json automatically, emit OpenAPI, generate a typed client, and write the whole test suite with app.request(), no HTTP server required.",
   date: "2026-05-20",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
   authorBio:
-    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. This is the walkthrough I wish someone had handed me on day one — bookmark it and send it to the next new hire.",
+    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. This is the walkthrough I wish someone had handed me on day one, bookmark it and send it to the next new hire.",
 };
 
 export const metadata = buildMetadata({
@@ -87,7 +87,7 @@ export const Book = z.object({
 });
 
 /**
- * Payload for POST /books — server assigns the id, so it's omitted here.
+ * Payload for POST /books - server assigns the id, so it's omitted here.
  * Note how \`tags\` is optional but the response always has the default array.
  */
 export const CreateBook = Book.omit({ id: true }).extend({
@@ -123,7 +123,7 @@ import {
 
 /**
  * Mount every book-related route on the given app.
- * Pure function on purpose — keeps build-app.ts small and lets tests
+ * Pure function on purpose - keeps build-app.ts small and lets tests
  * spin up a fresh App with just these routes if they want to.
  */
 export function registerBookRoutes(app: App) {
@@ -140,7 +140,7 @@ function list(app: App) {
     operationId: "listBooks",
     tags: ["Books"],
     request: {
-      // Query params are validated and coerced — the handler sees real numbers.
+      // Query params are validated and coerced - the handler sees real numbers.
       query: z.object({
         limit:  z.coerce.number().int().min(1).max(100).default(20),
         offset: z.coerce.number().int().min(0).default(0),
@@ -179,7 +179,7 @@ function getById(app: App) {
     },
     responses: {
       200: { description: "Found",     body: Book },
-      404: { description: "Not found" /* problem+json — framework adds it */ },
+      404: { description: "Not found" /* problem+json - framework adds it */ },
     },
     handler: async ({ params }) => {
       const book = store.get(params.id);
@@ -205,7 +205,7 @@ function create(app: App) {
           location: { schema: z.string(), description: "URI of the new book" },
         },
       },
-      // No 422 entry needed — the framework registers one automatically for
+      // No 422 entry needed - the framework registers one automatically for
       // any route with a validated request, pointing at ProblemDetails.
     },
     handler: async ({ body }) => {
@@ -242,7 +242,7 @@ curl -sS -X POST http://localhost:3000/books \\
 }
 # You did not write a single line for this. Schema + framework. Done.`;
 
-const BUILD_APP = `// src/build-app.ts — wire the routes onto the app.
+const BUILD_APP = `// src/build-app.ts, wire the routes onto the app.
 import {
   App,
   rateLimit,
@@ -273,7 +273,7 @@ export function buildApp(): App {
 
 export default buildApp;`;
 
-const ENTRY = `// src/index.ts — boot the HTTP listener. The only file that does I/O.
+const ENTRY = `// src/index.ts, boot the HTTP listener. The only file that does I/O.
 import { serve } from "@daloyjs/core/node";
 import { printStartupBanner } from "@daloyjs/core/banner";
 import { buildApp } from "./build-app.js";
@@ -295,7 +295,7 @@ printStartupBanner({
   ],
 });`;
 
-const TESTS = `// tests/books.test.ts — node:test + app.request(). No port. No flakes.
+const TESTS = `// tests/books.test.ts, node:test + app.request(). No port. No flakes.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/build-app.ts";
@@ -367,7 +367,7 @@ const RUN_TESTS = `pnpm test
 # ℹ pass 4
 # ℹ fail 0`;
 
-const DUMP_OPENAPI = `// scripts/dump-openapi.ts — single source of truth for the spec.
+const DUMP_OPENAPI = `// scripts/dump-openapi.ts, single source of truth for the spec.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { generateOpenAPI } from "@daloyjs/core";
@@ -395,7 +395,7 @@ pnpm gen
 
 # The two scripts are also chained on CI as \`pnpm gen:all\`.`;
 
-const USE_CLIENT = `// apps/web/lib/books.ts — frontend consumer of the typed client.
+const USE_CLIENT = `// apps/web/lib/books.ts, frontend consumer of the typed client.
 import { client, listBooks, createBook, getBookById } from "@/generated/client";
 
 client.setConfig({ baseUrl: process.env.NEXT_PUBLIC_API_URL });
@@ -411,9 +411,9 @@ export async function fetchFirstPage() {
 export async function addBook(input: Parameters<typeof createBook>[0]["body"]) {
   const { data, error } = await createBook({ body: input });
   if (error) {
-    // \`error\` is ProblemDetails — autocompletes type/title/detail/status.
+    // \`error\` is ProblemDetails - autocompletes type/title/detail/status.
     if (error.status === 422) {
-      // error.errors is { path; message }[] — straight into react-hook-form.
+      // error.errors is { path; message }[] - straight into react-hook-form.
       return { ok: false as const, fieldIssues: error.errors ?? [] };
     }
     throw new Error(error.title);
@@ -421,7 +421,7 @@ export async function addBook(input: Parameters<typeof createBook>[0]["body"]) {
   return { ok: true as const, book: data };
 }`;
 
-const SCRIPTS_BLOCK = `// package.json — the muscle memory commands.
+const SCRIPTS_BLOCK = `// package.json, the muscle memory commands.
 {
   "scripts": {
     "dev":          "tsx watch src/index.ts",
@@ -577,7 +577,7 @@ export default function BlogPostPage() {
             Hi, Devlin again. Ten years of fullstack, currently in Norway, and
             the post I get asked for most often is some version of{" "}
             <em>just show me what a real route looks like, end to end.</em> So
-            this is that post. We build the canonical Bookstore API — list
+            this is that post. We build the canonical Bookstore API, list
             books, fetch one by id, create one, validate the input, ship the
             docs, generate a typed client, and write tests that run faster than
             your dev server boots. By the end of this you could plausibly hand
@@ -588,7 +588,7 @@ export default function BlogPostPage() {
             One promise up front: every code snippet in here is a thing you can
             actually paste. No pseudocode, no &quot;left as an exercise for the
             reader&quot;. The whole tutorial is the equivalent of a single
-            afternoon of work — most of which the scaffolder does for you while
+            afternoon of work, most of which the scaffolder does for you while
             you go get a coffee.
           </p>
 
@@ -623,7 +623,7 @@ export default function BlogPostPage() {
             No port, no fetch, no flakes. Same App you ship.
           </StepCard>
 
-          <h2>Step 1 — Scaffold</h2>
+          <h2>Step 1: Scaffold</h2>
 
           <EditorFrame
             files={["terminal · zsh"]}
@@ -635,7 +635,7 @@ export default function BlogPostPage() {
 
           <p>
             <code>--minimal</code> strips the example bookstore routes from the
-            template so we can rebuild them ourselves — pedagogy over
+            template so we can rebuild them ourselves, pedagogy over
             convenience. (If you skip <code>--minimal</code>, the template gives
             you a working <code>/books/:id</code> route out of the box. Both
             paths are fine.)
@@ -649,7 +649,7 @@ export default function BlogPostPage() {
             <CodeBlock language="bash" code={PROJECT_TREE} />
           </EditorFrame>
 
-          <h2>Step 2 — Model the Book</h2>
+          <h2>Step 2: Model the Book</h2>
 
           <p>
             Open <code>src/routes/books.ts</code> (create it if you used{" "}
@@ -658,7 +658,7 @@ export default function BlogPostPage() {
             <strong>
               the Zod schema is the source of truth for everything
             </strong>{" "}
-            — validation, response shape, OpenAPI, and the generated TypeScript
+, validation, response shape, OpenAPI, and the generated TypeScript
             types. Write it once.
           </p>
 
@@ -673,12 +673,12 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/routes/books.ts"]}
             activeFile="src/routes/books.ts"
-            status="in-memory store — swap for Prisma later"
+            status="in-memory store, swap for Prisma later"
           >
             <CodeBlock language="ts" code={STORE} />
           </EditorFrame>
 
-          <h2>Step 3 — Register the routes</h2>
+          <h2>Step 3: Register the routes</h2>
 
           <p>
             Three little functions, each calling <code>app.route(...)</code>. We
@@ -712,7 +712,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/routes/books.ts"]}
             activeFile="src/routes/books.ts"
-            status="GET /books/:id · throw NotFoundError — never return 404 by hand"
+            status="GET /books/:id · throw NotFoundError, never return 404 by hand"
           >
             <CodeBlock language="ts" code={GET_BY_ID} />
           </EditorFrame>
@@ -725,11 +725,11 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={CREATE_ROUTE} />
           </EditorFrame>
 
-          <h2>Step 4 — Free validation errors</h2>
+          <h2>Step 4: Free validation errors</h2>
 
           <p>
             Send a deliberately wrong body and watch what comes back. You did
-            not write any of this response — the schema and the framework
+            not write any of this response, the schema and the framework
             conspired to produce it.
           </p>
 
@@ -752,7 +752,7 @@ export default function BlogPostPage() {
             that handles it is one helper, total.
           </p>
 
-          <h2>Step 5 — Wire it onto the App and serve</h2>
+          <h2>Step 5: Wire it onto the App and serve</h2>
 
           <EditorFrame
             files={["src/build-app.ts"]}
@@ -772,14 +772,14 @@ export default function BlogPostPage() {
 
           <p>
             Run <code>pnpm dev</code> and visit{" "}
-            <code>http://localhost:3000/docs</code> — Scalar renders your three
+            <code>http://localhost:3000/docs</code>: Scalar renders your three
             routes, complete with the Zod-derived schemas, the <code>422</code>{" "}
             problem+json response, and a working <em>Try it</em> panel. You did
             not write a single line of documentation; you wrote a schema and
             three handlers, and the docs fell out the other side.
           </p>
 
-          <h2>Step 6 — Generate the typed client</h2>
+          <h2>Step 6: Generate the typed client</h2>
 
           <EditorFrame
             files={["scripts/dump-openapi.ts"]}
@@ -800,7 +800,7 @@ export default function BlogPostPage() {
           <p>
             Now switch hats and pretend you&apos;re the frontend team. The
             generated SDK gives you typed function calls for every route, typed
-            bodies, typed responses, and — crucially — a typed{" "}
+            bodies, typed responses, and, crucially, a typed{" "}
             <code>error</code> field shaped like <code>ProblemDetails</code>.
             Autocomplete owns the rest.
           </p>
@@ -813,7 +813,7 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={USE_CLIENT} />
           </EditorFrame>
 
-          <h2>Step 7 — Test it (without booting a server)</h2>
+          <h2>Step 7: Test it (without booting a server)</h2>
 
           <p>
             <code>app.request(url, init?)</code> is the same App your production
@@ -858,7 +858,7 @@ export default function BlogPostPage() {
           <p>
             We modeled a domain in Zod. We declared three routes. We got
             validation, 404 handling, RFC 9457 problem+json, an OpenAPI
-            document, a Scalar UI, and a fully typed fetch SDK — and we never
+            document, a Scalar UI, and a fully typed fetch SDK, and we never
             had to write the &quot;glue&quot; that usually fills the first
             thousand lines of a Node project. The tests run without a port. The
             frontend client is generated from the same schema the server uses to
@@ -870,24 +870,24 @@ export default function BlogPostPage() {
 
           <ul>
             <li>
-              Swap the in-memory <code>Map</code> for Prisma — see the{" "}
+              Swap the in-memory <code>Map</code> for Prisma, see the{" "}
               <Link href="/docs/orm/prisma">Prisma guide</Link>.
             </li>
             <li>
-              Add auth and per-route rate limits — the{" "}
+              Add auth and per-route rate limits, the{" "}
               <Link href="/blog/secure-by-default">secure-by-default</Link> post
               covers the defaults you already have.
             </li>
             <li>
               Move the same code to Cloudflare Workers, Bun, Deno, or Vercel
-              Edge with no rewrite — the{" "}
+              Edge with no rewrite, the{" "}
               <Link href="/blog/same-app-five-runtimes-verified">
                 five-runtimes
               </Link>{" "}
               post shows the proof.
             </li>
             <li>
-              Sessions and CSRF for the cookie-based parts of your frontend —
+              Sessions and CSRF for the cookie-based parts of your frontend, 
               the <Link href="/blog/sessions-on-the-edge">sessions</Link> and{" "}
               <Link href="/blog/csrf-in-2026-double-submit-and-fetch-metadata">
                 CSRF
@@ -898,11 +898,11 @@ export default function BlogPostPage() {
 
           <p>
             That&apos;s the tour. If you send this to a new hire and they get
-            stuck on step <em>n</em>, file an issue — I&apos;ll fix the post,
+            stuck on step <em>n</em>, file an issue, I&apos;ll fix the post,
             not the framework.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

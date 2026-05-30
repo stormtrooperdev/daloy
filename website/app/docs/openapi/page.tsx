@@ -28,7 +28,7 @@ export default function Page() {
       <h1>OpenAPI generation</h1>
       <p>
         DaloyJS emits a clean <strong>OpenAPI 3.1</strong> document straight
-        from your route definitions — no plugins, no separate decorators.
+        from your route definitions, no plugins, no separate decorators.
         Validation, types, and the spec all share one source of truth.
       </p>
 
@@ -164,7 +164,7 @@ console.log(\`wrote \${out}\`);`}
       <h2>What gets emitted</h2>
       <ul>
         <li>
-          One <code>operationId</code> per route — duplicates throw at
+          One <code>operationId</code> per route, duplicates throw at
           registration.
         </li>
         <li>
@@ -186,7 +186,7 @@ console.log(\`wrote \${out}\`);`}
       <h2>Webhooks</h2>
       <p>
         OpenAPI 3.1 lets a producer publish <strong>top-level webhooks</strong>{" "}
-        — operations a consumer is expected to implement. Pass{" "}
+, operations a consumer is expected to implement. Pass{" "}
         <code>webhooks</code> to <code>generateOpenAPI</code>
         and DaloyJS emits them under the document&apos;s top-level{" "}
         <code>webhooks</code> map.
@@ -244,7 +244,7 @@ const doc = generateOpenAPI(app, {
         Each callback name maps to one or more runtime expression keys (e.g.{" "}
         <code>{`"{$request.body#/callbackUrl}"`}</code>), each of which maps to
         one or more operations keyed by HTTP method. Empty maps and empty arrays
-        are skipped — passing an empty callback never produces a malformed spec.
+        are skipped, passing an empty callback never produces a malformed spec.
       </p>
 
       <h2>Discriminated unions</h2>
@@ -255,12 +255,12 @@ const doc = generateOpenAPI(app, {
       </p>
       <ul>
         <li>
-          <code>discriminator(propertyName, mapping?)</code> — the bare spec
+          <code>discriminator(propertyName, mapping?)</code>: the bare spec
           builder. Use it when you already have a hand-rolled JSON Schema and
           just want to attach the field cleanly.
         </li>
         <li>
-          <code>discriminatedUnion(propertyName, variants, opts?)</code> — a
+          <code>discriminatedUnion(propertyName, variants, opts?)</code>: a
           Standard-Schema- compatible wrapper that <em>both</em> validates at
           runtime (dispatching on the discriminator value) <em>and</em> exposes{" "}
           <code>.toJSONSchema()</code> so the OpenAPI generator emits{" "}

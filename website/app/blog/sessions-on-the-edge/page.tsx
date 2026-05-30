@@ -11,13 +11,13 @@ const POST = {
   title:
     "Sessions on the Edge: Signed Cookies, Rotating Secrets, and a Pluggable Store",
   description:
-    "Tour of the new session() middleware — __Host- cookie defaults, secret: [current, ...previous] rotation, regenerate() to kill session fixation, MemorySessionStore for tests, and how to plug in Redis or Workers KV via the SessionStore contract. Pairs naturally with the rate-limit Redis post.",
+    "Tour of the new session() middleware, __Host- cookie defaults, secret: [current, ...previous] rotation, regenerate() to kill session fixation, MemorySessionStore for tests, and how to plug in Redis or Workers KV via the SessionStore contract. Pairs naturally with the rate-limit Redis post.",
   date: "2026-05-25",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
   authorBio:
-    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has rotated approximately four production session secrets in his life — three of them with zero downtime, one with a very honest apology email.",
+    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has rotated approximately four production session secrets in his life, three of them with zero downtime, one with a very honest apology email.",
 };
 
 export const metadata = buildMetadata({
@@ -43,7 +43,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const SESSION_BASIC = `// src/app.ts — the smallest useful session setup
+const SESSION_BASIC = `// src/app.ts, the smallest useful session setup
 import { App, session, type SessionContext } from "@daloyjs/core";
 
 // Add the session shape to your AppState so handlers get full typing.
@@ -69,7 +69,7 @@ app.use(
   }),
 );`;
 
-const SESSION_USAGE = `// src/routes/auth.ts — read and write session data
+const SESSION_USAGE = `// src/routes/auth.ts, read and write session data
 app.route({
   method: "POST",
   path: "/login",
@@ -124,7 +124,7 @@ const COOKIE_ANATOMY = `// The cookie that lands in DevTools looks like this:
 //   3. If invalid: ignore the cookie entirely. A new session is NOT minted
 //      until something writes to it.`;
 
-const ROTATION_EXAMPLE = `// .env.production — rotating a session secret in three deploys
+const ROTATION_EXAMPLE = `// .env.production, rotating a session secret in three deploys
 
 # DEPLOY #1 (steady state): one secret, the one you've had forever.
 SESSION_SECRET='a-very-long-string-at-least-16-chars-long'
@@ -139,7 +139,7 @@ SESSION_SECRETS='["new-secret-also-16-chars-or-more","a-very-long-string-at-leas
 # Any cookie still signed with the old secret naturally re-issues on next request.
 SESSION_SECRETS='["new-secret-also-16-chars-or-more"]'`;
 
-const ROTATION_WIRING = `// src/app.ts — wire the array form
+const ROTATION_WIRING = `// src/app.ts, wire the array form
 const secrets = JSON.parse(process.env.SESSION_SECRETS ?? "[]") as string[];
 
 if (secrets.length === 0) {
@@ -172,7 +172,7 @@ const REGENERATE_FIXATION = `// Why regenerate() exists: session fixation in one
 await state.session.regenerate();                      // carry data
 await state.session.regenerate({ keepData: false });   // fresh start`;
 
-const MEMORY_STORE_TESTS = `// tests/auth.test.ts — using MemorySessionStore in tests
+const MEMORY_STORE_TESTS = `// tests/auth.test.ts, using MemorySessionStore in tests
 import { describe, it, expect, beforeEach } from "vitest";
 import { App, session, MemorySessionStore } from "@daloyjs/core";
 
@@ -198,7 +198,7 @@ it("creates exactly one record per login", async () => {
 
 const SESSION_STORE_INTERFACE = `// The entire contract. Three required methods, one optional.
 //
-// Sync OR async — return values or promises. The middleware awaits everything.
+// Sync OR async - return values or promises. The middleware awaits everything.
 
 export interface SessionStore {
   get(sid: string): SessionRecord | null | Promise<SessionRecord | null>;
@@ -213,7 +213,7 @@ export interface SessionRecord {
   expiresAt: number; // ms since epoch
 }`;
 
-const REDIS_STORE = `// src/stores/redis-session-store.ts — production-grade Redis adapter
+const REDIS_STORE = `// src/stores/redis-session-store.ts, production-grade Redis adapter
 import type { SessionStore, SessionRecord } from "@daloyjs/core";
 import type { Redis } from "ioredis";
 
@@ -257,7 +257,7 @@ export class RedisSessionStore implements SessionStore {
 //   store: new RedisSessionStore(new Redis(process.env.REDIS_URL!)),
 // }));`;
 
-const KV_STORE = `// src/stores/kv-session-store.ts — Cloudflare Workers KV adapter
+const KV_STORE = `// src/stores/kv-session-store.ts, Cloudflare Workers KV adapter
 import type { SessionStore, SessionRecord } from "@daloyjs/core";
 import type { KVNamespace } from "@cloudflare/workers-types";
 
@@ -287,7 +287,7 @@ export class KvSessionStore implements SessionStore {
     await this.kv.delete(this.prefix + sid);
   }
 
-  // KV doesn't expose a cheap "extend TTL" — fall back to set(). The middleware
+  // KV doesn't expose a cheap "extend TTL" - fall back to set(). The middleware
   // does that automatically when touch() is omitted.
 }
 
@@ -300,7 +300,7 @@ export class KvSessionStore implements SessionStore {
 const CHECKLIST = `# Production checklist (the list I run through before every launch):
 
 [ ] secret is ≥ 32 random bytes, sourced from a secrets manager
-[ ] secret is the ARRAY form, even with one entry — rotation is now a config change
+[ ] secret is the ARRAY form, even with one entry - rotation is now a config change
 [ ] cookieName stays __Host-daloy.sid in production (require https)
 [ ] regenerate() is called on EVERY privilege change (login, MFA step-up,
     password reset, role assumption, impersonation)
@@ -308,7 +308,7 @@ const CHECKLIST = `# Production checklist (the list I run through before every l
 [ ] saveUninitialized stays false unless you have a cookie consent banner
     that explicitly allows it
 [ ] store is NOT MemorySessionStore in production (it doesn't survive a
-    restart and doesn't share across processes — the only acceptable
+    restart and doesn't share across processes - the only acceptable
     Memory store is for tests)
 [ ] ttlSeconds is short enough that a leaked cookie expires before your
     customer notices it leaked (we use 8h for staff, 30d for shoppers)
@@ -333,7 +333,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — VS Code-style chrome around a code sample.
+ * EditorFrame - VS Code-style chrome around a code sample.
  */
 function EditorFrame({
   files,
@@ -395,7 +395,7 @@ function EditorFrame({
 }
 
 /**
- * StoreCard — short summary card for each pluggable store.
+ * StoreCard - short summary card for each pluggable store.
  */
 function StoreCard({
   name,
@@ -488,7 +488,7 @@ export default function BlogPostPage() {
             <code>regenerate()</code> that does the fixation-safe dance for you,
             a <code>MemorySessionStore</code> for tests, and a three-method{" "}
             <code>SessionStore</code> interface so Redis, Workers KV, Vercel KV,
-            Postgres — any of them — is twenty lines.
+            Postgres, any of them, is twenty lines.
           </p>
 
           <h2>The smallest useful setup</h2>
@@ -527,7 +527,7 @@ export default function BlogPostPage() {
             The API is intentionally boring: <code>get</code>, <code>set</code>,{" "}
             <code>delete</code>, <code>destroy</code>, <code>regenerate</code>.
             The interesting part is what the middleware does between your
-            handler returning and the response going out — if you wrote
+            handler returning and the response going out, if you wrote
             anything, it persists to the store and re-issues the cookie; if you
             didn&apos;t, <code>saveUninitialized: false</code> means no cookie
             at all, which keeps your privacy banner&apos;s job small.
@@ -574,7 +574,7 @@ export default function BlogPostPage() {
               <em>verify</em> incoming cookies (timing-safe).
             </li>
             <li>
-              Each secret must be a non-empty string of at least 16 characters —
+              Each secret must be a non-empty string of at least 16 characters, 
               the middleware throws at construction if not.
             </li>
           </ul>
@@ -587,7 +587,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={[".env.production"]}
             activeFile=".env.production"
-            status="rotation via array — no logged-out users"
+            status="rotation via array, no logged-out users"
           >
             <CodeBlock language="bash" code={ROTATION_EXAMPLE} />
           </EditorFrame>
@@ -608,7 +608,7 @@ export default function BlogPostPage() {
             security work to feel.
           </p>
 
-          <h2>regenerate() — the one line that kills session fixation</h2>
+          <h2>regenerate(): the one line that kills session fixation</h2>
 
           <EditorFrame
             files={["NOTES.md"]}
@@ -628,7 +628,7 @@ export default function BlogPostPage() {
             API turned out.
           </p>
 
-          <h2>MemorySessionStore — fast tests, never production</h2>
+          <h2>MemorySessionStore: fast tests, never production</h2>
 
           <p>
             The default store is <code>MemorySessionStore</code>. It&apos;s a{" "}
@@ -665,11 +665,11 @@ export default function BlogPostPage() {
 
           <p>
             Sync or async. <code>touch()</code> is a perf hint for{" "}
-            <code>rolling: true</code> — if your backend has a cheap &quot;just
+            <code>rolling: true</code>: if your backend has a cheap &quot;just
             extend the TTL&quot; operation (like Redis <code>EXPIRE</code>),
             implement it; if not, omit it and the middleware will fall back to{" "}
             <code>set()</code>. That&apos;s the whole contract. No transactions,
-            no advisory locks, no cooperation with the cookie layer — that all
+            no advisory locks, no cooperation with the cookie layer, that all
             stays inside the middleware.
           </p>
 
@@ -680,7 +680,7 @@ export default function BlogPostPage() {
             <Link href="/blog/the-flow-i-wished-i-had">
               rest of the toolkit
             </Link>{" "}
-            — particularly the Redis-backed rate limiter, which can share the
+, particularly the Redis-backed rate limiter, which can share the
             same connection pool.
           </p>
 
@@ -695,7 +695,7 @@ export default function BlogPostPage() {
           <StoreCard
             name="Redis"
             good="Multi-process Node, Bun, or Deno deployments behind a load balancer. Pairs with rate-limit Redis. Atomic EXPIRE means touch() is essentially free."
-            watchFor="One Redis = one failure domain. Use a replica or accept that a Redis outage logs everyone out. Don't store huge payloads in the session — keep it to IDs."
+            watchFor="One Redis = one failure domain. Use a replica or accept that a Redis outage logs everyone out. Don't store huge payloads in the session, keep it to IDs."
           />
 
           <h2>A Workers KV store, similar shape</h2>
@@ -710,7 +710,7 @@ export default function BlogPostPage() {
 
           <StoreCard
             name="Workers KV / Vercel KV"
-            good="Edge deployments where you want session reads close to the user. Eventually consistent, but for sessions that's fine — you're reading your own writes by sid."
+            good="Edge deployments where you want session reads close to the user. Eventually consistent, but for sessions that's fine, you're reading your own writes by sid."
             watchFor="Workers KV has a 60s minimum expirationTtl and eventually-consistent global propagation. Don't use it for sub-second auth flows; do use it for long-lived sessions."
           />
 
@@ -733,13 +733,13 @@ export default function BlogPostPage() {
 
           <p>
             Signed cookie sessions are not magic. If an attacker gets your
-            session secret, they can mint any session id they want — that&apos;s
+            session secret, they can mint any session id they want, that&apos;s
             why the secret lives in a real secrets manager and gets rotated. If
             an attacker gets a user&apos;s cookie via TLS-stripping on a
-            misconfigured subdomain, the signature won&apos;t save you —
+            misconfigured subdomain, the signature won&apos;t save you, 
             that&apos;s why <code>__Host-</code> + <code>Secure</code> are
             non-negotiable defaults. And if your store backend goes down, your
-            users log out — that&apos;s why we picked an interface that supports
+            users log out, that&apos;s why we picked an interface that supports
             a replica or a fallback layer if you need one.
           </p>
 
@@ -771,7 +771,7 @@ export default function BlogPostPage() {
             <code>secret</code>, I will not judge, but I will worry.)
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

@@ -34,11 +34,11 @@ export default function Page() {
       <h2>What gets validated</h2>
       <p>For each route you can declare schemas for:</p>
       <ul>
-        <li><code>request.params</code> — path parameters (always strings; coerce in your schema if needed).</li>
-        <li><code>request.query</code> — query string.</li>
-        <li><code>request.headers</code> — request headers.</li>
-        <li><code>request.body</code> — parsed JSON body. Only read when declared (no overhead otherwise).</li>
-        <li><code>responses[status].body</code> — typed responses.</li>
+        <li><code>request.params</code>: path parameters (always strings; coerce in your schema if needed).</li>
+        <li><code>request.query</code>: query string.</li>
+        <li><code>request.headers</code>: request headers.</li>
+        <li><code>request.body</code>: parsed JSON body. Only read when declared (no overhead otherwise).</li>
+        <li><code>responses[status].body</code>: typed responses.</li>
       </ul>
 
       <h2>A complete route</h2>
@@ -85,7 +85,7 @@ app.route({
       <h2>Type inference</h2>
       <p>
         The handler context is fully typed: <code>body</code>, <code>params</code>, <code>query</code>, and{" "}
-        <code>headers</code> are inferred from your schemas. The return value is also typed — TypeScript yells
+        <code>headers</code> are inferred from your schemas. The return value is also typed, TypeScript yells
         if you return a status not declared in <code>responses</code>.
       </p>
       <CodeBlock code={`import { z } from "zod";
@@ -100,10 +100,10 @@ export type Book = z.infer<typeof Book>;`} />
 
       <h2>See also</h2>
       <ul>
-        <li><a href="/docs/validation">Validation overview</a> — how validators plug in via Standard Schema.</li>
-        <li><a href="/docs/validation/valibot">Validation with Valibot</a> — the tree-shakeable alternative.</li>
-        <li><a href="/docs/openapi">OpenAPI generation</a> — how schemas become a spec.</li>
-        <li><a href="/docs/errors">Errors &amp; problem+json</a> — the error contract.</li>
+        <li><a href="/docs/validation">Validation overview</a>: how validators plug in via Standard Schema.</li>
+        <li><a href="/docs/validation/valibot">Validation with Valibot</a>: the tree-shakeable alternative.</li>
+        <li><a href="/docs/openapi">OpenAPI generation</a>: how schemas become a spec.</li>
+        <li><a href="/docs/errors">Errors &amp; problem+json</a>: the error contract.</li>
       </ul>
     </>
   );

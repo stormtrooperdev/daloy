@@ -16,7 +16,7 @@ const POST = {
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
   authorBio:
-    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has watched a rate limiter fail open against a credential-stuffing botnet exactly once — which is, it turns out, the precise number of times it takes to become opinionated about this.",
+    "Ten years of fullstack, currently writing TypeScript from a desk in Norway. Has watched a rate limiter fail open against a credential-stuffing botnet exactly once, which is, it turns out, the precise number of times it takes to become opinionated about this.",
 };
 
 export const metadata = buildMetadata({
@@ -59,7 +59,7 @@ const PAIN = `# A representative production timeline, lightly edited for length:
 # Every framework's quickstart tells you to use the in-memory store. Almost
 # no quickstart tells you that it lies the moment you scale past one.`;
 
-const IN_MEM_RATE = `// What the quickstart shipped you with — fine for dev, lying in prod.
+const IN_MEM_RATE = `// What the quickstart shipped you with, fine for dev, lying in prod.
 import { App, rateLimit } from "@daloyjs/core";
 
 const app = new App();
@@ -78,7 +78,7 @@ app.use(rateLimit({
 //
 // This is fine on a laptop. It's a security boundary failure in prod.`;
 
-const REDIS_BASIC = `// src/rate-limit.ts — the fix is one import and one option.
+const REDIS_BASIC = `// src/rate-limit.ts, the fix is one import and one option.
 import IORedis from "ioredis";
 import { rateLimit } from "@daloyjs/core";
 import {
@@ -147,7 +147,7 @@ const byUser = (ctx: BaseContext) => {
   return u?.id ? "user:" + u.id : "anon:" + byIp(ctx);
 };
 
-// Aggressive global per-IP cap — coarse safety net.
+// Aggressive global per-IP cap - coarse safety net.
 app.use(rateLimit({
   windowMs: 60_000,
   max: 600,
@@ -164,7 +164,7 @@ app.use(rateLimit({
   store: redisRateLimitStore({ client, prefix: "rl:user:" }),
 }));`;
 
-const FAIL_OPEN_CLOSED = `// Fail-open vs fail-closed — pick deliberately, per endpoint class.
+const FAIL_OPEN_CLOSED = `// Fail-open vs fail-closed, pick deliberately, per endpoint class.
 import type { RateLimitStore } from "@daloyjs/core";
 
 // PUBLIC: fail OPEN. Better to over-serve than to take the whole site down
@@ -214,7 +214,7 @@ Retry-After: 37
 # retry-after-aware fetch clients (the ones every team eventually writes)
 # get a value they can actually trust.`;
 
-const NODE_REDIS_VARIANT = `// node-redis v4+ users — same store, different adapter.
+const NODE_REDIS_VARIANT = `// node-redis v4+ users, same store, different adapter.
 import { createClient } from "redis";
 import {
   redisRateLimitStore,
@@ -243,7 +243,7 @@ app.use(rateLimit({
 // Ten lines of glue and you're done. The atomic semantics are in the
 // script, not the transport.`;
 
-const SERVERLESS_GUIDANCE = `# Where to host the counter — runtime by runtime.
+const SERVERLESS_GUIDANCE = `# Where to host the counter, runtime by runtime.
 
 # Long-lived Node / Bun behind a load balancer:
 # - Managed Redis or ElastiCache, with rate-limit traffic on a separate
@@ -260,19 +260,19 @@ const SERVERLESS_GUIDANCE = `# Where to host the counter — runtime by runtime.
 #   the platform-native rate limiter (Cloudflare Rules) above your app.
 
 # Vercel Edge / Vercel Functions:
-# - Same story as Workers — Upstash is the obvious pick because it's the
+# - Same story as Workers - Upstash is the obvious pick because it's the
 #   only one that gives sub-50ms p99 over HTTP from every region.
 # - For Functions (Node runtime), a normal managed Redis works if it's
 #   geographically close to the function region.
 
 # AWS Lambda:
 # - Redis must be inside the VPC, or use Upstash REST. Cold-start latency
-#   matters a lot — keep the client OUTSIDE the handler closure so it's
+#   matters a lot - keep the client OUTSIDE the handler closure so it's
 #   reused across warm invocations.
 
 # Same App, every runtime: one store, one prefix. Adapt the transport.`;
 
-const TEST_RATE = `// tests/rate-limit.test.ts — verify the limit, end to end, without Redis.
+const TEST_RATE = `// tests/rate-limit.test.ts, verify the limit, end to end, without Redis.
 // The in-memory store is perfect for tests; only the production wiring
 // changes.
 import { test } from "node:test";
@@ -480,7 +480,7 @@ export default function BlogPostPage() {
             limiter doesn&apos;t look broken in the metrics. The metrics look{" "}
             <em>fine</em>. The login endpoint is on fire, the SREs are confused,
             and somebody in the postmortem says the sentence everyone is
-            thinking: <em>oh — it only works on a single instance.</em>
+            thinking: <em>oh, it only works on a single instance.</em>
           </p>
 
           <p>
@@ -534,7 +534,7 @@ export default function BlogPostPage() {
             That&apos;s the whole change. Same <code>rateLimit()</code>{" "}
             middleware, same <code>windowMs</code> and <code>max</code>, just a
             different store. Every replica now reads and writes the same
-            counter. The interesting bits are <em>inside</em> the store — and
+            counter. The interesting bits are <em>inside</em> the store, and
             interesting in the &quot;fewer than 15 lines of Lua&quot; sense,
             which is the way I like my interesting bits.
           </p>
@@ -562,7 +562,7 @@ export default function BlogPostPage() {
             <li>
               <strong>TTL only on the first hit.</strong> Re-arming the window
               every request makes the budget reset only when the client stops
-              calling — exactly the opposite of what you want. The conditional{" "}
+              calling, exactly the opposite of what you want. The conditional{" "}
               <code>if current == 1</code> is the whole game.
             </li>
             <li>
@@ -640,7 +640,7 @@ export default function BlogPostPage() {
             every other DaloyJS error response uses, so your frontend error
             helper handles it the same way it handles a 422. The{" "}
             <code>Retry-After</code> value is the real <code>PTTL</code> from
-            Redis, not a guess — which is the difference between a backoff that
+            Redis, not a guess, which is the difference between a backoff that
             works and one that thunders.
           </p>
 
@@ -649,7 +649,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/rate-limit.ts"]}
             activeFile="src/rate-limit.ts"
-            status="nodeRedisAdapter · or roll your own — 10 lines of glue"
+            status="nodeRedisAdapter · or roll your own, 10 lines of glue"
           >
             <CodeBlock language="ts" code={NODE_REDIS_VARIANT} />
           </EditorFrame>
@@ -658,7 +658,7 @@ export default function BlogPostPage() {
             The transport is decoupled on purpose. The whole{" "}
             <code>RedisCommands</code> contract is a single{" "}
             <code>eval(script, keys, args)</code> method. ioredis, node-redis,
-            Upstash&apos;s REST client, Deno&apos;s redis, valkey-glide — all
+            Upstash&apos;s REST client, Deno&apos;s redis, valkey-glide, all
             map onto it in a handful of lines. The interesting work lives in the
             Lua script, not the wire.
           </p>
@@ -711,8 +711,8 @@ export default function BlogPostPage() {
             happens when the counter is unreachable. DaloyJS ships the first as
             a 15-line Lua script in <code>@daloyjs/core/rate-limit-redis</code>,
             and exposes the second as a single <code>onError</code> callback.
-            That&apos;s the whole API. The rest is operational discipline —
-            multiple keys, namespaced prefixes, aggressive timeouts — and the
+            That&apos;s the whole API. The rest is operational discipline, 
+            multiple keys, namespaced prefixes, aggressive timeouts, and the
             checklist above is the version of that discipline I trust myself to
             follow at 2 a.m. on a Tuesday.
           </p>
@@ -730,7 +730,7 @@ export default function BlogPostPage() {
             post for where exactly the limiter fires in the request pipeline.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

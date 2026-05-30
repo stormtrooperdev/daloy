@@ -26,7 +26,7 @@ export default function Page() {
         cookie). When you later try to claim something at the counter, you have
         to show that same number written on a slip (the header). A stranger who
         never walked past the doorman can&apos;t guess the number, so they
-        can&apos;t use your name to grab a coat that isn&apos;t theirs — even if
+        can&apos;t use your name to grab a coat that isn&apos;t theirs, even if
         they know which counter to walk up to.
       </blockquote>
       <p>
@@ -245,7 +245,7 @@ await fetch("/transfer", {
           <strong>HTML form posts.</strong> Render{" "}
           <code>ctx.state.csrfToken</code> into a hidden field and forward it as
           the <code>x-csrf-token</code> header (or use a small client-side
-          script to do so) — the middleware only reads the header, not multipart
+          script to do so), the middleware only reads the header, not multipart
           bodies.
         </li>
         <li>

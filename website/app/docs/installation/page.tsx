@@ -40,7 +40,7 @@ export default function Page() {
 
       <h2>Fastest path: scaffold a project</h2>
       <p>
-        Use the official generator — it sets up a hardened <code>.npmrc</code>,
+        Use the official generator, it sets up a hardened <code>.npmrc</code>,
         strict TypeScript, and a working route in one command.
       </p>
       <p>
@@ -82,7 +82,7 @@ bun  create daloy           my-api`}
           <strong>Node.js</strong> 24.0.0 or newer (active LTS).
         </li>
         <li>
-          A package manager. Any of these works — pnpm 11.x or newer is
+          A package manager. Any of these works, pnpm 11.x or newer is
           recommended for supply-chain hardening, but <code>npm</code>,{" "}
           <code>yarn</code>, and <code>bun</code> install{" "}
           <code>@daloyjs/core</code> cleanly because the package has no peer
@@ -114,7 +114,7 @@ pnpm --version`}
 npm  install @daloyjs/core zod
 yarn add     @daloyjs/core zod
 bun  add     @daloyjs/core zod
-# optional — only if you want to generate a typed SDK
+# optional - only if you want to generate a typed SDK
 pnpm add -D @hey-api/openapi-ts`}
       />
       <p>
@@ -158,7 +158,7 @@ verify-store-integrity=true
 
       <h2>Verify</h2>
       <p>
-        Run this from the project root after installing — it works the same
+        Run this from the project root after installing, it works the same
         under pnpm, npm, yarn, or bun because it shells straight to{" "}
         <code>node</code>:
       </p>

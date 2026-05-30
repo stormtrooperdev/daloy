@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Internal services & service meshes",
   description:
-    'Use preset: "internal-service" to right-size DaloyJS\'s secure-by-default posture for service-to-service deployments behind a service mesh, sidecar, or private network — without turning off the input, credential, parser, or SSRF guards that still apply inside the perimeter.',
+    'Use preset: "internal-service" to right-size DaloyJS\'s secure-by-default posture for service-to-service deployments behind a service mesh, sidecar, or private network, without turning off the input, credential, parser, or SSRF guards that still apply inside the perimeter.',
   path: "/docs/security/internal-service-preset",
   keywords: [
     "internal-service preset",
@@ -30,18 +30,18 @@ export default function Page() {
       <blockquote>
         <strong>Think of it like…</strong> taking off your raincoat when you
         walk indoors. CSRF, same-origin checks, and browser-specific headers are
-        raincoats for the public street — useful when traffic comes from random
+        raincoats for the public street, useful when traffic comes from random
         people&apos;s browsers, useless inside a private building (your service
         mesh, where every caller is one of your own services). The preset takes
         off the raincoats but keeps the safe locked, the IDs verified, and the
         input guards on.
       </blockquote>
       <p>
-        Most DaloyJS security defaults — body limits, request timeouts, JWT
+        Most DaloyJS security defaults, body limits, request timeouts, JWT
         algorithm allowlists, <code>timingSafeEqual</code> credential checks,
         prototype-pollution-safe parsers, <code>fetchGuard()</code> SSRF
         defaults, schema strictness, RFC 9457 problem+json with prod-mode
-        redaction — apply just as much to a service running behind a service
+        redaction, apply just as much to a service running behind a service
         mesh as to one facing the public internet. A compromised neighbour, an
         SSRF in another pod, or a leaked internal token will exercise those
         guards identically.
@@ -72,7 +72,7 @@ const app = new App({
       <p>
         Per-knob options you pass alongside the preset still win. If you want
         headers back on a single internal service that proxies to a browser, set{" "}
-        <code>secureHeaders: {`{}`}</code> explicitly — the preset will not
+        <code>secureHeaders: {`{}`}</code> explicitly, the preset will not
         overwrite an explicit value.
       </p>
 
@@ -82,13 +82,13 @@ const app = new App({
           <strong>
             <code>secureHeaders</code> auto-install
           </strong>{" "}
-          — HSTS, CSP, X-Frame-Options, COOP / CORP. No browser to read them.
+, HSTS, CSP, X-Frame-Options, COOP / CORP. No browser to read them.
         </li>
         <li>
           <strong>
             <code>corsCrossOriginGuard</code>
           </strong>{" "}
-          — rejects state-changing requests carrying a cross-origin{" "}
+, rejects state-changing requests carrying a cross-origin{" "}
           <code>Origin</code> header. Service-to-service callers do not send{" "}
           <code>Origin</code>.
         </li>
@@ -96,7 +96,7 @@ const app = new App({
           <strong>
             <code>csrf</code> boot guard
           </strong>{" "}
-          — refuses to start when <code>session()</code> is registered alongside
+, refuses to start when <code>session()</code> is registered alongside
           a state-changing route without <code>csrf()</code>. Internal callers
           authenticate with bearer tokens or mTLS, not cookies.
         </li>
@@ -104,7 +104,7 @@ const app = new App({
           <strong>
             unconfigured <code>X-Forwarded-*</code> guard
           </strong>{" "}
-          — the first-request 500 when <code>trustProxy</code> /{" "}
+, the first-request 500 when <code>trustProxy</code> /{" "}
           <code>behindProxy</code> is unset. The mesh terminates TLS and the
           immediate peer inside the mesh <em>is</em> the caller.
         </li>
@@ -166,7 +166,7 @@ const app = new App({
         The preset is the answer to that risk for service-to-service
         deployments:{" "}
         <strong>
-          do not remove the guards — name the topology once, audit which guards
+          do not remove the guards, name the topology once, audit which guards
           stayed on, and keep everything else
         </strong>
         . That is closer to the <code>config.force_ssl</code> /{" "}
@@ -215,7 +215,7 @@ const app = new App({
       <h2>Introspecting the live posture</h2>
       <p>
         <code>app.getSecurityPosture()</code> returns a frozen snapshot of the
-        resolved security configuration — useful for an internal{" "}
+        resolved security configuration, useful for an internal{" "}
         <code>/__security</code> route, CI audits, or a custom dashboard:
       </p>
       <CodeBlock
@@ -254,21 +254,21 @@ const app = new App({
       <h2>Related</h2>
       <ul>
         <li>
-          <a href="/docs/security/secure-defaults">Secure-by-default</a> — the
+          <a href="/docs/security/secure-defaults">Secure-by-default</a>: the
           full list of defaults the framework ships.
         </li>
         <li>
           <a href="/docs/security/secure-defaults-enforcement">
             <code>secureDefaults</code> enforcement
           </a>{" "}
-          — the wholesale escape hatch (refuses-to-boot in production without
+, the wholesale escape hatch (refuses-to-boot in production without
           explicit acknowledgement). Prefer the topology preset where possible.
         </li>
         <li>
           <a href="/docs/security/fetch-guard">
             <code>fetchGuard()</code> SSRF defaults
           </a>{" "}
-          — still active under the preset.
+, still active under the preset.
         </li>
       </ul>
     </>

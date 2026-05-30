@@ -102,7 +102,7 @@ CMD ["dist/server.js"]`}
           255. Pass <code>0</code> to disable.
         </li>
         <li>
-          Some npm packages with native bindings still need Node — test before
+          Some npm packages with native bindings still need Node, test before
           committing to Bun in production.
         </li>
         <li>

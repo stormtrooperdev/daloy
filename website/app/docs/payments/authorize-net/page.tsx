@@ -52,7 +52,7 @@ export default function Page() {
         <li>
           <strong>It&apos;s a thin XML wrapper.</strong> Requests are built with{" "}
           <code>ApiContracts.*</code> classes and sent with <code>ApiControllers.*</code>{" "}
-          controllers. There&apos;s no fluent client and no Promises by default — every
+          controllers. There&apos;s no fluent client and no Promises by default, every
           controller exposes <code>.execute(callback)</code>. Wrap it with{" "}
           <code>util.promisify</code> for a sane async API.
         </li>
@@ -79,7 +79,7 @@ export default function Page() {
         <li>
           <strong>Webhooks are a separate API.</strong> Subscribe and verify against{" "}
           <code>https://api.authorize.net/rest/v1/webhooks</code> (or the <code>apitest</code>{" "}
-          host) — the XML transactions SDK doesn&apos;t handle them. Signatures use
+          host), the XML transactions SDK doesn&apos;t handle them. Signatures use
           HMAC-SHA512 with a dedicated <em>Signature Key</em>, <strong>not</strong> the
           Transaction Key.
         </li>
@@ -118,7 +118,7 @@ export default function Page() {
       <CodeBlock code={`pnpm add authorizenet`} />
       <p>
         The package ships its own TypeScript declarations, but they&apos;re hand-written and
-        not exhaustive — expect to <code>as any</code> in a few spots when you reach for newer
+        not exhaustive, expect to <code>as any</code> in a few spots when you reach for newer
         fields.
       </p>
 
@@ -167,7 +167,7 @@ function runController<TController extends { execute: (cb: () => void) => void; 
 
 export interface AuthorizeNetClient {
   chargeOpaqueData(input: {
-    amount: string;                 // "10.00" — string, two decimals.
+    amount: string;                 // "10.00" - string, two decimals.
     dataDescriptor: string;         // e.g. "COMMON.ACCEPT.INAPP.PAYMENT"
     dataValue: string;              // Accept.js nonce.
     invoiceNumber?: string;
@@ -208,7 +208,7 @@ function buildSaleRequest(input: Parameters<AuthorizeNetClient["chargeOpaqueData
 
 function verifyAuthorizeNetSignature(rawBody: Buffer, headerValue: string | null) {
   if (!headerValue) return false;
-  // The header looks like "sha512=ABCDEF..." — strip the prefix if present.
+  // The header looks like "sha512=ABCDEF..." - strip the prefix if present.
   const provided = headerValue.startsWith("sha512=")
     ? headerValue.slice("sha512=".length)
     : headerValue;
@@ -272,7 +272,7 @@ declare module "@daloyjs/core" {
       <p>
         Why <code>req.getJSON()</code>? The SDK builds an XML envelope internally, but the
         controllers want a serialised JSON snapshot of the request graph. It&apos;s an
-        awkward shape — that&apos;s the SDK, not a typo.
+        awkward shape, that&apos;s the SDK, not a typo.
       </p>
 
       <h2>5. Charge an Accept.js nonce</h2>
@@ -347,7 +347,7 @@ app.route({
       <h2>6. Subscribe to webhooks</h2>
       <p>
         Webhooks aren&apos;t in the XML SDK. Use the REST API with HTTP Basic auth (API Login
-        ID + Transaction Key) — once per environment, usually as a script or admin endpoint,
+        ID + Transaction Key), once per environment, usually as a script or admin endpoint,
         not on every boot:
       </p>
       <CodeBlock
@@ -424,8 +424,8 @@ app.route({
 });`}
       />
       <p>
-        Ack fast. Authorize.Net retries failed deliveries 10 times — 3× at 3-minute intervals,
-        3× at 8-hour intervals, 4× at 48-hour intervals — and then marks the webhook inactive.
+        Ack fast. Authorize.Net retries failed deliveries 10 times, 3× at 3-minute intervals,
+        3× at 8-hour intervals, 4× at 48-hour intervals, and then marks the webhook inactive.
         Do the heavy work in a queue.
       </p>
 
@@ -446,7 +446,7 @@ app.route({
         <Link href={"/docs/adapters" as Route}>Cloudflare Workers</Link> or Vercel Edge. On an
         edge runtime, POST JSON straight to{" "}
         <code>https://api.authorize.net/xml/v1/request.api</code> with <code>fetch</code>{" "}
-        instead — the gateway accepts the same JSON envelope that the SDK builds.
+        instead, the gateway accepts the same JSON envelope that the SDK builds.
       </p>
 
       <h2>Modernisation notes</h2>
@@ -459,7 +459,7 @@ app.route({
         <li>
           <strong>Skip the <code>shopify-style</code> auto-retry config.</strong> The SDK has
           no built-in retry; if you need it, wrap <code>runController</code> with your own
-          back-off on transient network errors only — never on declines.
+          back-off on transient network errors only, never on declines.
         </li>
         <li>
           <strong>Prefer Customer Profiles for repeat business.</strong> Vault the card into a

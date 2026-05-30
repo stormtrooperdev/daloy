@@ -9,7 +9,7 @@ const POST = {
   slug: "cloud-security-architecture-mapped-to-daloyjs",
   title: "Cloud Security Architecture, Mapped to the DaloyJS App Layer",
   description:
-    "Aikido's 'Cloud Security Architecture' guide is a fine high-level checklist — Zero Trust, defense-in-depth, IAM, segmentation, IaC scanning, continuous monitoring. Here's the honest, per-principle mapping of what DaloyJS already ships for the application-layer half of that checklist, what the cloud platform still owns, and the opt-ins worth turning on today.",
+    "Aikido's 'Cloud Security Architecture' guide is a fine high-level checklist, Zero Trust, defense-in-depth, IAM, segmentation, IaC scanning, continuous monitoring. Here's the honest, per-principle mapping of what DaloyJS already ships for the application-layer half of that checklist, what the cloud platform still owns, and the opt-ins worth turning on today.",
   date: "2026-05-23",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -48,7 +48,7 @@ export const app = new App();
 
 // 1. Every request is authenticated before reaching handlers.
 app.use(jwt({
-  // Rotates from JWKS — no long-lived shared secrets baked into the image.
+  // Rotates from JWKS - no long-lived shared secrets baked into the image.
   jwksUri: process.env.JWKS_URI!,
   audience: "api.example.com",
   issuer: "https://auth.example.com/",
@@ -68,7 +68,7 @@ app.use(
   }),
 );`;
 
-const DEFENSE_IN_DEPTH = `// src/app.ts — every layer here is a separate middleware.
+const DEFENSE_IN_DEPTH = `// src/app.ts, every layer here is a separate middleware.
 // Removing one does not silently disable the others.
 import {
   App,
@@ -90,7 +90,7 @@ app.use(cors({ origin: ["https://app.example.com"] }));
 app.use(loadShedding({ maxConcurrent: 500 })); // L7: brown-out before OOM
 app.use(rateLimit({ windowMs: 60_000, max: 120 })); // L7: per-IP throttle
 app.use(fetchGuard({ allow: ["https://api.example.com"] })); // L7: egress allow-list
-app.use(compression()); // safe defaults — no Brotli on cookies (BREACH-aware)`;
+app.use(compression()); // safe defaults - no Brotli on cookies (BREACH-aware)`;
 
 const STRUCTURED_LOGS = `// Structured logs with built-in redaction.
 import { logger } from "@daloyjs/core";
@@ -99,7 +99,7 @@ app.use(logger({
   // Authorization, cookie, set-cookie, x-api-key are redacted by default.
   // Add anything else your team treats as a secret:
   redactKeys: ["x-internal-token", "sessionId", "creditCard"],
-  // JSON output — shippable straight into CloudWatch / GCP / Datadog
+  // JSON output - shippable straight into CloudWatch / GCP / Datadog
   // without a regex-based scrubber in the middle.
   format: "json",
 }));`;
@@ -117,12 +117,12 @@ app.use(fetchGuard({
     "https://api.example.com",
     "https://*.s3.amazonaws.com",
   ],
-  // Always-blocked ranges (defaults — listed for clarity):
+  // Always-blocked ranges (defaults - listed for clarity):
   // 169.254.0.0/16, 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12,
   // 192.168.0.0/16, ::1, fc00::/7, etc.
 }));`;
 
-const SUPPLY_CHAIN_VERIFY = `# Repository CI gate — these are the framework's "IaC scanners".
+const SUPPLY_CHAIN_VERIFY = `# Repository CI gate, these are the framework's "IaC scanners".
 # Every PR runs them; any failure blocks merge.
 pnpm verify:actions-pinned       # all GitHub Actions pinned to SHA
 pnpm verify:dep-licenses         # license allow-list
@@ -139,7 +139,7 @@ pnpm verify:secret-comparisons   # all secret compares use timingSafeEqual`;
 
 const ASSUME_BREACH = `// Assume-breach defaults that DaloyJS turns on without asking:
 //
-// 1. Production redacts 5xx error bodies — no stack traces over the wire.
+// 1. Production redacts 5xx error bodies - no stack traces over the wire.
 // 2. Cookies default to __Host- prefix, Secure, HttpOnly, SameSite=Lax.
 // 3. JSON parser strips __proto__ / constructor / prototype keys.
 // 4. CRLF injection in user-controlled header values is rejected at write time.
@@ -246,13 +246,13 @@ export default function BlogPostPage() {
             and asked the only question worth asking when someone hands you a
             security checklist: <em>are we doing any of this?</em> Fair
             question. The piece is a tour of Zero Trust, defense-in-depth, IAM,
-            network segmentation, IaC scanning, and continuous monitoring — the
+            network segmentation, IaC scanning, and continuous monitoring, the
             meat-and-potatoes of modern cloud security architecture.
           </p>
 
           <p>
             It&apos;s a <em>cloud</em> guide, not a framework guide. A lot of it
-            lives at a layer DaloyJS will never touch — VPC peering, S3 bucket
+            lives at a layer DaloyJS will never touch, VPC peering, S3 bucket
             ACLs, GuardDuty, the AWS Well-Architected Security Pillar. But every
             one of its principles has an <strong>application-layer half</strong>
             , and that half is where a framework lives or dies. Below is the
@@ -269,7 +269,7 @@ export default function BlogPostPage() {
           </p>
 
           <h2>
-            Principle 1 — Zero Trust: &quot;never trust, always verify&quot;
+            Principle 1, Zero Trust: &quot;never trust, always verify&quot;
           </h2>
 
           <PrincipleCard
@@ -279,7 +279,7 @@ export default function BlogPostPage() {
           />
 
           <p>
-            Zero Trust at the application layer is not a vibe — it&apos;s a
+            Zero Trust at the application layer is not a vibe, it&apos;s a
             chain of <em>explicit verification points</em> that don&apos;t
             collapse into &quot;the firewall said it was fine.&quot; Daloy gives
             you the verifying middleware as first-class primitives, so the chain
@@ -290,16 +290,16 @@ export default function BlogPostPage() {
 
           <p>
             Two non-negotiables worth pointing out: every secret comparison in
-            the framework — basic auth, CSRF tokens, session HMAC, webhook
-            signatures — runs through <code>timingSafeEqual</code>. There is a
+            the framework, basic auth, CSRF tokens, session HMAC, webhook
+            signatures, runs through <code>timingSafeEqual</code>. There is a
             CI guard (<code>verify:secret-comparisons</code>) that fails the
             build if anyone tries to slip a raw <code>===</code> back in. And
             the JWT middleware refuses unsigned tokens, refuses{" "}
-            <code>alg: none</code>, and pins to JWKS by <code>kid</code> — so a
+            <code>alg: none</code>, and pins to JWKS by <code>kid</code>: so a
             stolen audience claim doesn&apos;t silently become a master key.
           </p>
 
-          <h2>Principle 2 — Defense-in-depth</h2>
+          <h2>Principle 2: Defense-in-depth</h2>
 
           <PrincipleCard
             principle="Multiple independent layers, any one of which can stop an attack"
@@ -308,7 +308,7 @@ export default function BlogPostPage() {
           />
 
           <p>
-            The post&apos;s castle analogy — moat, wall, towers, keep — maps
+            The post&apos;s castle analogy, moat, wall, towers, keep, maps
             almost one-for-one to a Daloy middleware pipeline. The point
             isn&apos;t that one layer catches everything; it&apos;s that
             removing one doesn&apos;t silently disable the others:
@@ -325,7 +325,7 @@ export default function BlogPostPage() {
             post.
           </p>
 
-          <h2>Principle 3 — Centralize IAM</h2>
+          <h2>Principle 3: Centralize IAM</h2>
 
           <PrincipleCard
             principle="Federated identity, MFA everywhere, roles not long-lived keys"
@@ -338,8 +338,8 @@ export default function BlogPostPage() {
             <strong>does not invent a user system</strong> for you. There is no
             built-in &quot;forgot password&quot; route silently shipped with
             every project, no default admin account, no auto-issued bearer
-            token. The thing IAM guides hate most — &quot;the framework&apos;s
-            default user table&quot; — does not exist here. You bring an IdP and
+            token. The thing IAM guides hate most, &quot;the framework&apos;s
+            default user table&quot;, does not exist here. You bring an IdP and
             Daloy verifies what it signs.
           </p>
 
@@ -351,7 +351,7 @@ export default function BlogPostPage() {
             no logout storm.
           </p>
 
-          <h2>Principle 4 — Segmented network &amp; SSRF protection</h2>
+          <h2>Principle 4: Segmented network &amp; SSRF protection</h2>
 
           <PrincipleCard
             principle="Limit blast radius; secure ingress AND egress"
@@ -361,8 +361,8 @@ export default function BlogPostPage() {
 
           <p>
             The article spends a lot of words on micro-segmentation. The
-            application-layer analogue — and the one the cloud guide{" "}
-            <em>doesn&apos;t</em> cover — is server-side request forgery. A
+            application-layer analogue, and the one the cloud guide{" "}
+            <em>doesn&apos;t</em> cover, is server-side request forgery. A
             compromised handler that can <code>fetch()</code> anywhere can still
             reach AWS metadata, your private Redis, your internal admin
             dashboard, and any IMDSv1 endpoint that didn&apos;t get upgraded.{" "}
@@ -377,17 +377,17 @@ export default function BlogPostPage() {
             for the full default deny-list and how it composes with timeouts.
           </p>
 
-          <h2>Principle 5 — Automate security with IaC scanning</h2>
+          <h2>Principle 5: Automate security with IaC scanning</h2>
 
           <PrincipleCard
             principle="Scan infrastructure-as-code in CI before it ships"
             framework="The framework's own repo runs ~15 verify-* gates on every PR. The scaffolded app from create-daloy ships with the same CI workflow templates so your project gets them on day one."
-            platform="Terraform / CloudFormation / Pulumi scanners (Checkov, tfsec, Aikido, etc.) for your cloud resources. Daloy does not scan your S3 buckets — but it does refuse to install a dependency that runs a postinstall script."
+            platform="Terraform / CloudFormation / Pulumi scanners (Checkov, tfsec, Aikido, etc.) for your cloud resources. Daloy does not scan your S3 buckets, but it does refuse to install a dependency that runs a postinstall script."
           />
 
           <p>
             The cloud post is talking about Terraform scanners. The framework
-            analogue is the supply-chain CI gate. These are not aspirational —
+            analogue is the supply-chain CI gate. These are not aspirational, 
             they all run today, and a failure blocks merge:
           </p>
 
@@ -400,16 +400,16 @@ export default function BlogPostPage() {
             </Link>
             . Short version: pnpm&apos;s install-time defaults, plus our CI
             gates, plus a release-age cooldown, plus SHA-pinned Actions, plus
-            npm provenance, plus a CycloneDX SBOM — chosen because attackers
+            npm provenance, plus a CycloneDX SBOM, chosen because attackers
             don&apos;t need a 0-day if they can ship a malicious{" "}
             <code>postinstall</code>.
           </p>
 
-          <h2>Principle 6 — Continuous monitoring (CSPM-equivalent)</h2>
+          <h2>Principle 6: Continuous monitoring (CSPM-equivalent)</h2>
 
           <PrincipleCard
             principle="A single pane of glass for security posture"
-            framework="Structured per-request JSON logs with correlated request IDs, automatic redaction of Authorization / Cookie / Set-Cookie / X-API-Key, Server-Timing, and OpenTelemetry-shaped spans — same shape on Node, Bun, Workers, and Vercel Edge."
+            framework="Structured per-request JSON logs with correlated request IDs, automatic redaction of Authorization / Cookie / Set-Cookie / X-API-Key, Server-Timing, and OpenTelemetry-shaped spans, same shape on Node, Bun, Workers, and Vercel Edge."
             platform="Ship the logs into your SIEM (CloudWatch / Datadog / Splunk / Loki). Daloy doesn't run the dashboard; it makes sure the events are useful when they arrive."
           />
 
@@ -422,7 +422,7 @@ export default function BlogPostPage() {
           <CodeBlock language="ts" code={STRUCTURED_LOGS} />
 
           <p>
-            The redaction is not a string regex pass — it walks the object
+            The redaction is not a string regex pass, it walks the object
             graph, so a secret hiding inside <code>req.body.user.token</code>{" "}
             gets redacted the same way an Authorization header does. The list of
             keys is extensible; the defaults are conservative. If your company
@@ -447,7 +447,7 @@ export default function BlogPostPage() {
             <li>
               We don&apos;t scan your cloud configuration. If you mis-IAM an S3
               bucket, Daloy won&apos;t know. Use the cloud provider&apos;s
-              tooling or a CSPM vendor — the Aikido post lists several.
+              tooling or a CSPM vendor, the Aikido post lists several.
             </li>
             <li>
               We don&apos;t encrypt your database. That&apos;s the data
@@ -463,7 +463,7 @@ export default function BlogPostPage() {
             <li>
               We don&apos;t replace your WAF. <code>secureHeaders()</code>,{" "}
               <code>rateLimit()</code>, and <code>loadShedding()</code> are
-              application-layer L7 — they overlap with a CDN/WAF and work behind
+              application-layer L7, they overlap with a CDN/WAF and work behind
               one, but they are not the same thing.
             </li>
           </ul>
@@ -479,13 +479,13 @@ export default function BlogPostPage() {
 
           <ol>
             <li>
-              <code>new App()</code> with no overrides — you already have body
+              <code>new App()</code> with no overrides, you already have body
               limits, request timeouts, problem+json redaction in production,
               and prototype-pollution-safe JSON.
             </li>
             <li>
               Add <code>secureHeaders()</code>, <code>rateLimit()</code>,{" "}
-              <code>loadShedding()</code>, and <code>fetchGuard()</code> — four
+              <code>loadShedding()</code>, and <code>fetchGuard()</code>: four
               lines, four layers.
             </li>
             <li>
@@ -514,7 +514,7 @@ export default function BlogPostPage() {
           </ol>
 
           <p>
-            None of this is novel — that&apos;s the point. The whole reason the
+            None of this is novel, that&apos;s the point. The whole reason the
             Aikido post exists is that the boring defenses are still the ones
             that prevent breaches. Daloy&apos;s job is to make sure you
             can&apos;t accidentally skip them.

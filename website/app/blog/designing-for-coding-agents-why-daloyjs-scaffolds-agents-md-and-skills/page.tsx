@@ -81,9 +81,9 @@ const AGENTS_SHAPE = `# Every project created by 'pnpm create daloy' lands with:
 #
 # Two files, two purposes:
 #
-#   AGENTS.md   — always-loaded, ~50 lines. Names the conventions and
+#   AGENTS.md   - always-loaded, ~50 lines. Names the conventions and
 #                 points to SKILL.md for the deep dive.
-#   SKILL.md    — on-demand, longer. The "how do I add a route, where
+#   SKILL.md    - on-demand, longer. The "how do I add a route, where
 #                 do schemas live, which middleware is load-bearing"
 #                 manual the agent reads when it actually needs it.
 #
@@ -103,10 +103,10 @@ routes are defined with Zod schemas and OpenAPI 3.1 is generated from them.
 
 ## Project shape
 
-- src/build-app.ts  — buildApp() factory. Routes + middleware. PURE, no side effects.
-- src/index.ts      — calls buildApp(), opens the port. ONLY file that listens.
-- scripts/dump-openapi.ts — writes generated/openapi.json. Imports buildApp() only.
-- generated/        — machine-written. Do not edit by hand.
+- src/build-app.ts  - buildApp() factory. Routes + middleware. PURE, no side effects.
+- src/index.ts      - calls buildApp(), opens the port. ONLY file that listens.
+- scripts/dump-openapi.ts - writes generated/openapi.json. Imports buildApp() only.
+- generated/        - machine-written. Do not edit by hand.
 
 ## Core rules
 
@@ -118,8 +118,8 @@ routes are defined with Zod schemas and OpenAPI 3.1 is generated from them.
 6. Every new route ships a happy-path test AND at least one unhappy-path test.
 7. After any route change: pnpm gen && pnpm typecheck && pnpm test.
 
-For the full workflow — adding routes step-by-step, schema conventions,
-testing patterns, security guidance — read
+For the full workflow - adding routes step-by-step, schema conventions,
+testing patterns, security guidance - read
 .agents/skills/daloyjs-best-practices/SKILL.md`;
 
 const WHY_SMALL = `# Why is AGENTS.md ~50 lines and not 500?
@@ -142,9 +142,9 @@ const WHY_SMALL = `# Why is AGENTS.md ~50 lines and not 500?
 # tier. It names load-bearing files, hard-and-fast rules, and the
 # commands the agent will be asked to run.
 #
-# Everything that the agent needs only sometimes — the recipe for
+# Everything that the agent needs only sometimes - the recipe for
 # adding a new route, the conventions around schemas, the deployment
-# notes — lives in the longer SKILL.md. Agents that understand the
+# notes - lives in the longer SKILL.md. Agents that understand the
 # skills protocol read it on demand. Agents that don't... still get
 # the link in AGENTS.md and can follow it.`;
 
@@ -154,7 +154,7 @@ const SKILL_SHAPE = `# .agents/skills/daloyjs-best-practices/SKILL.md is structu
 #
 # Structure of the file (verbatim from the scaffold):
 #
-#   # SKILL.md — DaloyJS best practices (Node)
+#   # SKILL.md - DaloyJS best practices (Node)
 #
 #   ## When to use this skill
 #     Bulleted list. Agents that follow the skills protocol use
@@ -185,11 +185,11 @@ const SKILL_PROTOCOL = `// What "the skill protocol" actually means, in 30 lines
 // Different agents discover repo context with different conventions.
 // DaloyJS picks the conventions with the widest blast radius:
 //
-//   AGENTS.md             — universal. Anthropic, GitHub Copilot, Codex,
+//   AGENTS.md             - universal. Anthropic, GitHub Copilot, Codex,
 //                           Cursor, and Aider all read it (or symlink-
 //                           recognize it). Always-loaded.
 //   .agents/skills/*/SKILL.md
-//                         — Anthropic Skills protocol. Read on demand
+//                         - Anthropic Skills protocol. Read on demand
 //                           when the prompt matches the "When to use"
 //                           section.
 //
@@ -268,7 +268,7 @@ app.route({
 });
 
 // ↑ Notice: zero load-bearing middleware removed (rule 5).
-// Notice: generated/openapi.json NEVER edited by hand — pnpm gen
+// Notice: generated/openapi.json NEVER edited by hand - pnpm gen
 //         writes it from buildApp() (project shape rule).`;
 
 const CARRYING_OVER = `# Want this in your existing (non-scaffolded) DaloyJS project? Copy
@@ -285,7 +285,7 @@ $ cp node_modules/create-daloy/templates/node-basic/.cursorrules ./
 # Tune AGENTS.md to YOUR repo. Two changes that matter most:
 #
 #   1) The "Core rules" section. Add anything load-bearing in YOUR
-#      codebase — "the admin plugin must never auto-mount in prod",
+#      codebase - "the admin plugin must never auto-mount in prod",
 #      "do not edit src/legacy/*", "audit logs go through audit.ts".
 #
 #   2) The "Project shape" section. Name your domain folders and what
@@ -668,7 +668,7 @@ export default function BlogPostPage() {
             framework side.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

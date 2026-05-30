@@ -27,7 +27,7 @@ export default function Page() {
         <strong>Think of it like…</strong> a customs officer who insists
         everyone fill out the standardized declaration form, not a handwritten
         note. The form has separate boxes for &quot;name&quot; and
-        &quot;quantity&quot; — there&apos;s no way to write &quot;tobacco&quot;
+        &quot;quantity&quot;, there&apos;s no way to write &quot;tobacco&quot;
         in the quantity box and have it counted as goods. Parameterized queries
         are the printed form; string-concatenated SQL is the handwritten note an
         attacker can scribble extra instructions on.
@@ -140,7 +140,7 @@ app.route({
   params: z.object({ id: z.string().uuid() }),
   responses: { 200: { description: "ok" } },
   handler: async ({ params }) => {
-    // 2) The ORM emits a parameterized query — params.id is bound, never spliced.
+    // 2) The ORM emits a parameterized query - params.id is bound, never spliced.
     const [user] = await db
       .select()
       .from(users)
@@ -161,13 +161,13 @@ app.route({
 
       <h3>Prisma</h3>
       <CodeBlock
-        code={`// SAFE — Prisma always parameterizes \`where\` arguments.
+        code={`// SAFE, Prisma always parameterizes \`where\` arguments.
 await prisma.user.findUnique({ where: { id: params.id } });
 
-// SAFE — \`$queryRaw\` is a tagged template; values become bind parameters.
+// SAFE - \`$queryRaw\` is a tagged template; values become bind parameters.
 await prisma.$queryRaw\`SELECT * FROM "User" WHERE id = \${params.id}\`;
 
-// DANGEROUS — \`$queryRawUnsafe\` splices the string verbatim.
+// DANGEROUS - \`$queryRawUnsafe\` splices the string verbatim.
 // Never pass user input to it. Use \`$queryRaw\` instead.
 await prisma.$queryRawUnsafe(\`SELECT * FROM "User" WHERE id = '\${params.id}'\`);`}
       />
@@ -176,36 +176,36 @@ await prisma.$queryRawUnsafe(\`SELECT * FROM "User" WHERE id = '\${params.id}'\`
       <CodeBlock
         code={`import { sql, eq } from "drizzle-orm";
 
-// SAFE — builder API.
+// SAFE - builder API.
 await db.select().from(users).where(eq(users.email, params.email));
 
-// SAFE — \`sql\` tag binds values, doesn't splice them.
+// SAFE - \`sql\` tag binds values, doesn't splice them.
 await db.execute(sql\`SELECT * FROM users WHERE email = \${params.email}\`);
 
-// DANGEROUS — \`sql.raw\` inserts the string as-is.
+// DANGEROUS - \`sql.raw\` inserts the string as-is.
 // Only feed it constants or values you have allowlisted yourself.
 await db.execute(sql.raw(\`SELECT * FROM users WHERE email = '\${params.email}'\`));`}
       />
 
       <h3>Kysely</h3>
       <CodeBlock
-        code={`// SAFE — typed builder, parameterized at the driver level.
+        code={`// SAFE, typed builder, parameterized at the driver level.
 await db.selectFrom("users").where("email", "=", params.email).selectAll().execute();
 
-// SAFE — \`sql\` template tag.
+// SAFE - \`sql\` template tag.
 await sql\`SELECT * FROM users WHERE email = \${params.email}\`.execute(db);
 
-// DANGEROUS — \`sql.raw\` / \`sql.lit\` skip binding.
+// DANGEROUS - \`sql.raw\` / \`sql.lit\` skip binding.
 await sql.raw(\`SELECT * FROM users WHERE email = '\${params.email}'\`).execute(db);`}
       />
 
       <h3>node-postgres / mysql2 (no ORM)</h3>
       <CodeBlock
-        code={`// SAFE — placeholders are bound by the driver.
+        code={`// SAFE, placeholders are bound by the driver.
 await pg.query("SELECT * FROM users WHERE email = $1", [params.email]);
 await mysql.execute("SELECT * FROM users WHERE email = ?", [params.email]);
 
-// DANGEROUS — template literal in the SQL string.
+// DANGEROUS - template literal in the SQL string.
 await pg.query(\`SELECT * FROM users WHERE email = '\${params.email}'\`);`}
       />
 
@@ -245,7 +245,7 @@ await pg.query(\`SELECT * FROM users WHERE email = '\${params.email}'\`);`}
         directly and spreading it into <code>where</code>.
       </p>
       <CodeBlock
-        code={`// DANGEROUS — \`email\` is typed as string but Zod accepts anything.
+        code={`// DANGEROUS, \`email\` is typed as string but Zod accepts anything.
 // Attacker posts {"email":{"not":""},"password":"x"} and \`findFirst\`
 // returns the first user whose email is not empty (i.e. any user).
 const Login = z.object({ email: z.any(), password: z.any() });
@@ -263,7 +263,7 @@ app.route({
   },
 });
 
-// SAFE — primitives are enforced at the wire, so \`body.email\` is a string.
+// SAFE - primitives are enforced at the wire, so \`body.email\` is a string.
 const SafeLogin = z.object({
   email: z.string().email().max(254),
   password: z.string().min(1).max(1024),
@@ -275,7 +275,7 @@ const SafeLogin = z.object({
         key can&apos;t reach Prisma:
       </p>
       <CodeBlock
-        code={`// SAFE — build the \`where\` yourself from validated primitives. The
+        code={`// SAFE, build the \`where\` yourself from validated primitives. The
 // shape passed to Prisma is owned by your code, not the request body.
 const Search = z.object({
   email: z.string().email().optional(),

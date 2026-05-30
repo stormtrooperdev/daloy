@@ -282,7 +282,7 @@ export default function Page() {
         If you scaffold with <code>create-daloy --with-ci</code> and{" "}
         <strong>keep the generated workflows</strong>, the YAML itself encodes
         these protections. They apply equally to public repos, private repos,
-        and private organizations — being private is not a substitute for any of
+        and private organizations, being private is not a substitute for any of
         them:
       </p>
       <ul>

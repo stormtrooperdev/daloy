@@ -30,9 +30,9 @@ export default function Page() {
         <code>src/websocket.ts</code> (re-exported from{" "}
         <code>@daloyjs/core/websocket</code>) plus adapter wiring for{" "}
         <code>@daloyjs/core/node</code> and <code>@daloyjs/core/bun</code>. Both
-        adapters accept the <strong>same handler shape</strong> — the Bun-style
+        adapters accept the <strong>same handler shape</strong>: the Bun-style
         <code> open</code> / <code>message</code> / <code>close</code> /{" "}
-        <code>drain</code> / <code>error</code> callbacks — so the same{" "}
+        <code>drain</code> / <code>error</code> callbacks, so the same{" "}
         <code>app.ws(path, handler)</code> registration works on either runtime
         without changes.
       </p>
@@ -105,7 +105,7 @@ const chatHandler = defineWebSocket({
     // cleanup
   },
   error(conn, err) {
-    // user error handler — does not affect close code
+    // user error handler - does not affect close code
   },
   drain(conn) {
     // backpressure released
@@ -123,26 +123,26 @@ app.ws("/chat/:room", chatHandler);`}
       </p>
       <ul>
         <li>
-          <code>conn.readyState</code> — one of{" "}
+          <code>conn.readyState</code>: one of{" "}
           <code>WS_READY_STATE.CONNECTING / OPEN / CLOSING / CLOSED</code>.
         </li>
         <li>
-          <code>conn.send(data, options?)</code> — send a text frame for{" "}
+          <code>conn.send(data, options?)</code>: send a text frame for{" "}
           <code>string</code>, or a binary frame for <code>Uint8Array</code> /{" "}
           <code>ArrayBuffer</code>. Pass <code>{`{ binary: true }`}</code> to
           force binary framing of a string.
         </li>
         <li>
-          <code>conn.ping(data?)</code> / <code>conn.pong(data?)</code> —
+          <code>conn.ping(data?)</code> / <code>conn.pong(data?)</code>: 
           control frames; payload must be ≤ 125 bytes per RFC 6455.
         </li>
         <li>
-          <code>conn.close(code?, reason?)</code> — graceful close (sends a
+          <code>conn.close(code?, reason?)</code>: graceful close (sends a
           CLOSE frame, fires your <code>close</code> handler, then closes the
           underlying socket).
         </li>
         <li>
-          <code>conn.terminate()</code> — immediate transport-level close, no
+          <code>conn.terminate()</code>: immediate transport-level close, no
           CLOSE frame.
         </li>
         <li>
@@ -150,7 +150,7 @@ app.ws("/chat/:room", chatHandler);`}
           <code>conn.extensions</code>, <code>conn.binaryType</code>.
         </li>
         <li>
-          <code>conn.data</code> — opaque per-connection slot for your app
+          <code>conn.data</code>: opaque per-connection slot for your app
           state.
         </li>
       </ul>

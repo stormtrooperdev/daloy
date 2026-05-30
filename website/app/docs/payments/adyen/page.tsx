@@ -53,7 +53,7 @@ export default function Page() {
           >
             Sessions flow
           </a>{" "}
-          — your server creates a session, the frontend hands it to Drop-in, and Adyen
+, your server creates a session, the frontend hands it to Drop-in, and Adyen
           handles 3-D Secure 2, redirects, and payment-method-specific quirks for you.
           Direct <code>/payments</code> is still supported for server-to-server use cases.
         </li>
@@ -211,7 +211,7 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        <code>hmacValidator</code> is a class — instantiate it once. The same instance is
+        <code>hmacValidator</code> is a class, instantiate it once. The same instance is
         safe to call concurrently.
       </p>
 
@@ -334,7 +334,7 @@ app.route({
       />
       <p>
         The event you care about most is{" "}
-        <code>AUTHORISATION</code> with <code>success === &quot;true&quot;</code> —
+        <code>AUTHORISATION</code> with <code>success === &quot;true&quot;</code>: 
         that&apos;s the canonical &quot;the money is good&quot; signal. The HTTP response from{" "}
         <code>/payments</code> or the Sessions success callback is only a hint; webhooks are
         the source of truth.
@@ -363,7 +363,7 @@ await checkout.ModificationsApi.refundCapturedPayment(item.pspReference, {
         >
           idempotency key
         </a>{" "}
-        on writes you might retry — the SDK takes one via the second{" "}
+        on writes you might retry, the SDK takes one via the second{" "}
         <code>IRequest.Options</code> argument:
       </p>
       <CodeBlock
@@ -415,7 +415,7 @@ await checkout.ModificationsApi.refundCapturedPayment(item.pspReference, {
           <strong>Network tokens by default.</strong> When you tokenise with{" "}
           <code>storePaymentMethod: true</code> and reuse via{" "}
           <code>shopperInteraction: &quot;ContAuth&quot;</code>, Adyen will route through
-          scheme tokens automatically — no extra code, lower decline rate.
+          scheme tokens automatically, no extra code, lower decline rate.
         </li>
       </ul>
 

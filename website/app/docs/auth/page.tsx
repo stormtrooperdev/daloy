@@ -25,7 +25,7 @@ export default function Page() {
     <>
       <h1>Authentication &amp; authorization</h1>
       <p>
-        DaloyJS doesn&apos;t bundle a user database or login UI — instead, it
+        DaloyJS doesn&apos;t bundle a user database or login UI, instead, it
         ships primitives that make it easy to plug in a hosted identity provider
         (IdP). Your API receives a bearer token, verifies it with the
         provider&apos;s JWKS or SDK, and gates routes by scope, role, or
@@ -36,29 +36,29 @@ export default function Page() {
       <h2>Supported providers</h2>
       <ul>
         <li>
-          <Link href="/docs/auth/aws-cognito">AWS Cognito</Link> — pay-as-you-go
+          <Link href="/docs/auth/aws-cognito">AWS Cognito</Link>: pay-as-you-go
           user pools with hosted sign-in. Use{" "}
           <code>aws-jwt-verify</code> to verify access and ID tokens with zero
           runtime dependencies; runs on Node, edge, and Lambda.
         </li>
         <li>
-          <Link href="/docs/auth/entra-id">Microsoft Entra ID (MSAL)</Link> —
+          <Link href="/docs/auth/entra-id">Microsoft Entra ID (MSAL)</Link>: 
           enterprise SSO for Microsoft 365 / Azure AD users. Verify tokens with
           the OIDC JWKS using <code>jose</code>; acquire downstream tokens with{" "}
           <code>@azure/msal-node</code> when needed.
         </li>
         <li>
-          <Link href="/docs/auth/auth0">Auth0</Link> — developer-friendly IdP
+          <Link href="/docs/auth/auth0">Auth0</Link>: developer-friendly IdP
           with universal login, MFA, and rich rule engine. Verify access tokens
           with <code>jose</code> against your tenant&apos;s issuer URL.
         </li>
         <li>
-          <Link href="/docs/auth/okta">Okta</Link> — workforce identity with
+          <Link href="/docs/auth/okta">Okta</Link>: workforce identity with
           custom authorization servers and granular policies. Use the official{" "}
           <code>@okta/jwt-verifier</code> for access and ID tokens.
         </li>
         <li>
-          <Link href="/docs/auth/clerk">Clerk</Link> — modern, embeddable
+          <Link href="/docs/auth/clerk">Clerk</Link>: modern, embeddable
           authentication with user, organization, and billing primitives. Use{" "}
           <code>@clerk/backend</code> <code>authenticateRequest()</code> to
           authenticate any <code>Request</code>.
@@ -183,7 +183,7 @@ declare module "@daloyjs/core" {
       <ul>
         <li>
           <strong>Always verify the signature.</strong> Never trust an
-          unverified JWT — decode-only utilities are for debugging. Use the
+          unverified JWT, decode-only utilities are for debugging. Use the
           provider&apos;s JWKS endpoint with key caching and automatic rotation
           (every SDK on the following pages handles this).
         </li>

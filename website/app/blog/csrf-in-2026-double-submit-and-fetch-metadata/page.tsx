@@ -43,7 +43,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const DOUBLE_SUBMIT_BASIC = `// src/app.ts — classic double-submit (the 2015 way, still works)
+const DOUBLE_SUBMIT_BASIC = `// src/app.ts, classic double-submit (the 2015 way, still works)
 import { App, csrf } from "@daloyjs/core";
 
 export const app = new App();
@@ -71,7 +71,7 @@ app.route({
   }),
 });`;
 
-const FETCH_METADATA_BASIC = `// src/app.ts — fetch-metadata (the 2026 way, no token at all)
+const FETCH_METADATA_BASIC = `// src/app.ts, fetch-metadata (the 2026 way, no token at all)
 import { App, csrf } from "@daloyjs/core";
 
 export const app = new App();
@@ -90,7 +90,7 @@ app.use(
 // Sec-Fetch-Site: same-site | cross-site → must be in allowedOrigins
 // Sec-Fetch-Site missing                 → Origin / Referer must be in allowedOrigins`;
 
-const BOTH_STRATEGY = `// src/app.ts — defense-in-depth: require both
+const BOTH_STRATEGY = `// src/app.ts, defense-in-depth: require both
 import { App, csrf, session } from "@daloyjs/core";
 
 export const app = new App();
@@ -128,7 +128,7 @@ fetch-metadata →  Your client is a modern SPA, mobile webview,
 both           →  Production app, mixed clients, no real cost.
                   This is the default I reach for.`;
 
-const FAILURE_MATRIX = `// What gets rejected — and how — under each strategy.
+const FAILURE_MATRIX = `// What gets rejected, and how, under each strategy.
 // (All rejections are 403 Forbidden, RFC 9457 problem+json.)
 
 // strategy: "double-submit"
@@ -150,7 +150,7 @@ const FAILURE_MATRIX = `// What gets rejected — and how — under each strateg
 //   POST /pay, double-submit passes, fetch-metadata fails → 403
 //   POST /pay, both pass → allowed`;
 
-const CONSTRUCTION_TIME = `// These all throw at app boot — not at request time, not in prod under load.
+const CONSTRUCTION_TIME = `// These all throw at app boot, not at request time, not in prod under load.
 // You find out before your container reports "ready".
 
 csrf({ strategy: "tripple-submit" });
@@ -171,7 +171,7 @@ csrf({ cookieOptions: { secure: false } });
 csrf({ cookieOptions: { sameSite: "None", secure: false } });
 // Error: csrf(): cookieOptions.sameSite: "None" requires secure: true.`;
 
-const FRONTEND_USAGE = `// apps/web/lib/csrf-fetch.ts — one helper, every mutation goes through it.
+const FRONTEND_USAGE = `// apps/web/lib/csrf-fetch.ts, one helper, every mutation goes through it.
 function readCookie(name: string): string | null {
   const match = document.cookie.match(
     new RegExp("(?:^|; )" + name.replace(/[.$?*|{}()[\\]\\\\\\/+^]/g, "\\\\$&") + "=([^;]*)"),
@@ -193,7 +193,7 @@ export async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}
 }`;
 
 const RFC_QUIRK = `# A common surprise from the RFC:
-# Sec-Fetch-Site can be "none" — that's NOT a placeholder, it means
+# Sec-Fetch-Site can be "none" - that's NOT a placeholder, it means
 # the request originated from a top-level browser action with no document
 # context (typing the URL into the address bar, clicking a bookmark, a
 # server-initiated redirect, etc.). It IS safe by definition.
@@ -220,7 +220,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — VS Code-style chrome around a code sample, kept local to
+ * EditorFrame - VS Code-style chrome around a code sample, kept local to
  * this post so the file is self-contained.
  */
 function EditorFrame({
@@ -283,7 +283,7 @@ function EditorFrame({
 }
 
 /**
- * StrategyCard — short summary box for each of the three strategies.
+ * StrategyCard - short summary box for each of the three strategies.
  */
 function StrategyCard({
   name,
@@ -395,9 +395,9 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            This post is the result. We ship two strategies — the classic
+            This post is the result. We ship two strategies, the classic
             <em> double-submit cookie</em> and the modern{" "}
-            <em>Fetch-Metadata</em> check — and a third option,{" "}
+            <em>Fetch-Metadata</em> check, and a third option,{" "}
             <code>strategy: &quot;both&quot;</code>, that runs both of them. I
             want to walk through why, when each one fails, and why
             &quot;both&quot; is the boring grown-up default for most production
@@ -414,13 +414,13 @@ export default function BlogPostPage() {
 
           <ol>
             <li>
-              <strong>Synchronizer tokens</strong> (2005-ish) — server stamps a
+              <strong>Synchronizer tokens</strong> (2005-ish), server stamps a
               token into a hidden form field, server keeps it in session,
               compares on submit. Works, but requires server-side state and dies
               the moment you have a stateless API.
             </li>
             <li>
-              <strong>Double-submit cookie</strong> (2010s) — server sets a
+              <strong>Double-submit cookie</strong> (2010s), server sets a
               random token in a cookie, frontend echoes it back as a header (or
               hidden field). The browser&apos;s same-origin policy prevents an
               attacker page from reading the cookie, so the echo proves the
@@ -428,7 +428,7 @@ export default function BlogPostPage() {
               framework-friendly. This is what the JS world ran on for a decade.
             </li>
             <li>
-              <strong>SameSite cookies</strong> (2017-2020) — browsers started
+              <strong>SameSite cookies</strong> (2017-2020), browsers started
               defaulting cookies to <code>SameSite=Lax</code>, which actually
               eliminates the most naive CSRF without any application code.
               Great, but partial: <code>Lax</code> still allows top-level{" "}
@@ -436,13 +436,13 @@ export default function BlogPostPage() {
               cookies (third-party widgets, SSO) have to opt out.
             </li>
             <li>
-              <strong>Fetch Metadata Request Headers</strong> (2020+) — the
+              <strong>Fetch Metadata Request Headers</strong> (2020+), the
               browser itself starts telling the server{" "}
               <em>where this request came from</em>, via{" "}
               <code>Sec-Fetch-Site</code>, <code>Sec-Fetch-Mode</code>,{" "}
-              <code>Sec-Fetch-Dest</code>. With one rule — &quot;reject mutating
+              <code>Sec-Fetch-Dest</code>. With one rule, &quot;reject mutating
               requests whose <code>Sec-Fetch-Site</code> isn&apos;t{" "}
-              <code>same-origin</code> or <code>none</code>&quot; — you can
+              <code>same-origin</code> or <code>none</code>&quot;, you can
               ditch the token entirely on modern browsers.
             </li>
           </ol>
@@ -481,8 +481,8 @@ export default function BlogPostPage() {
             ]}
             bad={[
               "Frontends that forget to set the header (this is the #1 bug)",
-              "JS-less workflows — no cookie reader, no echo",
-              "XSS — if an attacker can read your cookies, this falls",
+              "JS-less workflows, no cookie reader, no echo",
+              "XSS, if an attacker can read your cookies, this falls",
               "Cookieless API clients (mobile apps, server-to-server)",
             ]}
           />
@@ -490,7 +490,7 @@ export default function BlogPostPage() {
           <p>
             The single most common bug with double-submit is forgetting to send
             the header from the frontend. That bug isn&apos;t actually a CSRF
-            vulnerability — it just looks like one to users, who cheerfully
+            vulnerability, it just looks like one to users, who cheerfully
             report &quot;the save button is broken&quot; on a Friday afternoon.
             The fix is to centralize: one <code>csrfFetch()</code> helper, every
             mutation goes through it.
@@ -531,7 +531,7 @@ export default function BlogPostPage() {
               "Any modern browser (Chrome 76+, Firefox 90+, Safari 16.4+)",
               "Native fetch from SPAs / mobile webviews / Workers",
               "Server-to-server clients you own (you set the allowlist)",
-              "JS-less server-rendered forms — yes, really; same-origin POST still says so",
+              "JS-less server-rendered forms, yes, really; same-origin POST still says so",
             ]}
             bad={[
               "Cross-origin SSO redirects that go through your endpoint mid-flow",
@@ -568,13 +568,13 @@ export default function BlogPostPage() {
           <ul>
             <li>
               When <code>Sec-Fetch-Site</code> is <code>same-site</code> or
-              <code> cross-site</code> — usually because of a subdomain or a
-              user opening your site via a partner — we check the request&apos;s
+              <code> cross-site</code>: usually because of a subdomain or a
+              user opening your site via a partner, we check the request&apos;s
               <code> Origin</code> against the allowlist.
             </li>
             <li>
               When <code>Sec-Fetch-Site</code> is missing entirely (legacy
-              browser, some embedded webviews) — we check <code>Origin</code>{" "}
+              browser, some embedded webviews), we check <code>Origin</code>{" "}
               first, and if that&apos;s also missing we fall back to the origin
               of the <code>Referer</code> URL.
             </li>
@@ -597,7 +597,7 @@ export default function BlogPostPage() {
           <p>
             One rule for predicates: keep them <em>small</em> and{" "}
             <em>readable</em>. The instant your predicate looks like a regex
-            engine, you have introduced a different CSRF vector — the one where
+            engine, you have introduced a different CSRF vector, the one where
             a future engineer misreads it.
           </p>
 
@@ -606,7 +606,7 @@ export default function BlogPostPage() {
           <p>
             Most apps I&apos;ve shipped in the last three years have ended up
             here, and not because we couldn&apos;t pick a side. The reason is
-            simple — the two strategies are <em>cheap</em> to run together, and
+            simple, the two strategies are <em>cheap</em> to run together, and
             they fail in different ways:
           </p>
 
@@ -669,7 +669,7 @@ export default function BlogPostPage() {
             , not when a request arrives. A typo in the strategy string, a
             cookie name with a space, a <code>__Host-</code> cookie without
             <code> secure: true</code>, a <code>SameSite=None</code> without
-            <code> Secure</code> — every one of these throws at app boot, with a
+            <code> Secure</code>: every one of these throws at app boot, with a
             message that tells you exactly what to fix:
           </p>
 
@@ -704,7 +704,7 @@ export default function BlogPostPage() {
           <h2>The honest part</h2>
 
           <p>
-            CSRF, as a class, is mostly a solved problem in 2026 — between
+            CSRF, as a class, is mostly a solved problem in 2026, between
             <code> SameSite=Lax</code> defaults, Fetch-Metadata reporting, and
             double-submit being two lines away, the surviving bugs are almost
             always configuration bugs (a cookie set without <code>Secure</code>,
@@ -730,7 +730,7 @@ export default function BlogPostPage() {
             goes through it. Don&apos;t ask me why I know to suggest that.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

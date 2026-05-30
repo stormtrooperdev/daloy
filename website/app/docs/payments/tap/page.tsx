@@ -27,7 +27,7 @@ export default function Page() {
         <a href="https://www.tap.company/" target="_blank" rel="noreferrer">
           Tap Payments
         </a>{" "}
-        is the default acquirer for the GCC and wider MENA region — it&apos;s how you accept{" "}
+        is the default acquirer for the GCC and wider MENA region, it&apos;s how you accept{" "}
         <strong>KNET</strong> (Kuwait), <strong>Mada</strong> (Saudi),{" "}
         <strong>Benefit / BenefitPay</strong> (Bahrain), <strong>STC Pay</strong>, plus
         cards, Apple Pay, Google Pay, and BNPL methods like Tabby and Tamara. There&apos;s
@@ -53,7 +53,7 @@ export default function Page() {
         <li>
           <strong>It&apos;s a redirect flow.</strong> You create a charge, Tap returns{" "}
           <code>transaction.url</code>, you redirect the customer. They come back via your{" "}
-          <code>redirect.url</code> with <code>?tap_id=chg_xxx</code> — that&apos;s a UX
+          <code>redirect.url</code> with <code>?tap_id=chg_xxx</code>: that&apos;s a UX
           hint, not proof of payment.
         </li>
         <li>
@@ -64,7 +64,7 @@ export default function Page() {
         </li>
         <li>
           <strong>Amounts are decimals.</strong> Tap takes{" "}
-          <code>{`{ amount: 10, currency: "KWD" }`}</code> as a number — but KWD has 3
+          <code>{`{ amount: 10, currency: "KWD" }`}</code> as a number, but KWD has 3
           decimals (fils), SAR/AED/QAR/BHD have 2/3, USD 2. Use the right precision per
           currency or you&apos;ll under/overcharge.
         </li>
@@ -94,7 +94,7 @@ export default function Page() {
           <strong>Public Keys</strong> (<code>pk_*</code>).
         </li>
         <li>
-          Enable the payment methods you need (KNET, Mada, Benefit, etc.) — some require
+          Enable the payment methods you need (KNET, Mada, Benefit, etc.), some require
           contacting Tap support for activation.
         </li>
         <li>
@@ -112,7 +112,7 @@ TAP_MERCHANT_ID=merchant_xxx
 APP_URL=https://your-app.example.com`}
       />
 
-      <h2>3. Plugin (no SDK — fetch-based)</h2>
+      <h2>3. Plugin (no SDK: fetch-based)</h2>
       <CodeBlock
         code={`// src/plugins/tap.ts
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -258,7 +258,7 @@ declare module "@daloyjs/core" {
       />
       <p>
         The field order inside <code>buildHashString</code> is the part Tap is strict about
-        — keep it pinned to{" "}
+, keep it pinned to{" "}
         <a
           href="https://developers.tap.company/docs/webhook"
           target="_blank"
@@ -380,14 +380,14 @@ app.route({
         <code>/v2/authorize</code> instead of <code>/v2/charges</code>, then{" "}
         <code>POST /v2/authorize/{`{id}`}</code> with{" "}
         <code>{`{ status: "VOID" }`}</code> or a capture body. Not every method supports it
-        — confirm with Tap support per scheme before relying on it.
+, confirm with Tap support per scheme before relying on it.
       </p>
 
       <h2>Runtimes</h2>
       <p>
         Everything here is plain <code>fetch</code> and <code>node:crypto</code>. Swap{" "}
         <code>createHmac</code> for <code>crypto.subtle</code> if you&apos;re targeting
-        Cloudflare Workers or Vercel Edge — Tap itself has no runtime requirements beyond a
+        Cloudflare Workers or Vercel Edge, Tap itself has no runtime requirements beyond a
         TLS-capable HTTP client.
       </p>
 
@@ -415,7 +415,7 @@ app.route({
         <li>
           <strong>Stop using <code>charge_id</code> from the redirect to fulfil orders.</strong>{" "}
           The <code>?tap_id=</code> on the return URL is for showing the customer
-          &quot;thanks&quot; — never for marking the order paid. Fulfillment belongs in the
+          &quot;thanks&quot;, never for marking the order paid. Fulfillment belongs in the
           webhook handler.
         </li>
         <li>

@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Blog",
   description:
-    "Notes, stories, and field reports from the people building DaloyJS — the runtime-portable TypeScript framework with secure-by-default supply-chain hardening.",
+    "Notes, stories, and field reports from the people building DaloyJS, the runtime-portable TypeScript framework with secure-by-default supply-chain hardening.",
   path: "/blog",
   keywords: ["DaloyJS blog", "TypeScript framework blog", "Daloy updates"],
 });
@@ -256,9 +256,9 @@ const POSTS = [
   {
     slug: "same-app-five-runtimes-verified",
     title:
-      "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge — Verified",
+      "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge, Verified",
     description:
-      "One Bookstore app, five entry files, five deployments — Node serve(), Bun handle.url, Deno onListen, Workers ctx.waitUntil, and Vercel's three handler shapes. With receipts.",
+      "One Bookstore app, five entry files, five deployments, Node serve(), Bun handle.url, Deno onListen, Workers ctx.waitUntil, and Vercel's three handler shapes. With receipts.",
     date: "2026-05-18",
     readingTime: "14 min read",
     author: "Devlin Duldulao",
@@ -268,7 +268,7 @@ const POSTS = [
     title:
       "Contract-First Without the Codegen Dance: OpenAPI, Typed Client, and Contract Tests From One Definition",
     description:
-      "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app) — plus pnpm gen for a Hey API typed fetch SDK your frontend can import.",
+      "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app), plus pnpm gen for a Hey API typed fetch SDK your frontend can import.",
     date: "2026-05-18",
     readingTime: "12 min read",
     author: "Devlin Duldulao",
@@ -287,7 +287,7 @@ const POSTS = [
     slug: "introducing-daloyjs",
     title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
     description:
-      "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests — and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
+      "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
     date: "2026-05-18",
     readingTime: "11 min read",
     author: "Devlin Duldulao",

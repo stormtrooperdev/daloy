@@ -45,24 +45,24 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <code>loadShedding()</code> — first-party event-loop pressure monitor
+          <code>loadShedding()</code>: first-party event-loop pressure monitor
           that returns <code>503 Service Unavailable</code> +{" "}
           <code>Retry-After</code> when the process is overloaded.
         </li>
         <li>
-          <code>app.cspReportRoute()</code> — rate-limited POST receiver for CSP
+          <code>app.cspReportRoute()</code>: rate-limited POST receiver for CSP
           violation reports, plus{" "}
           <code>secureHeaders({"{ reportingEndpoints, reportTo }"})</code>{" "}
           wiring so a single line registers the endpoint and threads it back
           into the CSP header.
         </li>
         <li>
-          <code>disconnectStatusCode: 499</code> default — client-aborted
+          <code>disconnectStatusCode: 499</code> default, client-aborted
           requests record <code>499</code> instead of a <code>5xx</code>, so
           dashboards separate scraper aborts from real server failures.
         </li>
         <li>
-          <code>defineConfig({"{ schema, source }"})</code> — boot-time typed
+          <code>defineConfig({"{ schema, source }"})</code>: boot-time typed
           configuration validation through a Standard Schema (Zod / Valibot /
           ArkType / TypeBox), with aggregated error reporting.
         </li>
@@ -187,7 +187,7 @@ const legacy = new App({ disconnectStatusCode: 0 });
       />
       <p>
         Cannot be silenced to a <code>2xx</code> or escalated to a{" "}
-        <code>5xx</code> — the value is pinned to the <code>[400, 499]</code>{" "}
+        <code>5xx</code>: the value is pinned to the <code>[400, 499]</code>{" "}
         range (or <code>0</code> to keep whatever status the handler produced).
       </p>
 
@@ -199,7 +199,7 @@ const legacy = new App({ disconnectStatusCode: 0 });
         through a Standard Schema (Zod / Valibot / ArkType / TypeBox). Closes
         the &quot;we shipped to production with{" "}
         <code>JWT_SECRET=undefined</code> because the env var wasn&apos;t set on
-        the new cluster&quot; class of bugs at the framework boundary — not at
+        the new cluster&quot; class of bugs at the framework boundary, not at
         every middleware that consumes the secret.
       </p>
       <CodeBlock

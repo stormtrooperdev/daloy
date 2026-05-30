@@ -26,7 +26,7 @@ export default function Page() {
       <blockquote>
         <strong>Think of it like…</strong> the back office of a bank. Different
         door, different lock, different keys, different camera, and a logbook of
-        who opened the safe and when — all separate from the public lobby. Most
+        who opened the safe and when, all separate from the public lobby. Most
         admin-panel breaches happen because the back office was stapled to the
         public lobby with a flimsy curtain (the same auth, the same domain, the
         same surface).
@@ -163,7 +163,7 @@ app.route({
     adminAuth,
     {
       afterHandle: (_res, ctx) => {
-        // Structured audit record — one line per sensitive change.
+        // Structured audit record - one line per sensitive change.
         ctx.log.info({
           event: "admin.flag.toggle",
           actor: ctx.state.jwt?.sub,

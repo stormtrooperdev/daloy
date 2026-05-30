@@ -67,10 +67,10 @@ export function databasePlugin(db: Database) {
       <h2>Pick your ODM</h2>
       <ul>
         <li>
-          <Link href="/docs/odm/mongoose">Mongoose</Link> — mature schemas, middleware, validation, and session support for MongoDB.
+          <Link href="/docs/odm/mongoose">Mongoose</Link>: mature schemas, middleware, validation, and session support for MongoDB.
         </li>
         <li>
-          <Link href="/docs/odm/ottoman">Ottoman</Link> — schema and model layer for Couchbase buckets, scopes, and collections.
+          <Link href="/docs/odm/ottoman">Ottoman</Link>: schema and model layer for Couchbase buckets, scopes, and collections.
         </li>
       </ul>
 

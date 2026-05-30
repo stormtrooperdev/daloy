@@ -62,7 +62,7 @@ export default function Page() {
         metal detectors at the door (Socket Firewall, in-line on every install),
         randomly-scheduled bag checks (Snyk / Aikido scans on every PR), and a
         watch-list desk that knows which travellers are wanted elsewhere
-        (vulnerability databases). You want all three — each one catches things
+        (vulnerability databases). You want all three, each one catches things
         the others miss.
       </blockquote>
       <p>

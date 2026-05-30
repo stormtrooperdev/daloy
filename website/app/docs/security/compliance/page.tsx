@@ -30,7 +30,7 @@ export default function Page() {
       <h1>Compliance posture</h1>
       <blockquote>
         <strong>Think of it like…</strong> the paperwork side of a building
-        safety inspection. The bricks (technical controls — TLS, auth, audit
+        safety inspection. The bricks (technical controls, TLS, auth, audit
         logs, redaction, rate limits) are already in the framework; this page
         shows the inspector exactly which brick satisfies which line on the SOC
         2 / ISO 27001 / HIPAA / GDPR / PCI / NIS2 / DORA form so you stop
@@ -705,7 +705,7 @@ export default function Page() {
         <tbody>
           <tr>
             <td>
-              Annex I (1)(a) — no known exploitable vulnerabilities on release
+              Annex I (1)(a), no known exploitable vulnerabilities on release
             </td>
             <td>
               <code>pnpm audit --audit-level=high</code> in CI and pre-publish;
@@ -714,7 +714,7 @@ export default function Page() {
             </td>
           </tr>
           <tr>
-            <td>Annex I (1)(b) — secure-by-default configuration</td>
+            <td>Annex I (1)(b), secure-by-default configuration</td>
             <td>
               Body cap (1 MiB), 30 s request timeout,{" "}
               <code>secureHeaders()</code>, <code>fetchGuard()</code>{" "}
@@ -727,7 +727,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I (1)(c) — security updates independent of feature updates
+              Annex I (1)(c), security updates independent of feature updates
             </td>
             <td>
               SemVer with patch releases (<code>0.x.Y</code>) reserved for
@@ -737,7 +737,7 @@ export default function Page() {
             </td>
           </tr>
           <tr>
-            <td>Annex I (1)(d) — authentication and access control</td>
+            <td>Annex I (1)(d), authentication and access control</td>
             <td>
               First-party <code>bearerAuth</code>, <code>basicAuth</code>,{" "}
               <code>jwt()</code> (PS256 / RS256 / ES256 / EdDSA, JWKS rotation
@@ -749,7 +749,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I (1)(h) — resilience against and mitigation of DoS attacks
+              Annex I (1)(h), resilience against and mitigation of DoS attacks
             </td>
             <td>
               Core body cap, per-handler timeouts, first-party{" "}
@@ -761,7 +761,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I (1)(j) — limit attack surface and external interfaces
+              Annex I (1)(j), limit attack surface and external interfaces
             </td>
             <td>
               Tarball whitelist (<code>dist/</code> + <code>bin/</code> +{" "}
@@ -774,7 +774,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I Part II (2)(1) — SBOM in a commonly used, machine-readable
+              Annex I Part II (2)(1), SBOM in a commonly used, machine-readable
               format covering at least top-level dependencies
             </td>
             <td>
@@ -786,7 +786,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I Part II (2)(2) — remediate vulnerabilities without delay
+              Annex I Part II (2)(2), remediate vulnerabilities without delay
             </td>
             <td>
               CVSS-keyed upstream patch SLA: <strong>48 h</strong> Critical,{" "}
@@ -796,7 +796,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I Part II (2)(4) — public disclosure of fixed
+              Annex I Part II (2)(4), public disclosure of fixed
               vulnerabilities
             </td>
             <td>
@@ -815,7 +815,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I Part II (2)(5) — policy on coordinated vulnerability
+              Annex I Part II (2)(5), policy on coordinated vulnerability
               disclosure (CVD)
             </td>
             <td>
@@ -834,7 +834,7 @@ export default function Page() {
             </td>
           </tr>
           <tr>
-            <td>Annex I Part II (2)(7) — secure update distribution</td>
+            <td>Annex I Part II (2)(7), secure update distribution</td>
             <td>
               npm over HTTPS with <code>--provenance</code> Sigstore
               attestations bound to the <code>release.yml</code> workflow run on
@@ -844,14 +844,14 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Article 14 — 24-hour reporting of actively exploited
+              Article 14, 24-hour reporting of actively exploited
               vulnerabilities to ENISA
             </td>
             <td>
               From 2026-09-11 the maintainer rotation triages actively-exploited
               reports best-effort within 24 h and files the early-warning
               notification with ENISA via the Single Reporting Platform,
-              followed by a 72 h CVSS / scope update — even when a patch is not
+              followed by a 72 h CVSS / scope update, even when a patch is not
               yet available. See the{" "}
               <a
                 href="https://github.com/daloyjs/daloy/blob/main/SECURITY.md#article-14--24-hour-reporting-of-actively-exploited-vulnerabilities-and-severe-incidents"
@@ -865,7 +865,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Article 13(8) — declared support period (regulatory floor: 5
+              Article 13(8), declared support period (regulatory floor: 5
               years)
             </td>
             <td>

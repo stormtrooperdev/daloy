@@ -2,7 +2,7 @@ import { CodeBlock } from "../../../components/code-block";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "CLI — daloy inspect & daloy dev",
+  title: "CLI, daloy inspect & daloy dev",
   description:
     "Use the daloy CLI to introspect routes, contract-test an app, dump OpenAPI 3.1, or start a watch-mode dev server on any DaloyJS project.",
   path: "/docs/cli",
@@ -78,11 +78,11 @@ export function buildApp() {
       <h2>Flags</h2>
       <ul>
         <li>
-          <code>--json</code> — emit a machine-readable JSON document instead of
+          <code>--json</code>: emit a machine-readable JSON document instead of
           a human table.
         </li>
         <li>
-          <code>--check</code> — run the contract suite ({" "}
+          <code>--check</code>: run the contract suite ({" "}
           <a href="/docs/testing">
             missing operationIds, duplicate operationIds, dead routes, body
             schemas on safe methods, invalid examples
@@ -90,32 +90,32 @@ export function buildApp() {
           ) and exit 1 on any error.
         </li>
         <li>
-          <code>--schemas</code> — add a <code>B/Q/P/H</code> column showing
+          <code>--schemas</code>: add a <code>B/Q/P/H</code> column showing
           which of body, query, params, and headers schemas the route declares.
         </li>
         <li>
-          <code>--openapi</code> — print the OpenAPI 3.1 document.
+          <code>--openapi</code>: print the OpenAPI 3.1 document.
         </li>
         <li>
-          <code>--ai</code> — print an AI/codegen-friendly dump of the route
+          <code>--ai</code>: print an AI/codegen-friendly dump of the route
           catalog with JSON Schemas and any <code>meta.examples</code> you
           authored. See the{" "}
           <a href="/docs/ai-metadata">AI-friendly route metadata</a> guide.
         </li>
         <li>
-          <code>--yaml</code> · <code>--format &lt;json|yaml&gt;</code> — emit{" "}
+          <code>--yaml</code> · <code>--format &lt;json|yaml&gt;</code>: emit{" "}
           <code>--openapi</code> or <code>--ai</code> output as YAML instead of
           JSON. YAML drops braces, commas, and most quotes, so the payload is
-          typically ~30% smaller than the equivalent pretty-printed JSON —
+          typically ~30% smaller than the equivalent pretty-printed JSON, 
           useful when pasting route metadata into an LLM system prompt where
           every token counts.
         </li>
         <li>
-          <code>--tag &lt;tag&gt;</code> — only show routes that declare this
+          <code>--tag &lt;tag&gt;</code>: only show routes that declare this
           tag.
         </li>
         <li>
-          <code>--method &lt;method&gt;</code> — only show routes for this HTTP
+          <code>--method &lt;method&gt;</code>: only show routes for this HTTP
           method.
         </li>
         <li>
@@ -124,11 +124,11 @@ export function buildApp() {
       </ul>
 
       <h2>
-        <code>daloy dev</code> — watch-mode dev server
+        <code>daloy dev</code>: watch-mode dev server
       </h2>
       <p>
         <code>daloy dev [entry]</code> starts your app in the host
-        runtime&apos;s native watch mode — no extra config, no extra dependency
+        runtime&apos;s native watch mode, no extra config, no extra dependency
         to install on Bun or Deno:
       </p>
       <CodeBlock

@@ -5,7 +5,7 @@ import { buildMetadata, CORE_PACKAGE_VERSION } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "API reference",
   description:
-    "Complete API reference for DaloyJS: App, routing, middleware, plugins, errors, security helpers, JWT/JWK, sessions, streaming, websockets, and runtime adapters — with TypeScript signatures.",
+    "Complete API reference for DaloyJS: App, routing, middleware, plugins, errors, security helpers, JWT/JWK, sessions, streaming, websockets, and runtime adapters, with TypeScript signatures.",
   path: "/docs/api-reference",
   keywords: [
     "DaloyJS API reference",
@@ -19,7 +19,7 @@ export default function Page() {
   return (
     <>
       <h1>API reference</h1>
-      <p>{`The complete public surface of DaloyJS v${CORE_PACKAGE_VERSION}, organized by import path. Every signature on this page is generated from the same TypeScript types your editor reads on hover — open the source files for fuller TSDoc, examples, and security rationale.`}</p>
+      <p>{`The complete public surface of DaloyJS v${CORE_PACKAGE_VERSION}, organized by import path. Every signature on this page is generated from the same TypeScript types your editor reads on hover, open the source files for fuller TSDoc, examples, and security rationale.`}</p>
 
       <p>Quick map of subpath modules exposed by the package:</p>
       <CodeBlock
@@ -39,7 +39,7 @@ export default function Page() {
 @daloyjs/core/cli         // CLI internals (used by bin/daloy.mjs)
 
 // Runtime adapters
-@daloyjs/core/node        // Node.js (http) — serve(app, opts)
+@daloyjs/core/node        // Node.js (http) - serve(app, opts)
 @daloyjs/core/bun         // Bun.serve adapter
 @daloyjs/core/deno        // Deno.serve adapter
 @daloyjs/core/cloudflare  // Cloudflare Workers + generic { fetch } default export
@@ -160,7 +160,7 @@ interface AuthSpec {
   payload?: boolean;     // default true; refuse to opt out when scheme requires payload auth
 }
 
-// Plugin-extensible — augment via "declare module"
+// Plugin-extensible - augment via "declare module"
 interface AppState {}
 
 type AuthScheme = "bearer" | "basic" | "jwt" | "jwk" | "webhook" | "session" | "apiKey";
@@ -179,7 +179,7 @@ interface BaseContext<P extends string, R extends RequestSchemas | undefined> {
   set:     { status?: number; headers: Headers };
 }
 
-// HandlerReturn<R> is a discriminated union by status code — TS enforces
+// HandlerReturn<R> is a discriminated union by status code - TS enforces
 // that every returned response is declared in the route's responses map.
 type HandlerReturn<R extends ResponsesMap> = ...;
 
@@ -239,16 +239,16 @@ class HttpError extends Error {
 interface ProblemDetails { type?: string; title: string; status: number; detail?: string; instance?: string; [ext: string]: unknown }
 
 class BadRequestError            extends HttpError {} // 400
-class UnauthorizedError          extends HttpError {} // 401 — sets WWW-Authenticate
+class UnauthorizedError          extends HttpError {} // 401 - sets WWW-Authenticate
 class ForbiddenError             extends HttpError {} // 403
 class NotFoundError              extends HttpError {} // 404
-class MethodNotAllowedError      extends HttpError {} // 405 — sets Allow
+class MethodNotAllowedError      extends HttpError {} // 405 - sets Allow
 class RequestTimeoutError        extends HttpError {} // 408
 class PayloadTooLargeError       extends HttpError {} // 413
 class UnsupportedMediaTypeError  extends HttpError {} // 415
-class ValidationError            extends HttpError {} // 422 — carries StandardSchema issues
-class TooManyRequestsError       extends HttpError {} // 429 — sets Retry-After
-class InternalError              extends HttpError {} // 500 — detail redacted in production
+class ValidationError            extends HttpError {} // 422 - carries StandardSchema issues
+class TooManyRequestsError       extends HttpError {} // 429 - sets Retry-After
+class InternalError              extends HttpError {} // 500 - detail redacted in production
 
 // Defensive guard: throws MessageLeakError when a custom error response
 // would set a header outside the safe allowlist.

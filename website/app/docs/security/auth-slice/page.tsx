@@ -33,7 +33,7 @@ export default function Page() {
         things most don&apos;t. It checks not just your badge but who issued it
         (JWKS lookup by <code>kid</code>), revalidates that you still work here
         on every request (the <code>verify</code> hook), and refuses to cache
-        the &quot;denied&quot; answer at the elevator — so a fired employee
+        the &quot;denied&quot; answer at the elevator, so a fired employee
         can&apos;t ride up tomorrow on a stale 401 (
         <code>Cache-Control: no-store</code>).
       </blockquote>
@@ -46,19 +46,19 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <strong>Hosted IdPs</strong> — Auth0, Okta, Azure AD / Entra ID, AWS
+          <strong>Hosted IdPs</strong>: Auth0, Okta, Azure AD / Entra ID, AWS
           Cognito, Google Identity, Clerk, WorkOS, Supabase Auth, Logto, Stytch,
           Kinde. Anything that publishes a standard{" "}
           <code>/.well-known/jwks.json</code> works with <code>jwk()</code> out
           of the box.
         </li>
         <li>
-          <strong>Self-hosted IdPs</strong> — Keycloak, Ory Hydra, ZITADEL,
+          <strong>Self-hosted IdPs</strong>: Keycloak, Ory Hydra, ZITADEL,
           Authentik, Dex. Same JWKS contract, same one-line <code>jwk()</code>{" "}
           setup.
         </li>
         <li>
-          <strong>Your own sibling auth service</strong> — a separate DaloyJS
+          <strong>Your own sibling auth service</strong>: a separate DaloyJS
           app using <code>createJwtSigner()</code> to mint tokens and exposing a
           JWKS endpoint. The API service then validates those tokens with{" "}
           <code>jwk()</code> exactly as it would for an external IdP.
@@ -67,13 +67,13 @@ export default function Page() {
       <p>Rough mapping of which middleware to reach for:</p>
       <ul>
         <li>
-          <strong>Browser app + external IdP (OIDC)</strong> —{" "}
+          <strong>Browser app + external IdP (OIDC)</strong>: {" "}
           <code>jwk()</code> on the API, <code>requireScopes()</code> per route,{" "}
           <code>session()</code> only if you also need server-side session state
           alongside the access token.
         </li>
         <li>
-          <strong>Service-to-service inside one tenant</strong> —{" "}
+          <strong>Service-to-service inside one tenant</strong>: {" "}
           <code>bearerAuth({"{ validate }"})</code> with an opaque token, or{" "}
           <code>jwk()</code> if both sides already speak JWT. The{" "}
           <a href="/docs/security/internal-service-preset">
@@ -82,12 +82,12 @@ export default function Page() {
           relaxes browser-only headers for these endpoints.
         </li>
         <li>
-          <strong>Webhook receivers</strong> — neither <code>bearerAuth()</code>{" "}
+          <strong>Webhook receivers</strong>: neither <code>bearerAuth()</code>{" "}
           nor <code>jwk()</code>; use the dedicated HMAC verifier (see the{" "}
           <a href="/docs/security">security overview</a>).
         </li>
         <li>
-          <strong>Admin tools / scripts</strong> — <code>basicAuth()</code>{" "}
+          <strong>Admin tools / scripts</strong>: <code>basicAuth()</code>{" "}
           behind <code>ipRestriction()</code>, or short-lived JWTs from your
           IdP.
         </li>
@@ -98,7 +98,7 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <code>jwk()</code> — asymmetric-only Bearer-token middleware backed by
+          <code>jwk()</code>: asymmetric-only Bearer-token middleware backed by
           a JWKS source. Refuses <code>HS*</code> at construction, requires a{" "}
           <code>kid</code> header that matches a JWK in the set, and
           cross-checks JWT-header <code>alg</code> against the JWK&apos;s
@@ -106,13 +106,13 @@ export default function Page() {
         </li>
         <li>
           <code>bearerAuth({"{ verify }"})</code> /{" "}
-          <code>jwk({"{ verify }"})</code> — per-request revalidation hook so
+          <code>jwk({"{ verify }"})</code>: per-request revalidation hook so
           revocation lists, token-version counters, and &quot;user changed
           password since this token was issued&quot; checks can invalidate
           previously-issued credentials.
         </li>
         <li>
-          <code>basicAuth({"{ onAuthSuccess }"})</code> — typed-context callback
+          <code>basicAuth({"{ onAuthSuccess }"})</code>: typed-context callback
           that fires after <code>ctx.state.user.username</code> is stamped, so
           handlers do not re-parse the <code>Authorization</code> header.
         </li>
@@ -120,7 +120,7 @@ export default function Page() {
           <code>Cache-Control: no-store</code> on every first-party auth helper{" "}
           <code>401</code> challenge (<code>bearerAuth()</code>,{" "}
           <code>basicAuth()</code>, <code>jwk()</code>) so intermediaries never
-          cache an auth challenge — RFC 9111 §3.5 and audit alignment.
+          cache an auth challenge, RFC 9111 §3.5 and audit alignment.
         </li>
       </ul>
 
@@ -133,7 +133,7 @@ export default function Page() {
         <code>RS384</code> / <code>RS512</code>, <code>PS256</code> /{" "}
         <code>PS384</code> / <code>PS512</code>, <code>ES256</code> /{" "}
         <code>ES384</code> / <code>ES512</code>, and <code>EdDSA</code>.
-        Symmetric <code>HS*</code> algorithms are refused at construction — the
+        Symmetric <code>HS*</code> algorithms are refused at construction, the
         classic confused-deputy &quot;HS256 verified with the JWKS public key as
         the HMAC secret&quot; attack cannot be configured. The middleware is
         exported from the dedicated subpath <code>@daloyjs/core/jwk</code>.
@@ -241,11 +241,11 @@ app.use(
 
       <h2>What shipped next</h2>
       <p>
-        The remaining leftover items — the <code>wsRateLimit()</code> adapter,{" "}
+        The remaining leftover items, the <code>wsRateLimit()</code> adapter,{" "}
         <code>loginThrottle()</code> preset, <code>rotateSession()</code>{" "}
         helper, the file-upload MIME + magic-byte + size guard, the{" "}
         <code>requirePayloadAuth</code> scheme flag, and the WebSocket-helper
-        safe defaults — shipped in the{" "}
+        safe defaults, shipped in the{" "}
         <a href="/docs/security/websocket-login-throttle">
           0.23.0 remaining slice
         </a>

@@ -25,7 +25,7 @@ export default function Page() {
       <h1>Vercel</h1>
       <p>
         Vercel has two standalone places you can mount a DaloyJS REST API
-        handler &mdash; Node.js Functions and Edge Functions. Each target
+        handler, Node.js Functions and Edge Functions. Each target
         expects a slightly different export shape; the underlying{" "}
         <code>app</code> object is identical.
       </p>
@@ -100,7 +100,7 @@ export default toWebHandler(app);`}
 }`}
       />
       <p>
-        The legacy <code>builds</code> property is deprecated &mdash; use{" "}
+        The legacy <code>builds</code> property is deprecated, use{" "}
         <code>functions</code> instead.
       </p>
 
@@ -124,7 +124,7 @@ pnpm vercel env add SESSION_SECRET production`}
           products.
         </strong>{" "}
         They were sunset in December 2024 and existing stores were migrated
-        automatically &mdash; Vercel KV to Upstash Redis, Vercel Postgres to
+        automatically, Vercel KV to Upstash Redis, Vercel Postgres to
         Neon. For new projects, add the equivalent integration from the{" "}
         <a
           href="https://vercel.com/marketplace"
@@ -133,7 +133,7 @@ pnpm vercel env add SESSION_SECRET production`}
         >
           Vercel Marketplace
         </a>{" "}
-        (Neon for Postgres, Upstash for Redis) &mdash; the integration
+        (Neon for Postgres, Upstash for Redis), the integration
         provisions the store and injects the connection env vars into your
         project.
       </p>
@@ -149,7 +149,7 @@ pnpm vercel env add SESSION_SECRET production`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Edge runtime has no <code>node:*</code> &mdash; keep middleware
+          Edge runtime has no <code>node:*</code>: keep middleware
           portable, and prefer fetch-based drivers (Neon serverless,
           PlanetScale, Turso) when running on Edge.
         </li>

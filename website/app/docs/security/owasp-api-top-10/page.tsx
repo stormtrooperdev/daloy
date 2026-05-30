@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "OWASP API Security Top 10 mapping",
   description:
-    "How DaloyJS addresses each item in the OWASP API Security Top 10 (2023) — what the core enforces, which middleware to enable, and what stays your responsibility.",
+    "How DaloyJS addresses each item in the OWASP API Security Top 10 (2023), what the core enforces, which middleware to enable, and what stays your responsibility.",
   path: "/docs/security/owasp-api-top-10",
   keywords: [
     "OWASP API Security Top 10",
@@ -25,7 +25,7 @@ export default function Page() {
         <strong>Think of it like…</strong> the fire marshal&apos;s inspection
         checklist. Each item is a known way buildings burn down; this page maps
         every item to the equivalent fire-safety feature already installed in
-        the framework — sprinklers, fire doors, smoke alarms — so you can point
+        the framework, sprinklers, fire doors, smoke alarms, so you can point
         at the actual hardware instead of writing &quot;we&apos;ll get to
         it&quot; on the form.
       </blockquote>

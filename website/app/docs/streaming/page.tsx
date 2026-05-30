@@ -28,7 +28,7 @@ export default function Page() {
         common in HTTP APIs: <strong>Server-Sent Events (SSE)</strong> and
         <strong> newline-delimited JSON (NDJSON)</strong>. Both helpers wrap an
         <code>AsyncIterable</code> in a backpressure-safe{" "}
-        <code>ReadableStream</code> — the underlying iterator is only advanced
+        <code>ReadableStream</code>: the underlying iterator is only advanced
         when the consumer pulls the next chunk, so a slow client cannot cause
         unbounded memory growth.
       </p>
@@ -139,7 +139,7 @@ app.route({
       <h2>Backpressure & cancellation</h2>
       <p>
         Both helpers use the <code>pull()</code> entry point of{" "}
-        <code>ReadableStream</code> — they call <code>iterator.next()</code>{" "}
+        <code>ReadableStream</code>: they call <code>iterator.next()</code>{" "}
         exactly once per pull. The runtime decides when to pull: a slow client
         on a Node socket pulls slowly, a fast Cloudflare consumer pulls quickly.
         You never need to write throttling code.

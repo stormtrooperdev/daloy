@@ -17,7 +17,7 @@ export default function Page() {
       <h1>Testing & contract tests</h1>
 
       <h2>In-process test client</h2>
-      <p>Every <code>App</code> exposes a <code>request()</code> method that round-trips a fetch <code>Request</code> through the same pipeline real traffic uses — no socket, no port:</p>
+      <p>Every <code>App</code> exposes a <code>request()</code> method that round-trips a fetch <code>Request</code> through the same pipeline real traffic uses, no socket, no port:</p>
       <CodeBlock code={`import test from "node:test";
 import assert from "node:assert/strict";
 import { app } from "../src/server.js";
@@ -74,7 +74,7 @@ if (!report.ok) {
   console.error(report.issues);
   process.exit(1);
 }
-console.log(\`\${report.checked} routes — all clean\`);`} />
+console.log(\`\${report.checked} routes - all clean\`);`} />
 
       <p>The report flags:</p>
       <ul>

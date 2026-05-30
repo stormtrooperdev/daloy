@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Modular monolith",
   description:
-    "Reference folder and file structure for building a scalable modular monolith with DaloyJS — bounded contexts as plugins, a thin shared kernel, contract-driven module boundaries, and a clean path to extract services later.",
+    "Reference folder and file structure for building a scalable modular monolith with DaloyJS, bounded contexts as plugins, a thin shared kernel, contract-driven module boundaries, and a clean path to extract services later.",
   path: "/docs/architecture/modular-monolith",
   keywords: [
     "modular monolith",
@@ -27,7 +27,7 @@ export default function Page() {
       <p>
         A modular monolith is one deployable, but inside the codebase each business capability is a
         clearly bounded module. You get the operational simplicity of a monolith and most of the
-        decoupling of microservices — without the network, the orchestration, or the early
+        decoupling of microservices, without the network, the orchestration, or the early
         commitment.
       </p>
       <p>
@@ -42,16 +42,16 @@ export default function Page() {
       <h2>Mental model</h2>
       <ul>
         <li>
-          <strong>Module</strong> — one bounded context (e.g. <code>catalog</code>,{" "}
+          <strong>Module</strong>: one bounded context (e.g. <code>catalog</code>,{" "}
           <code>orders</code>, <code>identity</code>). Owns its routes, domain logic, persistence,
           and tests. Exposes only a public surface.
         </li>
         <li>
-          <strong>Shared kernel</strong> — cross-cutting infrastructure (db client, logger, http
+          <strong>Shared kernel</strong>: cross-cutting infrastructure (db client, logger, http
           hooks, config). Knows nothing about any specific module.
         </li>
         <li>
-          <strong>Platform</strong> — wiring code: which modules to register, in what order, with
+          <strong>Platform</strong>: wiring code: which modules to register, in what order, with
           which prefixes. Builds the <code>App</code> and exposes the typed client.
         </li>
       </ul>
@@ -71,7 +71,7 @@ export default function Page() {
 │   ├── env.ts               # zod-validated process.env
 │   └── index.ts
 │
-├── shared/                  # cross-cutting kernel — NO business logic
+├── shared/                  # cross-cutting kernel - NO business logic
 │   ├── db/
 │   │   └── client.ts        # single ORM, ODM, or query-client instance
 │   ├── http/
@@ -89,7 +89,7 @@ export default function Page() {
 │   │   │   ├── list-books.ts
 │   │   │   ├── get-book.ts
 │   │   │   └── create-book.ts
-│   │   ├── domain/          # pure business rules — no framework imports
+│   │   ├── domain/          # pure business rules - no framework imports
 │   │   │   ├── book.ts
 │   │   │   └── catalog-service.ts
 │   │   ├── infra/           # adapters: db, search, external APIs
@@ -115,7 +115,7 @@ export default function Page() {
 │       ├── infra/
 │       └── contracts/
 │
-├── platform/                # wiring only — no domain logic
+├── platform/                # wiring only - no domain logic
 │   ├── modules.ts           # ordered list of modules to register
 │   ├── openapi.ts           # generateOpenAPI(app) → openapi.json
 │   └── client.ts            # in-process typed client wiring
@@ -188,7 +188,7 @@ export const catalogModule = {
   name: "catalog",
   register(app: App) {
     // Wire the module's own dependencies into a single decorator.
-    // Other modules cannot see this — encapsulation is per-plugin.
+    // Other modules cannot see this - encapsulation is per-plugin.
     app.decorate("catalog", new CatalogService(new BookRepo(app.state.db)));
 
     listBooks(app);
@@ -226,7 +226,7 @@ export type Book = z.infer<typeof Book>;`}
       <p>
         Inside the module, <code>domain/</code> and <code>infra/</code> may use richer internal
         types. Across modules, only the public schema is visible. This is the same pattern that
-        makes future extraction painless — the cross-module type surface is already minimal and
+        makes future extraction painless, the cross-module type surface is already minimal and
         already validated.
       </p>
 
@@ -234,7 +234,7 @@ export type Book = z.infer<typeof Book>;`}
       <p>
         When <code>orders</code> needs a book, it does <em>not</em> import <code>BookRepo</code>.
         It calls catalog through the same <Link href="/docs/typed-client">typed client</Link>{" "}
-        consumers use — pointed at the in-process app instead of HTTP.
+        consumers use, pointed at the in-process app instead of HTTP.
       </p>
       <CodeBlock
         code={`// src/platform/client.ts
@@ -352,8 +352,8 @@ tests/e2e/checkout.e2e.ts                  # cross-module user journeys`}
 
       <h2>Scaling the monolith</h2>
       <p>
-        Most teams never need to leave this layout. When you do — usually because one module needs
-        independent scaling, a different runtime, or a separate on-call rotation — the path is
+        Most teams never need to leave this layout. When you do, usually because one module needs
+        independent scaling, a different runtime, or a separate on-call rotation, the path is
         straightforward.
       </p>
       <ol>
@@ -366,7 +366,7 @@ tests/e2e/checkout.e2e.ts                  # cross-module user journeys`}
           still import the types.
         </li>
         <li>
-          Swap the in-process typed client for a real HTTP base URL in the original repo — the
+          Swap the in-process typed client for a real HTTP base URL in the original repo, the
           callsites do not change.
         </li>
         <li>
@@ -393,7 +393,7 @@ tests/e2e/checkout.e2e.ts                  # cross-module user journeys`}
           <code>Book</code>, it belongs inside <code>modules/catalog</code>.
         </li>
         <li>
-          <strong>One giant <code>routes.ts</code> per module.</strong> Prefer one file per route —
+          <strong>One giant <code>routes.ts</code> per module.</strong> Prefer one file per route, 
           it keeps OpenAPI diffs reviewable and gives you obvious test boundaries.
         </li>
         <li>
@@ -411,19 +411,19 @@ tests/e2e/checkout.e2e.ts                  # cross-module user journeys`}
       <h2>Where to next</h2>
       <ul>
         <li>
-          <Link href="/docs/plugins">Plugins & encapsulation</Link> — the primitive every module is
+          <Link href="/docs/plugins">Plugins & encapsulation</Link>: the primitive every module is
           built on.
         </li>
         <li>
-          <Link href="/docs/openapi">OpenAPI generation</Link> — the contract that powers the typed
+          <Link href="/docs/openapi">OpenAPI generation</Link>: the contract that powers the typed
           client and contract tests.
         </li>
         <li>
-          <Link href="/docs/typed-client">Typed clients</Link> — how cross-module calls stay
+          <Link href="/docs/typed-client">Typed clients</Link>: how cross-module calls stay
           decoupled.
         </li>
         <li>
-          <Link href="/docs/testing">Testing</Link> — pairing module-level tests with
+          <Link href="/docs/testing">Testing</Link>: pairing module-level tests with
           contract-level guarantees.
         </li>
       </ul>

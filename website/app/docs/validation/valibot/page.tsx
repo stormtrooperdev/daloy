@@ -26,12 +26,12 @@ export default function Page() {
         tree-shakeable schema library that ships as a collection of small functions instead of a
         chained builder. It implements{" "}
         <a href="https://github.com/standard-schema/standard-schema" target="_blank" rel="noreferrer">Standard Schema</a>,
-        so DaloyJS picks it up the same way it picks up Zod — no adapter, no wrapper, no extra deps.
+        so DaloyJS picks it up the same way it picks up Zod, no adapter, no wrapper, no extra deps.
       </p>
       <p>
         Valibot is developed in the open at{" "}
         <a href="https://github.com/open-circle/valibot" target="_blank" rel="noreferrer">github.com/open-circle/valibot</a>{" "}
-        and published to npm as <code>valibot</code> — that&apos;s the package you install below.
+        and published to npm as <code>valibot</code>: that&apos;s the package you install below.
       </p>
 
       <h2>Install</h2>
@@ -49,7 +49,7 @@ export default function Page() {
         </li>
         <li>
           <strong>Standard Schema native.</strong> Same handler types and the same problem+json error
-          shape you get with Zod — DaloyJS doesn&apos;t care which one you picked.
+          shape you get with Zod, DaloyJS doesn&apos;t care which one you picked.
         </li>
       </ul>
 
@@ -86,7 +86,7 @@ app.route({
   }),
 });`} />
       <p>
-        <code>body</code> in the handler is inferred from <code>CreateOrder</code> — including the
+        <code>body</code> in the handler is inferred from <code>CreateOrder</code>: including the
         optional <code>notes</code> field. Returning anything that doesn&apos;t match <code>Order</code>{" "}
         is a TypeScript error, not a runtime surprise.
       </p>
@@ -150,7 +150,7 @@ app.route({
   responses: { 202: { description: "Accepted" } },
   handler: async ({ body }) => {
     if (body.type === "updated") {
-      // body.fields is string[] here — narrowed by the discriminator.
+      // body.fields is string[] here - narrowed by the discriminator.
     }
     return { status: 202 };
   },
@@ -176,7 +176,7 @@ export type BookInput = v.InferInput<typeof Book>;`} />
       <p>
         Validation failures produce the same response as every other validator in DaloyJS:
         <strong> 422 Unprocessable Entity</strong> as RFC 9457 problem+json, with each issue&apos;s{" "}
-        <code>path</code> and <code>message</code>. You don&apos;t need to write an error handler — that&apos;s
+        <code>path</code> and <code>message</code>. You don&apos;t need to write an error handler, that&apos;s
         the framework&apos;s job.
       </p>
       <CodeBlock code={`{
@@ -197,7 +197,7 @@ export type BookInput = v.InferInput<typeof Book>;`} />
 
       <h2>Mixing validators</h2>
       <p>
-        Nothing stops you from using Valibot for one route and Zod for another in the same app — both
+        Nothing stops you from using Valibot for one route and Zod for another in the same app, both
         speak Standard Schema. Useful when migrating a codebase incrementally, or when a shared package
         already exports its schemas in one library and you don&apos;t want to rewrite them.
       </p>
@@ -205,16 +205,16 @@ export type BookInput = v.InferInput<typeof Book>;`} />
       <h2>See also</h2>
       <ul>
         <li>
-          <a href="/docs/validation">Validation overview</a> — how validators plug in via Standard Schema.
+          <a href="/docs/validation">Validation overview</a>: how validators plug in via Standard Schema.
         </li>
         <li>
-          <a href="/docs/validation/zod">Validation with Zod</a> — the chainable alternative.
+          <a href="/docs/validation/zod">Validation with Zod</a>: the chainable alternative.
         </li>
         <li>
-          <a href="/docs/openapi">OpenAPI generation</a> — how schemas become a spec.
+          <a href="/docs/openapi">OpenAPI generation</a>: how schemas become a spec.
         </li>
         <li>
-          <a href="/docs/errors">Errors &amp; problem+json</a> — the error contract.
+          <a href="/docs/errors">Errors &amp; problem+json</a>: the error contract.
         </li>
       </ul>
     </>

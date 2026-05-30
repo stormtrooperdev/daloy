@@ -24,7 +24,7 @@ export default function Page() {
       <blockquote>
         <strong>Think of it like…</strong> a brand-new car. Seatbelts are
         buckled, airbags are armed, doors are locked when you start moving. You{" "}
-        <em>can</em> turn any of those off — but only by deliberately pressing a
+        <em>can</em> turn any of those off, but only by deliberately pressing a
         button labelled &quot;I know this is unsafe&quot; (
         <code>secureDefaults: false</code> +{" "}
         <code>acknowledgeInsecureDefaults: true</code>), and the car logs that
@@ -55,7 +55,7 @@ export default function Page() {
         code={`import { App } from "@daloyjs/core";
 
 const app = new App();
-// secureHeaders() already attached — no app.use(secureHeaders()) needed.`}
+// secureHeaders() already attached - no app.use(secureHeaders()) needed.`}
       />
 
       <p>
@@ -117,7 +117,7 @@ app.use(cors({ origin: ["https://app.example.com"] }));
       />
 
       <p>
-        Per-route opt-in works too — register the <code>cors()</code> hook on
+        Per-route opt-in works too, register the <code>cors()</code> hook on
         the specific routes that need it via{" "}
         <code>route({"{ hooks: cors({...}) }"})</code>.
       </p>
@@ -202,7 +202,7 @@ export function myCustomHeaders() {
       <ul>
         <li>
           Audit any custom <code>secureHeaders()</code> call sites. Behavior is
-          the same — the auto-installed instance is automatically replaced when
+          the same, the auto-installed instance is automatically replaced when
           you register your own.
         </li>
         <li>

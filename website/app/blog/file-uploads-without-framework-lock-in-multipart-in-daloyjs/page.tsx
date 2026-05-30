@@ -10,7 +10,7 @@ const POST = {
   slug: "file-uploads-without-framework-lock-in-multipart-in-daloyjs",
   title: "File Uploads Without Framework Lock-In: Multipart in DaloyJS",
   description:
-    "The fileField() and multipartObject() helpers: per-file size caps, MIME allowlists with wildcards, filename predicates, strict field validation, and OpenAPI binary schema emission — all while keeping the file as a Web standard File/Blob you can stream straight to S3, R2, or disk on any runtime.",
+    "The fileField() and multipartObject() helpers: per-file size caps, MIME allowlists with wildcards, filename predicates, strict field validation, and OpenAPI binary schema emission, all while keeping the file as a Web standard File/Blob you can stream straight to S3, R2, or disk on any runtime.",
   date: "2026-06-02",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
@@ -75,12 +75,12 @@ const upload = multer({
 const app = express();
 app.post("/avatars", upload.single("file"), async (req, res) => {
   // req.file is a multer-shaped object. Not a standard Web File.
-  // To get it to S3 you fs.createReadStream(req.file.path) — disk roundtrip.
+  // To get it to S3 you fs.createReadStream(req.file.path) - disk roundtrip.
   // To get it OUT of /tmp you remember to delete it (or you don't, and
   // /tmp fills up on every cold start).
 });`;
 
-const MULTIPART_OBJECT = `// src/routes/avatars.ts — the DaloyJS version.
+const MULTIPART_OBJECT = `// src/routes/avatars.ts, the DaloyJS version.
 // Two helpers do all the work, both Standard Schema compatible.
 import { z } from "zod";
 import { App, fileField, multipartObject } from "@daloyjs/core";
@@ -112,7 +112,7 @@ app.route({
     },
   },
   handler: async ({ body }) => {
-    // body.file is a Web File / Blob — every runtime has it.
+    // body.file is a Web File / Blob - every runtime has it.
     // body.alt is a string. body.isPrimary is a real boolean.
     const url = await uploadToObjectStorage({
       stream: body.file.stream(),            // ← streams. no buffer-the-world.
@@ -144,7 +144,7 @@ curl -sS -X POST http://localhost:3000/avatars \\
 # Zero handler code involved. The framework rejected the request before
 # a single byte hit your business logic. Memory-safe by construction.`;
 
-const FILE_FIELD_OPTIONS = `// fileField(options) — every knob, in one place.
+const FILE_FIELD_OPTIONS = `// fileField(options), every knob, in one place.
 fileField({
   maxBytes: 10 * 1024 * 1024,                // hard cap on file.size
   accept:   ["image/*", "application/pdf"],  // exact or "type/*" wildcard
@@ -159,7 +159,7 @@ fileField({
 //   accept: ["*/*"]        ✓ matches anything (use sparingly; mostly for tests)`;
 
 const MULTIPLE_FILES = `// Need an array of files? Wrap fileField() in your validator's array
-// helper. Standard Schema is the only contract — Zod, Valibot, ArkType
+// helper. Standard Schema is the only contract - Zod, Valibot, ArkType
 // all work. Per-file rules still apply to every entry.
 import { z } from "zod";
 import { fileField, multipartObject } from "@daloyjs/core";
@@ -167,7 +167,7 @@ import { fileField, multipartObject } from "@daloyjs/core";
 const GalleryUpload = multipartObject({
   // Browsers send <input type="file" multiple /> as a single field with
   // multiple parts. Whatever runtime adapter you're on, FormData.getAll()
-  // gives you an array — and the framework hands it to your array schema.
+  // gives you an array - and the framework hands it to your array schema.
   images: z.array(
     fileField({
       maxBytes: 20 * 1024 * 1024,
@@ -183,7 +183,7 @@ const GalleryUpload = multipartObject({
 //   }`;
 
 const STREAMING = `// Streaming is the whole point. file.stream() returns a Web standard
-// ReadableStream — the same shape on Node, Bun, Deno, Cloudflare
+// ReadableStream - the same shape on Node, Bun, Deno, Cloudflare
 // Workers, and Vercel Edge. Pipe it to any compatible writer:
 
 // 1) Cloudflare R2 (Workers binding):
@@ -211,16 +211,16 @@ await body.file.stream().pipeTo(
   Writable.toWeb(createWriteStream("/var/data/" + key)),
 );
 
-// 4) Forward to another service over HTTP — no buffering at all:
+// 4) Forward to another service over HTTP - no buffering at all:
 await fetch(\`\${UPSTREAM}/store/\${key}\`, {
   method: "PUT",
   headers: { "content-type": body.file.type, "content-length": String(body.file.size) },
   body: body.file.stream(),
-  // @ts-expect-error  half-duplex hint — Node 18+ needs this for streaming bodies
+  // @ts-expect-error  half-duplex hint - Node 18+ needs this for streaming bodies
   duplex: "half",
 });`;
 
-const OPENAPI_OUTPUT = `// generated/openapi.json — what the spec looks like for the AvatarUpload route.
+const OPENAPI_OUTPUT = `// generated/openapi.json, what the spec looks like for the AvatarUpload route.
 // Notice the "multipart/form-data" content type and the "binary" format hint
 // on the file field. Every OpenAPI tool understands this shape.
 {
@@ -257,7 +257,7 @@ const OPENAPI_OUTPUT = `// generated/openapi.json — what the spec looks like f
 // In the Hey API generated SDK, uploadAvatar({ body: { file, alt, isPrimary } })
 // is typed against the browser File type. No surprise stringification.`;
 
-const TEST_UPLOAD = `// tests/avatars.test.ts — test the upload end-to-end without a port.
+const TEST_UPLOAD = `// tests/avatars.test.ts, test the upload end-to-end without a port.
 // FormData and File are part of Node 18+ (and every other modern runtime),
 // so this works in your existing node:test setup.
 import { test } from "node:test";
@@ -461,7 +461,7 @@ export default function BlogPostPage() {
             Hi, Devlin. Ten years of fullstack, currently in Norway, currently
             nursing a strong opinion that file uploads should not be the part of
             your codebase that decides which runtime you can deploy to. And yet
-            — for most of my career — it has been. A multer-shaped object here,
+, for most of my career, it has been. A multer-shaped object here,
             a busboy stream there, a<code> /tmp/uploads</code> directory
             we&apos;re not allowed to talk about in serverless. You know the
             script.
@@ -471,8 +471,8 @@ export default function BlogPostPage() {
             DaloyJS treats uploads the way the modern web platform does: you get
             back a <code>File</code> (which is a <code>Blob</code> with a{" "}
             <code>name</code>), which is the same shape on Node, Bun, Deno,
-            Cloudflare Workers, and Vercel Edge. Two helpers —{" "}
-            <code>fileField()</code> and <code>multipartObject()</code> — give
+            Cloudflare Workers, and Vercel Edge. Two helpers, {" "}
+            <code>fileField()</code> and <code>multipartObject()</code>: give
             you per-file size caps, MIME allowlists, filename predicates, strict
             field validation, and OpenAPI binary schemas, without ever stepping
             outside the standard. This post is the tour.
@@ -530,7 +530,7 @@ export default function BlogPostPage() {
           <CheckCard badge="2" title="strict: true rejects unknown fields">
             Extra form fields are usually either a misconfigured frontend
             (silent bugs) or someone fishing for parser behaviour. Reject them.
-            The framework returns RFC 9457 422 with a problem+json body — same
+            The framework returns RFC 9457 422 with a problem+json body, same
             shape as every other validation error in the app.
           </CheckCard>
           <CheckCard badge="3" title="body.file is a real Web File">
@@ -563,7 +563,7 @@ export default function BlogPostPage() {
             .
           </p>
 
-          <h2>fileField() — every option, in one screen</h2>
+          <h2>fileField(): every option, in one screen</h2>
 
           <EditorFrame
             files={["@daloyjs/core · multipart.ts"]}
@@ -588,7 +588,7 @@ export default function BlogPostPage() {
           <p>
             This is the bit that pays for the abstraction. Because{" "}
             <code>body.file</code> is a Web <code>Blob</code>, you get{" "}
-            <code>file.stream()</code> for free — a <code>ReadableStream</code>{" "}
+            <code>file.stream()</code> for free, a <code>ReadableStream</code>{" "}
             with the exact same shape on Node, Bun, Deno, Workers, and Vercel
             Edge. Four ways to use it, same handler code on all of them:
           </p>
@@ -596,18 +596,18 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/storage.ts"]}
             activeFile="src/storage.ts"
-            status="R2 · S3 · disk · upstream HTTP — same Web ReadableStream"
+            status="R2 · S3 · disk · upstream HTTP, same Web ReadableStream"
           >
             <CodeBlock language="ts" code={STREAMING} />
           </EditorFrame>
 
           <p>
             The runtime-portability story for uploads is the same story as for
-            everything else in this stack — see the{" "}
+            everything else in this stack, see the{" "}
             <Link href="/blog/same-app-five-runtimes-verified">
               five-runtimes verification post
             </Link>{" "}
-            — but it&apos;s especially noticeable here because uploads are the
+, but it&apos;s especially noticeable here because uploads are the
             one feature most Node frameworks accidentally pin you to Node for.
           </p>
 
@@ -669,7 +669,7 @@ export default function BlogPostPage() {
             OpenAPI binary schemas without extra work, RFC 9457 problem+json on
             every rejection, and an in-process test path that doesn&apos;t
             require touching disk. The &quot;upload subsystem&quot; folder you
-            keep meaning to refactor — you might not need it anymore.
+            keep meaning to refactor, you might not need it anymore.
           </p>
 
           <p>
@@ -686,7 +686,7 @@ export default function BlogPostPage() {
             is the broader starter walkthrough.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

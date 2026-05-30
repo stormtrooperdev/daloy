@@ -30,8 +30,8 @@ export default function Page() {
         <Link href="/docs/adapters">adapter</Link> you target.
       </p>
       <p>
-        The pages in this section cover <strong>where your data lives</strong> — managed hosts and their
-        drivers — separately from <strong>how you query it</strong> (see{" "}
+        The pages in this section cover <strong>where your data lives</strong>: managed hosts and their
+        drivers, separately from <strong>how you query it</strong> (see{" "}
         <Link href="/docs/orm">ORMs</Link> and <Link href="/docs/odm">ODMs</Link>). Most providers here
         pair with Drizzle or Prisma rather than replacing them.
       </p>
@@ -48,27 +48,27 @@ export default function Page() {
       <h2>Supported providers</h2>
       <ul>
         <li>
-          <Link href="/docs/databases/neon">Neon</Link> — serverless Postgres with branching,
+          <Link href="/docs/databases/neon">Neon</Link>: serverless Postgres with branching,
           scale-to-zero, and an HTTP/WebSocket driver (<code>@neondatabase/serverless</code>).
         </li>
         <li>
-          <Link href="/docs/databases/planetscale">PlanetScale</Link> — managed MySQL with Vitess,
+          <Link href="/docs/databases/planetscale">PlanetScale</Link>: managed MySQL with Vitess,
           branching, deploy requests, and an HTTP driver (<code>@planetscale/database</code>).
         </li>
         <li>
-          <Link href="/docs/orm/supabase">Supabase</Link> — hosted Postgres plus auth, storage, and
+          <Link href="/docs/orm/supabase">Supabase</Link>: hosted Postgres plus auth, storage, and
           realtime via the fetch-based <code>@supabase/supabase-js</code>.
         </li>
         <li>
-          <Link href="/docs/databases/turso">Turso</Link> — distributed libSQL (SQLite fork) via{" "}
+          <Link href="/docs/databases/turso">Turso</Link>: distributed libSQL (SQLite fork) via{" "}
           <code>@libsql/client</code>; works over HTTP for edge runtimes.
         </li>
         <li>
-          <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link> — SQLite-compatible database
+          <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link>: SQLite-compatible database
           bundled with Workers, accessed through a runtime binding (no network driver).
         </li>
         <li>
-          <Link href="/docs/databases/aurora-dsql">AWS Aurora DSQL</Link> — distributed PostgreSQL on
+          <Link href="/docs/databases/aurora-dsql">AWS Aurora DSQL</Link>: distributed PostgreSQL on
           AWS, ideal for the <Link href="/docs/adapters">Lambda adapter</Link>.
         </li>
       </ul>
@@ -147,25 +147,25 @@ export default function Page() {
       <h2>Choosing one</h2>
       <ul>
         <li>
-          <strong>You target Cloudflare Workers exclusively</strong> — D1 (built-in) or Neon /
+          <strong>You target Cloudflare Workers exclusively</strong>: D1 (built-in) or Neon /
           PlanetScale / Turso over HTTP.
         </li>
         <li>
-          <strong>You want Postgres on Vercel Edge</strong> — Neon, Supabase, or PlanetScale Postgres
+          <strong>You want Postgres on Vercel Edge</strong>: Neon, Supabase, or PlanetScale Postgres
           through the Neon serverless driver.
         </li>
         <li>
-          <strong>You want MySQL with database branching</strong> — PlanetScale.
+          <strong>You want MySQL with database branching</strong>: PlanetScale.
         </li>
         <li>
-          <strong>You want auth + storage + realtime in one package</strong> — Supabase.
+          <strong>You want auth + storage + realtime in one package</strong>: Supabase.
         </li>
         <li>
-          <strong>You&apos;re all-in on AWS with the Lambda adapter</strong> — Aurora DSQL or RDS Postgres
+          <strong>You&apos;re all-in on AWS with the Lambda adapter</strong>: Aurora DSQL or RDS Postgres
           via standard <code>pg</code>.
         </li>
         <li>
-          <strong>You need SQLite-style data close to users</strong> — Turso or D1.
+          <strong>You need SQLite-style data close to users</strong>: Turso or D1.
         </li>
       </ul>
 

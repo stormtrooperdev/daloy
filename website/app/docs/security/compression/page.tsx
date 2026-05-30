@@ -26,7 +26,7 @@ export default function Page() {
         <strong>Think of it like…</strong> vacuum-sealing parcels for shipping:
         smaller, cheaper, faster to deliver. But you never vacuum-seal anything
         with a return address visible through the wrap (cookies, auth headers,
-        CSRF tokens) — because a thief watching the loading dock could measure
+        CSRF tokens), because a thief watching the loading dock could measure
         the bulge and figure out what&apos;s inside. That&apos;s the BREACH
         attack, and that&apos;s why the middleware skips compression on
         sensitive headers and small responses by default.
@@ -110,7 +110,7 @@ app.use(compression());
         <code>&quot;abc&quot;</code>, Daloy downgrades it to{" "}
         <code>W/&quot;abc&quot;</code>. The ETag was computed over the upstream
         body, not the compressed wire bytes, so a weak validator is the honest
-        one — RFC 9110 §8.8.1 requires strong validators to be byte-equal to the
+        one, RFC 9110 §8.8.1 requires strong validators to be byte-equal to the
         representation on the wire, and the wire bytes change per encoding.
       </p>
 
@@ -136,7 +136,7 @@ app.use(compression());
             If <code>compression()</code> runs first
           </strong>{" "}
           it encodes the body. <code>etag()</code> then hashes the
-          already-compressed bytes, which is also valid — the strong tag still
+          already-compressed bytes, which is also valid, the strong tag still
           byte-matches the wire bytes the client receives.
         </li>
       </ul>
@@ -146,7 +146,7 @@ app.use(compression());
         <code>gzip</code>, <code>deflate</code>, and <code>identity</code>{" "}
         clients because the <code>Vary: Accept-Encoding</code> header forces
         per-encoding cache keys. You don&apos;t have to manage the weak/strong
-        downgrade yourself — even if you set <code>ETag</code> manually from a
+        downgrade yourself, even if you set <code>ETag</code> manually from a
         route handler, <code>compression()</code> performs the downgrade for you
         on the way out.
       </p>

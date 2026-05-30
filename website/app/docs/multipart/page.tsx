@@ -25,8 +25,8 @@ export default function Page() {
       <h1>File uploads (multipart/form-data)</h1>
       <p>
         DaloyJS treats <code>multipart/form-data</code> as a first-class request
-        shape. Two helpers — <code>fileField()</code> and{" "}
-        <code>multipartObject()</code> — let you describe an upload contract
+        shape. Two helpers, <code>fileField()</code> and{" "}
+        <code>multipartObject()</code>: let you describe an upload contract
         once, get runtime validation (size caps, MIME allowlists, filename
         matchers), an end-to-end-typed handler, and a correct OpenAPI document
         with <code>multipart/form-data</code> media type and{" "}
@@ -75,29 +75,29 @@ app.route({
       <h2>fileField() options</h2>
       <ul>
         <li>
-          <code>maxBytes</code> — reject files larger than this many bytes.
+          <code>maxBytes</code>: reject files larger than this many bytes.
         </li>
         <li>
-          <code>accept</code> — MIME allowlist. Each entry can be exact (
+          <code>accept</code>: MIME allowlist. Each entry can be exact (
           <code>&quot;image/png&quot;</code>) or a wildcard (
           <code>&quot;image/*&quot;</code> / <code>&quot;*/*&quot;</code>).
         </li>
         <li>
-          <code>filename(name)</code> — predicate for filename validation,
+          <code>filename(name)</code>: predicate for filename validation,
           useful for forcing extensions.
         </li>
         <li>
-          <code>magicBytes</code> — verify file signatures before the handler
+          <code>magicBytes</code>: verify file signatures before the handler
           receives the upload. <code>true</code> derives known signatures from{" "}
           <code>accept</code> for PNG, JPEG, GIF, WebP, PDF, ZIP, and GZIP;
           custom signatures support domain-specific formats.
         </li>
         <li>
-          <code>optional</code> — when <code>true</code>, accept{" "}
+          <code>optional</code>: when <code>true</code>, accept{" "}
           <code>undefined</code>/<code>null</code> values without raising.
         </li>
         <li>
-          <code>format</code> — OpenAPI hint, defaults to{" "}
+          <code>format</code>: OpenAPI hint, defaults to{" "}
           <code>&quot;binary&quot;</code>.
         </li>
       </ul>
@@ -162,7 +162,7 @@ fileField({
       <p>
         Field-level failures are returned as a standard{" "}
         <code>422 Unprocessable Content</code> problem+json document with one
-        entry per failing field — same shape as JSON body validation, so clients
+        entry per failing field, same shape as JSON body validation, so clients
         have a single error path to handle.
       </p>
     </>

@@ -39,7 +39,7 @@ export default function Page() {
         how to verify Shopify webhooks against the raw request body.
       </p>
 
-      <h2>REST is deprecated — prefer GraphQL</h2>
+      <h2>REST is deprecated: prefer GraphQL</h2>
       <p>
         Shopify <a
           href="https://shopify.dev/docs/api/admin-rest"
@@ -71,7 +71,7 @@ export default function Page() {
         <li>
           In the Shopify admin, open <strong>Settings → Apps and sales channels → Develop
           apps</strong>, then create a custom app. The legacy &ldquo;private apps&rdquo; flow
-          (API key + password) was removed back in January 2022 — don&apos;t use the{" "}
+          (API key + password) was removed back in January 2022, don&apos;t use the{" "}
           <code>apiKey</code> / <code>password</code> options on the SDK.
         </li>
         <li>
@@ -84,7 +84,7 @@ export default function Page() {
             Admin API access scopes
           </a>{" "}
           your integration actually needs (for example <code>read_products</code>,{" "}
-          <code>write_orders</code>). Stay minimal — you can always grant more later.
+          <code>write_orders</code>). Stay minimal, you can always grant more later.
         </li>
         <li>
           Install the app on the store. Copy the <strong>Admin API access token</strong> (starts
@@ -125,7 +125,7 @@ const shopify = new Shopify({
   accessToken: process.env.SHOPIFY_ACCESS_TOKEN!,
   apiVersion: process.env.SHOPIFY_API_VERSION ?? "2026-01",
   // Retry 429s and respect Shopify's GraphQL throttled-cost data.
-  // Mutually exclusive with autoLimit — pick one.
+  // Mutually exclusive with autoLimit - pick one.
   maxRetries: 5,
   timeout: 30_000,
 });
@@ -291,7 +291,7 @@ app.route({
   method: "POST",
   path: "/webhooks/shopify",
   operationId: "shopifyWebhook",
-  // No body schema — we hash bytes before parsing.
+  // No body schema - we hash bytes before parsing.
   responses: {
     200: { description: "ack", body: z.object({ ok: z.literal(true) }) },
     401: { description: "bad signature", body: z.object({ error: z.string() }) },
@@ -343,7 +343,7 @@ app.route({
         </a>
         . Use the <code>maxRetries</code> option (above) so the SDK respects the throttled-cost
         information that comes back on 429 responses. <code>autoLimit</code> only works for the
-        REST API and only inside a single Node process — skip it for GraphQL or multi-instance
+        REST API and only inside a single Node process, skip it for GraphQL or multi-instance
         deployments and rely on retries instead.
       </p>
 

@@ -10,7 +10,7 @@ const POST = {
   slug: "csp-nonces-and-trusted-types-without-tears",
   title: "CSP Nonces and Trusted Types Without Tears",
   description:
-    "A practical tour of secureHeaders({ contentSecurityPolicy: { nonce: true, trustedTypes: { policies: [...] } } }) — how ctx.state.cspNonce flows into a server-rendered template, why the nonce now lands on all four script/style directives, and how to roll out Trusted Types in report-only mode first without setting your weekend on fire.",
+    "A practical tour of secureHeaders({ contentSecurityPolicy: { nonce: true, trustedTypes: { policies: [...] } } }), how ctx.state.cspNonce flows into a server-rendered template, why the nonce now lands on all four script/style directives, and how to roll out Trusted Types in report-only mode first without setting your weekend on fire.",
   date: "2026-05-19",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
@@ -42,7 +42,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const NONCE_BASIC = `// src/app.ts — turn on per-request CSP nonces
+const NONCE_BASIC = `// src/app.ts, turn on per-request CSP nonces
 import { App, secureHeaders } from "@daloyjs/core";
 
 export const app = new App();
@@ -71,11 +71,11 @@ app.use(
 //   1. A fresh 128-bit base64url nonce is generated
 //   2. It is stashed on ctx.state.cspNonce for your templates
 //   3. 'nonce-<value>' is appended to script-src, script-src-elem,
-//      style-src, and style-src-elem — but only because those
+//      style-src, and style-src-elem - but only because those
 //      directives are declared above. The nonce never appears in a
 //      directive you didn't ask for.`;
 
-const SSR_TEMPLATE = `// src/routes/home.ts — pipe the nonce into the rendered HTML
+const SSR_TEMPLATE = `// src/routes/home.ts, pipe the nonce into the rendered HTML
 import { app } from "../app";
 
 app.route({
@@ -96,7 +96,7 @@ app.route({
 
 function renderHome(nonce: string): string {
   // No template lib for the demo. In real life this is the one place I
-  // happily reach for handlebars/eta/whatever — anywhere you'd write an
+  // happily reach for handlebars/eta/whatever - anywhere you'd write an
   // inline <script> or <style>, attach nonce="\${nonce}".
   return \`<!doctype html>
 <html lang="en">
@@ -138,7 +138,7 @@ const FOUR_DIRECTIVES = `// What the response header looks like in DevTools:
 // four so a single nonce attribute on <script nonce> or <style nonce>
 // just works regardless of which directive the browser consults.`;
 
-const TRUSTED_TYPES_ENFORCED = `// src/app.ts — enforce Trusted Types alongside the nonce
+const TRUSTED_TYPES_ENFORCED = `// src/app.ts, enforce Trusted Types alongside the nonce
 import { App, secureHeaders } from "@daloyjs/core";
 
 export const app = new App();
@@ -174,7 +174,7 @@ app.use(
 // setTimeout(string) call from JS throws unless the string was minted
 // by trustedTypes.createPolicy("app-default", {...}).createHTML(...).`;
 
-const APP_DEFAULT_POLICY = `// apps/web/src/trusted-types.ts — the one place HTML becomes HTML
+const APP_DEFAULT_POLICY = `// apps/web/src/trusted-types.ts, the one place HTML becomes HTML
 import DOMPurify from "dompurify";
 
 // Required: browsers only let you create a policy whose name appears
@@ -198,11 +198,11 @@ const sanitizer = window.trustedTypes!.createPolicy("app-default", {
 export function setHtml(target: Element, html: string): void {
   // Without Trusted Types this is a normal string and it works.
   // With Trusted Types enforced, browsers reject the assignment unless
-  // the right-hand side is a TrustedHTML — which is what sanitizer.createHTML returns.
+  // the right-hand side is a TrustedHTML - which is what sanitizer.createHTML returns.
   target.innerHTML = sanitizer.createHTML(html);
 }`;
 
-const REPORT_ONLY_ROLLOUT = `// src/app.ts — roll out Trusted Types in report-only mode FIRST
+const REPORT_ONLY_ROLLOUT = `// src/app.ts, roll out Trusted Types in report-only mode FIRST
 import { App, secureHeaders, type Hooks } from "@daloyjs/core";
 
 export const app = new App();
@@ -227,7 +227,7 @@ app.use(
   }),
 );
 
-// Step 2: add a SECOND header — Content-Security-Policy-Report-Only — that
+// Step 2: add a SECOND header - Content-Security-Policy-Report-Only - that
 // turns on Trusted Types in observe-only mode. Browsers will fire reports
 // to /__csp-report instead of breaking the page.
 const trustedTypesObserve: Hooks = {
@@ -257,7 +257,7 @@ app.route({
   },
 });`;
 
-const PROMOTE_TO_ENFORCED = `// Step 4 (later, after the report stream is quiet) — flip to enforced.
+const PROMOTE_TO_ENFORCED = `// Step 4 (later, after the report stream is quiet), flip to enforced.
 // Move the trustedTypes block into the main secureHeaders() call, drop the
 // report-only middleware, keep the report-uri so genuine bypasses keep
 // telling you about themselves.
@@ -287,7 +287,7 @@ const COMMON_PITFALLS = `# Pitfalls I have stepped on so you don't have to:
 1. "My nonce isn't being added!"
    You didn't declare script-src / style-src in your directives map.
    The middleware only appends 'nonce-...' to directives that already
-   exist — that's intentional (no surprise directives) but it bites you
+   exist - that's intentional (no surprise directives) but it bites you
    the first time. Add the four src directives.
 
 2. "It works in dev but not in prod."
@@ -299,7 +299,7 @@ const COMMON_PITFALLS = `# Pitfalls I have stepped on so you don't have to:
 3. "TT broke our analytics snippet."
    Of course it did. Wrap the snippet in its own policy
    ("analytics") and add it to the policies array. Each vendor that
-   uses innerHTML gets its own narrow policy — that's the point.
+   uses innerHTML gets its own narrow policy - that's the point.
 
 4. "Reports keep mentioning eval."
    Trusted Types enforcement covers setTimeout(string), new Function,
@@ -330,7 +330,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — VS Code-style chrome around a code sample.
+ * EditorFrame - VS Code-style chrome around a code sample.
  */
 function EditorFrame({
   files,
@@ -392,7 +392,7 @@ function EditorFrame({
 }
 
 /**
- * RolloutStep — numbered card for the report-only rollout.
+ * RolloutStep - numbered card for the report-only rollout.
  */
 function RolloutStep({
   step,
@@ -482,7 +482,7 @@ export default function BlogPostPage() {
             carry a per-response random token that an XSS payload cannot guess.
             Trusted Types upgrades the browser&apos;s sink APIs (
             <code>innerHTML</code>, <code>setTimeout</code> with strings,
-            <code> document.write</code>) so they refuse plain strings —
+            <code> document.write</code>) so they refuse plain strings, 
             anything dangerous has to come from a named, registered policy.
             Together they shrink the XSS attack surface from &quot;anywhere in
             your bundle&quot; to &quot;the three lines in{" "}
@@ -502,7 +502,7 @@ export default function BlogPostPage() {
 
           <p>
             Three things to notice. First, you pass the object form of{" "}
-            <code>contentSecurityPolicy</code> — that&apos;s what tells the
+            <code>contentSecurityPolicy</code>: that&apos;s what tells the
             middleware to rebuild the CSP header per request instead of caching
             a static string. Second, <code>nonce: true</code> is the entire
             opt-in. The middleware generates a 128-bit base64url nonce using
@@ -515,8 +515,8 @@ export default function BlogPostPage() {
             Third, and this is the one that bit me the first time: the nonce is
             appended <em>only to directives you already declared</em>. If your
             config has no <code>style-src</code>, the middleware will{" "}
-            <em>not</em> invent one for you. That&apos;s deliberate — secure
-            headers should never silently broaden your policy — but it means you
+            <em>not</em> invent one for you. That&apos;s deliberate, secure
+            headers should never silently broaden your policy, but it means you
             need to spell those directives out yourself if you want to use a
             nonce on them. Which leads us to&hellip;
           </p>
@@ -528,9 +528,9 @@ export default function BlogPostPage() {
             <code>script-src</code> and <code>style-src</code>&quot;. That was
             true in CSP 2. In CSP 3, the browser also consults
             <code> script-src-elem</code> and <code>style-src-elem</code>{" "}
-            specifically for <em>element-based</em> loads —{" "}
+            specifically for <em>element-based</em> loads, {" "}
             <code>&lt;script src=...&gt;</code> and{" "}
-            <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code> — and falls
+            <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code>: and falls
             back to the older directives if they aren&apos;t present. The
             wrinkle is that if you declare both pairs and only nonce the non-
             <code>-elem</code> ones, the browser uses the more specific
@@ -577,14 +577,14 @@ export default function BlogPostPage() {
 
           <p>
             If you forget the nonce on a tag, that tag silently does not execute
-            — which is exactly what you want, but is also why you&apos;ll
+, which is exactly what you want, but is also why you&apos;ll
             briefly hate yourself the first time a footer analytics snippet
             stops working. Open the console, you&apos;ll see a clean CSP
             violation message naming the directive. Add the nonce, refresh,
             done.
           </p>
 
-          <h2>Step three: turn on Trusted Types — enforced</h2>
+          <h2>Step three: turn on Trusted Types: enforced</h2>
 
           <p>
             CSP keeps XSS payloads from <em>running</em> as scripts. Trusted
@@ -638,7 +638,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            The CSP spec gives us a beautiful escape hatch — a parallel header
+            The CSP spec gives us a beautiful escape hatch, a parallel header
             called <code>Content-Security-Policy-Report-Only</code>. The browser
             evaluates it exactly like the enforced policy, but instead of
             blocking violations it sends them to a <code>report-uri</code>.
@@ -649,7 +649,7 @@ export default function BlogPostPage() {
           <RolloutStep
             step={1}
             title="Keep your enforced CSP exactly as-is"
-            description="The nonce and the rest of the policy stay enforced. You do not weaken anything during the rollout — you add an observation layer on top."
+            description="The nonce and the rest of the policy stay enforced. You do not weaken anything during the rollout, you add an observation layer on top."
           />
           <RolloutStep
             step={2}
@@ -677,7 +677,7 @@ export default function BlogPostPage() {
 
           <p>
             And the flip to enforced, once the report stream is quiet, is
-            mechanical — move the <code>trustedTypes</code> block into the main{" "}
+            mechanical, move the <code>trustedTypes</code> block into the main{" "}
             <code>secureHeaders()</code> call and delete the report-only hook:
           </p>
 
@@ -691,8 +691,8 @@ export default function BlogPostPage() {
 
           <p>
             I&apos;d keep the <code>report-uri</code> on forever. Genuine
-            attempts to bypass your policy — including legitimate-looking ones
-            from a future engineer who didn&apos;t know about the policy — are
+            attempts to bypass your policy, including legitimate-looking ones
+            from a future engineer who didn&apos;t know about the policy, are
             now telemetry, not silent failures.
           </p>
 
@@ -713,8 +713,8 @@ export default function BlogPostPage() {
             nothing for SSRF, nothing for SQL injection, nothing for an attacker
             who gets your <code>SESSION</code> cookie because{" "}
             <code>Secure</code> wasn&apos;t set on a staging environment. Use
-            them <em>in addition to</em> the rest of the boring stuff — output
-            encoding, prepared statements, sane cookie flags — not{" "}
+            them <em>in addition to</em> the rest of the boring stuff, output
+            encoding, prepared statements, sane cookie flags, not{" "}
             <em>instead of</em>.
           </p>
 
@@ -735,7 +735,7 @@ export default function BlogPostPage() {
             how this fits with CSRF, sessions, and the rest of the defenses. If
             you want to see the actual generator, it&apos;s a small file: open{" "}
             <code>src/middleware.ts</code> and search for{" "}
-            <code>buildCspHeader</code> — it&apos;s about thirty lines.
+            <code>buildCspHeader</code>: it&apos;s about thirty lines.
           </p>
 
           <p>
@@ -745,7 +745,7 @@ export default function BlogPostPage() {
             information.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

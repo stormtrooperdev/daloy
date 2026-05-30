@@ -77,7 +77,7 @@ const TWO_EVENTS = `// Two events, that's the whole API:
 //
 // Plus the two you already knew about:
 //
-//   app.onClose(hook)             // AFTER drain — close pools, etc.
+//   app.onClose(hook)             // AFTER drain - close pools, etc.
 //   await app.ready()             // waits for async plugins
 //
 // That's the entire surface for cross-cutting platform plugins.
@@ -115,7 +115,7 @@ app.register(
 //
 // Anonymous plugins (passed as a bare function) fire too, with name=undefined.`;
 
-const REGISTRY_PLUGIN = `// platform/registry-plugin.ts — a service registration plugin.
+const REGISTRY_PLUGIN = `// platform/registry-plugin.ts, a service registration plugin.
 // Run by the platform team. Routes are unaware. Operations gets a
 // real-time inventory of what each pod actually serves.
 import type { App } from "@daloyjs/core";
@@ -141,7 +141,7 @@ export function registrationPlugin(consul: { url: string; token: string }) {
       app.log.info({ event: "deregistered", serviceId, reason });
     });
 
-    // app.onClose runs AFTER drain — perfect for releasing
+    // app.onClose runs AFTER drain - perfect for releasing
     // the registration lock if your service mesh holds one.
     app.onClose(async () => {
       // ...release any final platform resource
@@ -163,7 +163,7 @@ export function registrationPlugin(consul: { url: string; token: string }) {
   };
 }`;
 
-const METRICS_PLUGIN = `// platform/metrics-plugin.ts — Prometheus-style metrics, flushed on shutdown.
+const METRICS_PLUGIN = `// platform/metrics-plugin.ts, Prometheus-style metrics, flushed on shutdown.
 // One platform-team file. Routes never import metrics directly.
 import type { App, Hooks } from "@daloyjs/core";
 import { register, Counter, Histogram } from "prom-client";
@@ -182,7 +182,7 @@ const httpLatency = new Histogram({
 
 export function metricsPlugin(opts: { pushGatewayUrl?: string; job: string }) {
   return (app: App) => {
-    // Per-plugin label is captured at install time — no global mutable state
+    // Per-plugin label is captured at install time - no global mutable state
     // racing inside hot handlers.
     const labelByPrefix = new Map<string, string>();
     app.onPluginInstalled(({ name, prefix }) => {
@@ -258,7 +258,7 @@ const SHUTDOWN_FLOW = `# What happens when app.shutdown() is called:
 # SIGINT and SIGTERM. Other runtimes (Workers, Lambda) call it from
 # your handler when the lifecycle event fires.`;
 
-const POLICY_PLUGIN = `// platform/policy-plugin.ts — central tagging / enforcement.
+const POLICY_PLUGIN = `// platform/policy-plugin.ts, central tagging / enforcement.
 // Use onPluginInstalled to AUDIT every plugin's mount, and fail boot
 // if anything violates the platform-team policy.
 import type { App } from "@daloyjs/core";
@@ -303,7 +303,7 @@ export function policyPlugin(policy: Policy) {
   };
 }`;
 
-const COMPOSE = `// src/server.ts — what main() looks like in a real platform-team app.
+const COMPOSE = `// src/server.ts, what main() looks like in a real platform-team app.
 // Notice: NOT ONE infra import in routes/*.ts. They just declare routes.
 import { App, requestId, secureHeaders, timing } from "@daloyjs/core";
 import { trace } from "@opentelemetry/api";
@@ -369,7 +369,7 @@ const PLATFORM_FLOW = `# What boot looks like in the logs of a single replica:
 # The whole sequence is composable. Add a plugin → its listener slots
 # into onPluginInstalled and onShutdown alongside everyone else's.`;
 
-const TESTING_PLUGINS = `// tests/platform-plugins.test.ts — verify the wiring without a network.
+const TESTING_PLUGINS = `// tests/platform-plugins.test.ts, verify the wiring without a network.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { App } from "@daloyjs/core";
@@ -638,7 +638,7 @@ export default function BlogPostPage() {
           >
             Receives <code>{`{ reason?, timeoutMs }`}</code>. The right place to
             push metrics, deregister from service discovery, and flush span
-            buffers — everything that needs the network to still work.
+            buffers, everything that needs the network to still work.
           </EventCard>
           <EventCard event="onClose" fires="AFTER in-flight requests drain">
             Use for releasing resources you paid for at boot:{" "}
@@ -753,7 +753,7 @@ export default function BlogPostPage() {
             Note carefully: <code>routes/users.ts</code>,{" "}
             <code>routes/orders.ts</code>, <code>routes/admin.ts</code> have{" "}
             <em>zero</em> imports from <code>platform/*</code>. The metrics show
-            up, the registration happens, the policy fires — all without a
+            up, the registration happens, the policy fires, all without a
             single line in the route files knowing any of that exists. That is
             the entire point.
           </p>
@@ -820,7 +820,7 @@ export default function BlogPostPage() {
             Workers, Vercel Edge, and Lambda.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

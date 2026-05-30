@@ -60,7 +60,7 @@ const PAIN = `# A real observability stack failure mode, lightly fictionalized:
 # switch vendors without a rewrite. DaloyJS goes the other way:
 # small contracts, your choice of implementation, zero global patching.`;
 
-const LOGGER_BASIC = `// src/log.ts — boot a structured JSON logger.
+const LOGGER_BASIC = `// src/log.ts, boot a structured JSON logger.
 import { createLogger } from "@daloyjs/core";
 
 export const log = createLogger({
@@ -83,7 +83,7 @@ export const log = createLogger({
 
 const LOGGER_PINO = `// Want pino in production for performance? createLogger is just one
 // implementation of the Logger interface. Anything matching the shape
-// works — same constructor signature, no framework changes.
+// works - same constructor signature, no framework changes.
 import pino from "pino";
 import type { Logger } from "@daloyjs/core";
 import { App } from "@daloyjs/core";
@@ -98,7 +98,7 @@ const app = new App({ logger: log });
 //   new App({ logger: false })   // → noopLogger, silent
 //   new App({ logger: noopLogger })`;
 
-const REQUEST_ID = `// src/app.ts — request IDs are the spine of observability.
+const REQUEST_ID = `// src/app.ts, request IDs are the spine of observability.
 import { App, requestId, timing } from "@daloyjs/core";
 import { log } from "./log.js";
 
@@ -128,7 +128,7 @@ app.route({
   },
 });`;
 
-const LOG_OUTPUT = `// Output for one request — note the shared requestId across lines.
+const LOG_OUTPUT = `// Output for one request, note the shared requestId across lines.
 {"level":"info","time":"2026-06-03T08:42:11.108Z","service":"books-api",
  "requestId":"01HZQ4M8Z1F7E0SE0EH7E3WJW2","method":"GET","path":"/books",
  "msg":"request received"}
@@ -147,7 +147,7 @@ content-type: application/json; charset=utf-8
 x-request-id: 01HZQ4M8Z1F7E0SE0EH7E3WJW2
 server-timing: app;dur=5.91`;
 
-const OTEL_BASIC = `// src/tracing.ts — bring your own OTel tracer.
+const OTEL_BASIC = `// src/tracing.ts, bring your own OTel tracer.
 // DaloyJS does NOT import @opentelemetry/api. You install it, you
 // configure it, you pass the tracer in. That's the whole API surface.
 import { trace } from "@opentelemetry/api";
@@ -155,7 +155,7 @@ import { App, otelTracing } from "@daloyjs/core";
 
 // 1. Wire your OTel SDK exactly as the OTel docs say (node SDK, edge
 //    SDK, sdk-trace-base + a custom exporter, etc.). DaloyJS does not
-//    care which one — it never touches the global provider.
+//    care which one - it never touches the global provider.
 import "./otel-bootstrap.js"; // ← your code; calls trace.setGlobalTracerProvider(...)
 
 const tracer = trace.getTracer("books-api", "1.0.0");
@@ -175,21 +175,21 @@ const app = new App({
 
 const OTEL_LIFECYCLE = `# The four-hook lifecycle, in order, for a single request:
 #
-# 1) onRequest     — starts a SERVER span and stamps HTTP semantic
+# 1) onRequest     - starts a SERVER span and stamps HTTP semantic
 #                    attributes:
 #                       http.request.method, url.path, url.scheme,
 #                       server.address, url.query, user_agent.original
-# 2) beforeHandle  — stores the span on ctx.state.otelSpan so handlers
+# 2) beforeHandle  - stores the span on ctx.state.otelSpan so handlers
 #                    can add events / create child spans / set custom
 #                    attributes ("user.id", "tenant.id", ...).
-# 3) onError       — calls span.recordException(err) and sets status
+# 3) onError       - calls span.recordException(err) and sets status
 #                    to ERROR with err.message. Runs ONCE.
-# 4) onSend        — sets http.response.status_code, escalates to ERROR
+# 4) onSend        - sets http.response.status_code, escalates to ERROR
 #                    for 5xx if onError didn't already, and calls
 #                    span.end() exactly once. Even if the handler threw.
 #
 # Everything is delivered through the standard Hooks contract from
-# src/types.ts — no monkey-patching of fetch, no async-hooks magic,
+# src/types.ts - no monkey-patching of fetch, no async-hooks magic,
 # no surprise globals. The same hooks composition you'd write by hand.`;
 
 const SEMANTIC_ATTRS = `// Add app-specific semantic attributes inside a handler.
@@ -218,7 +218,7 @@ app.route({
 
 const NO_OTEL_SDK = `// You can use otelTracing() WITHOUT installing @opentelemetry/api.
 // The framework only depends on the small TracingTracer/TracingSpan
-// interfaces. Roll your own collector — useful on Workers, in tests,
+// interfaces. Roll your own collector - useful on Workers, in tests,
 // or for emitting OTLP HTTP directly from an edge function.
 import { App, otelTracing } from "@daloyjs/core";
 import type { TracingTracer, TracingSpan } from "@daloyjs/core";
@@ -251,7 +251,7 @@ const tinyTracer: TracingTracer = {
 
 const app = new App({ hooks: otelTracing({ tracer: tinyTracer }) });`;
 
-const PARENT_CONTEXT = `// W3C traceparent propagation — bring your own propagator.
+const PARENT_CONTEXT = `// W3C traceparent propagation, bring your own propagator.
 // DaloyJS deliberately does NOT import a propagator (they pull in
 // the OTel context API and aren't edge-safe in every runtime).
 // Pass any function that returns the parent context you want.
@@ -274,7 +274,7 @@ const app = new App({
 // recorded automatically, with no per-handler code.`;
 
 const CUSTOM_EXPORTER = `// otelTracing() is just hooks. You can compose your own exporter at
-// the same layer — wrap startSpan to also push to your sink, or wrap
+// the same layer - wrap startSpan to also push to your sink, or wrap
 // otelTracing's onSend hook to also emit a log line.
 import { otelTracing } from "@daloyjs/core";
 import type { Hooks } from "@daloyjs/core";
@@ -297,7 +297,7 @@ const tracingWithAccessLog: Hooks = {
 
 app.use(tracingWithAccessLog);`;
 
-const TESTING = `// tests/observability.test.ts — verify spans without a real backend.
+const TESTING = `// tests/observability.test.ts, verify spans without a real backend.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { App, otelTracing } from "@daloyjs/core";
@@ -350,7 +350,7 @@ const RUNTIME_NOTES = `# Runtime-by-runtime observability checklist.
 # - For tracing: roll a small TracingTracer that POSTs to an OTLP/HTTP
 #   collector (or directly to vendor APIs like Honeycomb). The "no OTel
 #   SDK" example above is the template.
-# - Inherit traceparent via contextFromRequest — propagation only needs
+# - Inherit traceparent via contextFromRequest - propagation only needs
 #   reading the header; you can do that without the OTel propagator.
 #
 # Vercel Edge / Functions:
@@ -374,14 +374,14 @@ const CHECKLIST = `# Pre-flight observability checklist for any service.
 #    Use ctx.log inside handlers, not the top-level instance.
 # 3) timing() so the Network tab shows handler latency without
 #    instrumentation in the frontend.
-# 4) otelTracing({ tracer, spanName }) — TEMPLATE the span name. Raw
+# 4) otelTracing({ tracer, spanName }) - TEMPLATE the span name. Raw
 #    URLs are the most common source of cardinality explosions in
 #    every observability bill on earth.
 # 5) Wire contextFromRequest to your propagator. A trace that starts
 #    at the frontend and ends in the database is the only kind worth
 #    paying for.
 # 6) Record exceptions and stamp http.response.status_code. The
-#    framework does this for you — just verify in dev.
+#    framework does this for you - just verify in dev.
 # 7) Tie logs to traces. Stamp the trace id on every log line; jump
 #    from a log entry to the matching span in your UI of choice.
 # 8) Keep the SDK out of @daloyjs/core. The portability story dies
@@ -574,7 +574,7 @@ export default function BlogPostPage() {
             The default <code>createLogger</code> is intentionally tiny: JSON to
             stdout, level threshold, bindings merged into every record, and a{" "}
             <code>child(bindings)</code> method that returns a new logger with
-            extra fields baked in. That last bit is the magic ingredient — the
+            extra fields baked in. That last bit is the magic ingredient, the
             framework uses it to give every request its own logger pre-bound to
             the request id.
           </p>
@@ -611,7 +611,7 @@ export default function BlogPostPage() {
 
           <p>
             Two things to highlight. First, <code>trustIncoming: false</code> is
-            the safe default — clients can send any header they want, and
+            the safe default, clients can send any header they want, and
             accepting an arbitrary id from the public internet lets them collide
             with (or impersonate) other requests in your log stream. Second,{" "}
             <code>timing()</code> writes the standard <code>Server-Timing</code>{" "}
@@ -627,8 +627,8 @@ export default function BlogPostPage() {
             <code>otelTracing()</code> is shaped like the{" "}
             <code>@opentelemetry/api</code> tracer, but the framework does not
             import it. The contract is two small interfaces in{" "}
-            <code>src/tracing.ts</code> — <code>TracingTracer</code> and{" "}
-            <code>TracingSpan</code> — and any object that fits them works. You
+            <code>src/tracing.ts</code>: <code>TracingTracer</code> and{" "}
+            <code>TracingSpan</code>: and any object that fits them works. You
             install the OTel SDK in <em>your</em> <code>package.json</code>,
             configure it in <em>your</em> bootstrap, and pass the tracer in. The
             portability story survives.
@@ -800,7 +800,7 @@ export default function BlogPostPage() {
             post for the hooks that make all of this possible.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

@@ -28,7 +28,7 @@ export default function Page() {
         <a href="https://squareup.com/" target="_blank" rel="noreferrer">
           Square
         </a>{" "}
-        gives you one API across in-person, online, and recurring payments — useful when
+        gives you one API across in-person, online, and recurring payments, useful when
         the same merchant takes both Tap to Pay at the counter and Apple Pay through your
         web app. This guide uses the modern{" "}
         <a
@@ -38,7 +38,7 @@ export default function Page() {
         >
           <code>square</code>
         </a>{" "}
-        TypeScript SDK (v40+, currently v44.x — a full rewrite from the pre-v40 line),
+        TypeScript SDK (v40+, currently v44.x, a full rewrite from the pre-v40 line),
         Square&apos;s Web Payments SDK on the client for tokenisation, and{" "}
         <code>WebhooksHelper.verifySignature</code> on the server for webhook auth.
       </p>
@@ -51,7 +51,7 @@ export default function Page() {
           <code>paymentsApi.createPayment</code> in tutorials, you&apos;re looking at the
           legacy SDK. The new client is <code>SquareClient</code>, calls are{" "}
           <code>client.payments.create(...)</code>, and parameters are camelCase. The
-          legacy surface is still shipped as <code>square/legacy</code> for migration only —
+          legacy surface is still shipped as <code>square/legacy</code> for migration only, 
           don&apos;t start there in 2026.
         </li>
         <li>
@@ -62,7 +62,7 @@ export default function Page() {
           See the serialisation note below.
         </li>
         <li>
-          <strong>You don&apos;t charge a card — you charge a <em>source ID</em>.</strong>{" "}
+          <strong>You don&apos;t charge a card, you charge a <em>source ID</em>.</strong>{" "}
           The Web Payments SDK on the client returns a single-use token (
           <code>cnon:...</code> for cards, <code>cash:</code>, Apple Pay nonces, etc.) that
           your server passes as <code>sourceId</code>. Raw PANs never touch your code.
@@ -70,7 +70,7 @@ export default function Page() {
         <li>
           <strong>Always send an <code>idempotencyKey</code>.</strong> Required on every
           mutating call (<code>payments.create</code>, <code>refunds.refundPayment</code>,
-          orders, etc.). A UUID per logical attempt is the right shape — re-use it on
+          orders, etc.). A UUID per logical attempt is the right shape, re-use it on
           retries.
         </li>
         <li>
@@ -95,7 +95,7 @@ export default function Page() {
         <li>
           Grab a <strong>Sandbox access token</strong> and your <strong>Application ID</strong>{" "}
           from <em>Credentials</em>. Also note a <strong>Location ID</strong> from{" "}
-          <em>Locations</em> — every payment needs one.
+          <em>Locations</em>: every payment needs one.
         </li>
         <li>
           Under <em>Webhooks → Subscriptions</em>, add an endpoint pointing at your DaloyJS
@@ -395,7 +395,7 @@ await state.square.refund({
         The v40+ SDK is Fern-generated and uses the platform <code>fetch</code> when
         available, falling back to <code>node-fetch</code>. Square officially supports
         Node.js 18+, Vercel (Edge and Node), Cloudflare Workers, Deno 1.25+, Bun 1.0+, and
-        React Native — so the same plugin runs on Edge runtimes unchanged. The only thing
+        React Native, so the same plugin runs on Edge runtimes unchanged. The only thing
         to watch is reading the raw body: on Edge, use{" "}
         <code>await request.text()</code> instead of <code>readRawBody</code> if your
         adapter doesn&apos;t expose Node streams.
@@ -405,7 +405,7 @@ await state.square.refund({
       <p>
         Non-2xx responses throw <code>SquareError</code>. Inspect{" "}
         <code>err.statusCode</code>, <code>err.body</code>, and the structured{" "}
-        <code>err.errors[]</code> array — each entry has <code>category</code> (e.g.{" "}
+        <code>err.errors[]</code> array, each entry has <code>category</code> (e.g.{" "}
         <code>PAYMENT_METHOD_ERROR</code>), <code>code</code> (e.g.{" "}
         <code>CARD_DECLINED</code>, <code>CVV_FAILURE</code>), <code>detail</code>, and an
         optional <code>field</code>. Map them through{" "}
@@ -418,7 +418,7 @@ await state.square.refund({
       <ul>
         <li>
           <strong>Use the new SDK, not <code>square/legacy</code>.</strong> The legacy
-          export exists so v39 codebases can migrate piecemeal — there&apos;s no reason to
+          export exists so v39 codebases can migrate piecemeal, there&apos;s no reason to
           start a new integration on it in 2026. New features ship to the new client first
           (or only).
         </li>

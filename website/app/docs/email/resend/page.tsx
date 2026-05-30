@@ -98,7 +98,7 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        Resend SDK methods return <code>{`{ data, error }`}</code> rather than throwing — handle
+        Resend SDK methods return <code>{`{ data, error }`}</code> rather than throwing, handle
         the <code>error</code> branch and surface it through the{" "}
         <Link href="/docs/errors">DaloyJS error helpers</Link>.
       </p>
@@ -177,7 +177,7 @@ await resend.emails.send({
       <h2>Batch sending</h2>
       <p>
         Use <code>resend.batch.send([...])</code> to enqueue up to 100 messages in a single API
-        call — handy for fan-out notifications without queueing infrastructure.
+        call, handy for fan-out notifications without queueing infrastructure.
       </p>
 
       <h2>Runtimes</h2>

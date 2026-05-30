@@ -56,7 +56,7 @@ app.route({
         The request id is returned to the client in two places: the <code>x-request-id</code> response
         header, and (per <a href="https://www.rfc-editor.org/rfc/rfc9457#name-members-of-a-problem-detail" target="_blank" rel="noreferrer">RFC&nbsp;9457 §3.1</a>)
         the problem document&apos;s <code>instance</code> field as a <code>urn:request:&lt;uuid&gt;</code> URN.
-        There is no top-level <code>requestId</code> property — clients should read the header or parse the URN
+        There is no top-level <code>requestId</code> property, clients should read the header or parse the URN
         from <code>instance</code>.
       </p>
       <CodeBlock language="json" code={`HTTP/1.1 404 Not Found

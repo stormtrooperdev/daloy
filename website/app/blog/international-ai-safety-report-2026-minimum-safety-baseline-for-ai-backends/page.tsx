@@ -10,7 +10,7 @@ const POST = {
   title:
     "The International AI Safety Report 2026, Translated Into a Minimum Safety Baseline for AI Backends",
   description:
-    "Aikido's read of the International AI Safety Report 2026 lands on a short list of deployment-time requirements for any backend an autonomous AI system can call — layered defense, independent verification, prompt-injection-resistant guardrails, network scope control, inference/execution separation, full observability and emergency controls. Here's the honest per-requirement mapping to what a DaloyJS app already enforces by default, what one opt-in line adds, and what still lives above the HTTP layer.",
+    "Aikido's read of the International AI Safety Report 2026 lands on a short list of deployment-time requirements for any backend an autonomous AI system can call, layered defense, independent verification, prompt-injection-resistant guardrails, network scope control, inference/execution separation, full observability and emergency controls. Here's the honest per-requirement mapping to what a DaloyJS app already enforces by default, what one opt-in line adds, and what still lives above the HTTP layer.",
   date: "2026-05-24",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
@@ -90,7 +90,7 @@ app.route({
     }).strict(),  // unknown keys are rejected, not silently ignored
   },
   responses: {
-    // Response schemas are validated too — the handler cannot
+    // Response schemas are validated too - the handler cannot
     // accidentally leak a field a downstream agent wasn't supposed
     // to see, even if a junior engineer adds it to the SELECT later.
     200: { description: "queued", schema: z.object({ id: z.string().uuid() }).strict() },
@@ -126,7 +126,7 @@ app.use(fetchGuard({
 // network, not the model-facing one.
 app.use("/admin/*", ipRestriction({ allow: ["10.0.0.0/8"] }));`;
 
-const INFERENCE_EXECUTION_SEPARATION = `// "Separation of inference and execution" — the report's way of
+const INFERENCE_EXECUTION_SEPARATION = `// "Separation of inference and execution", the report's way of
 // saying: the process that talks to the model is not the same
 // process that touches your production database.
 //
@@ -161,7 +161,7 @@ execApp.use(jwt({
   maxTokenAgeSeconds: 5 * 60,       // 5-min tokens, not year-long keys
 }));`;
 
-const OBSERVABILITY_KILL_SWITCH = `// "Full observability and emergency controls" — when the model
+const OBSERVABILITY_KILL_SWITCH = `// "Full observability and emergency controls", when the model
 // goes off the rails at 3am you need (a) the receipts and (b) a
 // big red button. DaloyJS gives you both as primitives.
 import {
@@ -189,7 +189,7 @@ app.use(structuredLogger({ destination: process.stdout }));
 app.use(loadShedding({ maxQueueDepth: 100, maxEventLoopDelayMs: 50 }));
 gracefulShutdown(app, { drainMs: 15_000 });`;
 
-const PROMPT_INJECTION_BOUNDARY = `// Prompt injection doesn't live "at the HTTP layer" — it lives in
+const PROMPT_INJECTION_BOUNDARY = `// Prompt injection doesn't live "at the HTTP layer", it lives in
 // the model. What lives at the HTTP layer is the BLAST RADIUS of
 // a successful prompt injection. A tool surface that takes
 // strongly typed inputs, returns strongly typed outputs, and
@@ -225,14 +225,14 @@ app.route({
   handler: async ({ body }) => docs.search(body),
 });`;
 
-const PROD_MODE_REDACTION = `// "Data processing guarantees" — the report's way of saying:
+const PROD_MODE_REDACTION = `// "Data processing guarantees", the report's way of saying:
 // the model should not be a path to your internals.
 // In production, DaloyJS redacts 5xx bodies by default. Stack
 // traces, DB error messages, internal hostnames never reach
 // the wire. The agent gets a problem+json with a requestId; your
 // SIEM gets the full detail.
 
-// Prod response — what the model / its operator sees:
+// Prod response - what the model / its operator sees:
 HTTP/1.1 500 Internal Server Error
 content-type: application/problem+json
 
@@ -245,7 +245,7 @@ content-type: application/problem+json
   "requestId": "01J9XP4M2K3W7Z8V0YQHB6T5RC"
 }
 
-// Same incident in your structured log line — what your team sees:
+// Same incident in your structured log line - what your team sees:
 {
   "level":"error","requestId":"01J9XP4M2K3W7Z8V0YQHB6T5RC",
   "route":"/tools/refund","method":"POST","status":500,
@@ -427,7 +427,7 @@ export default function BlogPostPage() {
             >
               International AI Safety Report 2026
             </a>{" "}
-            — 100+ experts, 30+ countries, Yoshua Bengio chairing — through an
+, 100+ experts, 30+ countries, Yoshua Bengio chairing, through an
             operator&apos;s lens and lands on a short, useful conclusion: the
             interesting safety work for the rest of us is at{" "}
             <strong>deployment time and runtime</strong>, not at training time.
@@ -472,21 +472,21 @@ export default function BlogPostPage() {
             opt-in line adds, and the items no framework can own.
           </p>
 
-          <h2>Layered defense — the deployment layer must stand alone</h2>
+          <h2>Layered defense: the deployment layer must stand alone</h2>
 
           <RequirementCard
             requirement="Report: 'Each layer must function independently. The deployment-time layer cannot rely on the model behaving.'"
-            framework="The DaloyJS constructor ships secure-by-default for the deployment layer: 1 MiB body limit, 30s request timeout, prod-mode 5xx redaction, prototype-pollution-safe JSON parse, CRLF / header-splitting refusal, path-traversal rejection, method-confusion 405 (not 404), 415 on unsupported content types, __Host- / Secure / HttpOnly / SameSite=Lax cookies. None of these depend on the model behaving — they hold even when the calling agent is fully compromised."
+            framework="The DaloyJS constructor ships secure-by-default for the deployment layer: 1 MiB body limit, 30s request timeout, prod-mode 5xx redaction, prototype-pollution-safe JSON parse, CRLF / header-splitting refusal, path-traversal rejection, method-confusion 405 (not 404), 415 on unsupported content types, __Host- / Secure / HttpOnly / SameSite=Lax cookies. None of these depend on the model behaving, they hold even when the calling agent is fully compromised."
             user="Decide what the runtime layer does when the deployment layer fires: page someone, drop the request, fail open, fail closed. The framework gives you the signal; the runbook is yours."
           />
 
           <CodeBlock language="ts" code={LAYERED_DEFENSE} />
 
-          <h2>Mandatory verification — the route schema is the contract</h2>
+          <h2>Mandatory verification: the route schema is the contract</h2>
 
           <RequirementCard
             requirement="Report: 'Trust the verifier, not the model. Independent verification must sit in front of every side effect.'"
-            framework="Every DaloyJS route declares a schema (Zod, Valibot, ArkType — anything Standard Schema). The handler does not run until the request matches. .strict() is the project convention so unknown keys are rejected, not silently dropped into the database. Response schemas are validated too, so a handler cannot leak a field the contract didn't promise — useful when the consumer is an agent that will happily exfiltrate anything it sees."
+            framework="Every DaloyJS route declares a schema (Zod, Valibot, ArkType, anything Standard Schema). The handler does not run until the request matches. .strict() is the project convention so unknown keys are rejected, not silently dropped into the database. Response schemas are validated too, so a handler cannot leak a field the contract didn't promise, useful when the consumer is an agent that will happily exfiltrate anything it sees."
             user="Write the schema tight. min/max on numbers, min/max on string lengths, regex on identifiers, enum on choices. The framework runs whatever shape you give it; a permissive schema is permissive enforcement."
           />
 
@@ -497,21 +497,21 @@ export default function BlogPostPage() {
             easiest one to get wrong. The temptation when a model is doing
             something clever is to widen the schema so the clever thing fits.
             Don&apos;t. Widen the schema only when you&apos;ve thought through
-            what the wider input means in production — and write the
+            what the wider input means in production, and write the
             unhappy-path test before you ship it.
           </p>
 
-          <h2>Network-level scope control — fetchGuard is one line</h2>
+          <h2>Network-level scope control: fetchGuard is one line</h2>
 
           <RequirementCard
             requirement="Report: 'A backend the model can call must not be a path to internal infrastructure or the cloud metadata service.'"
             framework="fetchGuard() is a default-deny outbound wrapper around fetch / undici / Bun.fetch / Workers fetch. Cloud metadata IPs, localhost, RFC 1918 private ranges, link-local, and IPv6 equivalents are blocked. Redirects are re-validated against the same allow-list, so an attacker can't bounce off a public URL into the metadata service. ipRestriction() does the same job for inbound traffic on admin / kill-switch surfaces."
-            user="Write the allow-list. fetchGuard refuses to start without one — there is no '*' default. That refusal is on purpose; the most common AI tool SSRF is a 'we'll lock it down later' that never gets locked down."
+            user="Write the allow-list. fetchGuard refuses to start without one, there is no '*' default. That refusal is on purpose; the most common AI tool SSRF is a 'we'll lock it down later' that never gets locked down."
           />
 
           <CodeBlock language="ts" code={NETWORK_SCOPE} />
 
-          <h2>Inference / execution separation — two Apps, two deploys</h2>
+          <h2>Inference / execution separation: two Apps, two deploys</h2>
 
           <RequirementCard
             requirement="Report: 'The process that talks to the model is not the process that touches production state.'"
@@ -522,7 +522,7 @@ export default function BlogPostPage() {
           <CodeBlock language="ts" code={INFERENCE_EXECUTION_SEPARATION} />
 
           <h2>
-            Full observability and emergency controls — the receipts and the big
+            Full observability and emergency controls, the receipts and the big
             red button
           </h2>
 
@@ -534,11 +534,11 @@ export default function BlogPostPage() {
 
           <CodeBlock language="ts" code={OBSERVABILITY_KILL_SWITCH} />
 
-          <h2>Prompt injection — the HTTP boundary owns the blast radius</h2>
+          <h2>Prompt injection: the HTTP boundary owns the blast radius</h2>
 
           <p>
             Let&apos;s be honest about this one. Prompt injection doesn&apos;t
-            live at the HTTP layer — it lives in the model. No framework
+            live at the HTTP layer, it lives in the model. No framework
             &quot;solves&quot; prompt injection. What the framework owns is the{" "}
             <em>blast radius</em> of a successful prompt injection: how much
             damage the model can do once it has been convinced to call your tool
@@ -554,7 +554,7 @@ export default function BlogPostPage() {
           <CodeBlock language="ts" code={PROMPT_INJECTION_BOUNDARY} />
 
           <h2>
-            Data processing guarantees — prod-mode redaction is on by default
+            Data processing guarantees, prod-mode redaction is on by default
           </h2>
 
           <RequirementCard
@@ -583,7 +583,7 @@ export default function BlogPostPage() {
             <li>
               <strong>Training-time safety.</strong> That&apos;s the model
               provider&apos;s layer. The report is correct that you cannot rely
-              on it alone — but we can&apos;t supply it either. What we can do
+              on it alone, but we can&apos;t supply it either. What we can do
               is make the deployment layer strong enough that a jailbroken model
               is still bounded by the schema.
             </li>
@@ -597,7 +597,7 @@ export default function BlogPostPage() {
             </li>
             <li>
               <strong>Telling you what is safe for your business.</strong> The
-              schema says &quot;amountCents must be ≤ 50,000&quot; — the
+              schema says &quot;amountCents must be ≤ 50,000&quot;, the
               framework cannot tell you that 50,000 is the right number. That is
               a product / risk / compliance call and it changes per route, per
               customer tier, per jurisdiction.
@@ -605,7 +605,7 @@ export default function BlogPostPage() {
             <li>
               <strong>Stopping you from disabling the guards.</strong> The
               guards run in your app. If you delete fetchGuard or widen the
-              schema to <code>z.any()</code>, the framework lets you — the
+              schema to <code>z.any()</code>, the framework lets you, the
               repo&apos;s AGENTS.md asks coding agents not to, and{" "}
               <Link href="/blog/secure-by-default">
                 the secure-by-default post
@@ -621,7 +621,7 @@ export default function BlogPostPage() {
               Are we doing anything about the International AI Safety Report
               2026?
             </em>{" "}
-            Yes — the framework was already designed against this exact shape of
+            Yes, the framework was already designed against this exact shape of
             threat model. Aikido&apos;s read of the report lines up one-for-one
             with primitives that ship today: <code>fetchGuard()</code> for
             network scope control, route schemas + <code>.strict()</code> for
@@ -637,7 +637,7 @@ export default function BlogPostPage() {
           <p>
             None of it is exotic. None of it requires a runtime dependency. All
             of it is on by default or one line of opt-in. The framework cannot
-            make the model safe — but it can make sure that when the model
+            make the model safe, but it can make sure that when the model
             isn&apos;t, the backend still is.
           </p>
 

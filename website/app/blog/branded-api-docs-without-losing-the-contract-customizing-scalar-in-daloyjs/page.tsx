@@ -11,7 +11,7 @@ const POST = {
   title:
     "Branded API Docs Without Losing the Contract: Customizing Scalar in DaloyJS",
   description:
-    "DaloyJS 0.14 adds docs.scalar — a JSON-only knob that lets you theme the Scalar API reference, hide the Try-it button, drop in a brand stylesheet, and pick a layout, without forking the docs route. And because Daloy locks the spec URL to your live OpenAPI path at serialize time, the prettiest docs page in the company can't drift away from the contract.",
+    "DaloyJS 0.14 adds docs.scalar, a JSON-only knob that lets you theme the Scalar API reference, hide the Try-it button, drop in a brand stylesheet, and pick a layout, without forking the docs route. And because Daloy locks the spec URL to your live OpenAPI path at serialize time, the prettiest docs page in the company can't drift away from the contract.",
   date: "2026-06-21",
   readingTime: "10 min read",
   author: "Devlin Duldulao",
@@ -59,7 +59,7 @@ const PAIN = `# The Slack thread that started this feature, only lightly fiction
 #
 # This is the part of the job that should not be a project.`;
 
-const BEFORE = `// src/app.ts — before. Defaults are fine, but you cannot say "and also
+const BEFORE = `// src/app.ts, before. Defaults are fine, but you cannot say "and also
 // hide the Try It button on prod" without leaving the constructor.
 import { App } from "@daloyjs/core";
 
@@ -67,7 +67,7 @@ export const app = new App({
   docs: "auto",  // mounts /docs and /openapi.json, generic Scalar theme.
 });`;
 
-const AFTER = `// src/app.ts — after. New in 0.14: docs.scalar accepts any JSON-serialisable
+const AFTER = `// src/app.ts, after. New in 0.14: docs.scalar accepts any JSON-serialisable
 // option the Scalar API reference understands.
 import { App } from "@daloyjs/core";
 
@@ -96,7 +96,7 @@ export const app = new App({
   },
 });`;
 
-const STRIP = `// src/docs.ts — what Daloy does at serialize time. (Excerpt; the real
+const STRIP = `// src/docs.ts, what Daloy does at serialize time. (Excerpt; the real
 // code is in @daloyjs/core/src/docs.ts and the contract is enforced by
 // the ScalarReferenceConfiguration type.)
 //
@@ -105,12 +105,12 @@ const STRIP = `// src/docs.ts — what Daloy does at serialize time. (Excerpt; t
 // serving. No matter what you pass, the rendered docs page reads the
 // same spec your typed client and contract tests read.
 const STRIP_RUNTIME_FIELDS = [
-  "content",       // inline spec — would shadow the live route
-  "sources",       // multi-spec switcher — silently picks the wrong one
+  "content",       // inline spec - would shadow the live route
+  "sources",       // multi-spec switcher - silently picks the wrong one
   "spec",          // deprecated alias of content
   "url",           // we ALWAYS set this ourselves
-  "plugins",       // functions — not JSON-serialisable
-  "fetch",         // function — not JSON-serialisable
+  "plugins",       // functions - not JSON-serialisable
+  "fetch",         // function - not JSON-serialisable
 ] as const;
 
 // And these are typed as 'never' so TypeScript catches you before you
@@ -189,12 +189,12 @@ export const app = new App({
 });`;
 
 const CUSTOM_ROUTE = `// You need a function-valued option (a plugin, an onBeforeRequest hook,
-// a custom slug generator). docs.scalar can't carry those — they're not
+// a custom slug generator). docs.scalar can't carry those - they're not
 // JSON-serialisable, and shoving a stringified function into a data-*
 // attribute is the kind of thing you read about in incident reviews.
 //
 // Drop the auto-mount and use scalarHtml() directly. Same generator,
-// same CSP, same nonce handling — just rendered by a route you control.
+// same CSP, same nonce handling - just rendered by a route you control.
 import { App, scalarHtml, htmlResponse } from "@daloyjs/core";
 
 export const app = new App({ docs: false });
@@ -216,7 +216,7 @@ app.get("/docs", (ctx) => {
   return htmlResponse(html, { scriptNonce: ctx.state.cspNonce });
 });`;
 
-const TEST = `// tests/docs-scalar.test.ts — the regression test I copy into every
+const TEST = `// tests/docs-scalar.test.ts, the regression test I copy into every
 // project. Two lines, catches the next intern who hard-codes a different
 // spec URL into the rendered HTML "just for debugging."
 import { test } from "node:test";
@@ -246,7 +246,7 @@ const CHECKLIST = `# A short checklist before you ship a branded /docs page.
 # 2) hideTestRequestButton: true in production unless the docs are
 #    behind your internal SSO. The Try-It button is real fetch().
 #
-# 3) customCss is a string — keep it small. Two or three CSS vars
+# 3) customCss is a string - keep it small. Two or three CSS vars
 #    (--scalar-color-1, --scalar-color-accent, --scalar-font) cover
 #    90% of brand work. Don't reimplement Tailwind in there.
 #
@@ -501,7 +501,7 @@ export default function BlogPostPage() {
           </OptionCard>
           <OptionCard
             name="layout"
-            what={'"modern" or "classic" — sidebar vs. accordion.'}
+            what={'"modern" or "classic", sidebar vs. accordion.'}
           >
             <code>&quot;modern&quot;</code> for public consumer-facing docs,{" "}
             <code>&quot;classic&quot;</code> for internal docs where engineers
@@ -729,7 +729,7 @@ export default function BlogPostPage() {
             strict policy.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

@@ -123,7 +123,7 @@ export default function Page() {
       </p>
       <CodeBlock
         language="ini"
-        code={`# .npmrc — shipped by create-daloy
+        code={`# .npmrc, shipped by create-daloy
 
 # Block transitive postinstall/preinstall/prepare hooks, which is the
 # execution channel used by chalk/debug, node-ipc, and Shai-Hulud.
@@ -224,7 +224,7 @@ strict-peer-dependencies=true`}
       </p>
       <CodeBlock
         language="bash"
-        code={`# Aikido Safe Chain — free, no account required.
+        code={`# Aikido Safe Chain, free, no account required.
 # Wraps npm / pnpm / yarn / npx / pnpx and refuses known-malicious
 # package versions before they install.
 npm install -g @aikidosec/safe-chain

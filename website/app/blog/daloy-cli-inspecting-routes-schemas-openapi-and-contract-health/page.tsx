@@ -64,7 +64,7 @@ const PAIN = `# A PR review you have lived through, probably more than once:
 # front of the reviewer, in plain text, in CI, on every PR.`;
 
 const INSPECT_BASIC = `# Run it from any DaloyJS project. Loads ./src/app.ts (or ./src/build-app.ts,
-# or ./app.ts) through tsx automatically — no build step, no transpile config.
+# or ./app.ts) through tsx automatically - no build step, no transpile config.
 $ pnpm daloy inspect
 
 METHOD  PATH              OPERATION ID    RESPONSES   TAGS
@@ -99,7 +99,7 @@ const ENTRY_LOADING = `// What the CLI looks for, in order:
 //
 // TypeScript files are loaded through tsx with zero config. So your
 // src/app.ts that imports zod, your route schemas, your generated
-// types — all of it just works, even though no "build" ever ran.
+// types - all of it just works, even though no "build" ever ran.
 
 // Need a different entry? Pass it positionally:
 //
@@ -107,7 +107,7 @@ const ENTRY_LOADING = `// What the CLI looks for, in order:
 //
 // Need a different entry shape? Refactor a tiny exporter:
 
-// src/build-app.ts — recommended pattern for libraries with tests + CLI
+// src/build-app.ts - recommended pattern for libraries with tests + CLI
 import { App } from "@daloyjs/core";
 import { registerRoutes } from "./routes.js";
 
@@ -215,7 +215,7 @@ $ pnpm daloy inspect --json --check | jq '
 # Same JSON works as the input to a GitHub Action that posts a sticky
 # review comment with the contract report on every PR. Boring, effective.`;
 
-const CI_WORKFLOW = `# .github/workflows/api-review.yml — review the API surface on every PR.
+const CI_WORKFLOW = `# .github/workflows/api-review.yml, review the API surface on every PR.
 name: api-review
 on:
   pull_request:
@@ -278,7 +278,7 @@ daloy dev: node → node --import tsx --watch ./src/server.ts
 $ daloy dev --runtime bun ./src/server.ts
 $ daloy dev --runtime deno ./src/server.ts
 
-# Same App, every runtime — see the five-runtimes post for the receipts.`;
+# Same App, every runtime - see the five-runtimes post for the receipts.`;
 
 const CHECKLIST = `# Pre-merge API-review checklist (copy into your PR template).
 #
@@ -446,7 +446,7 @@ export default function BlogPostPage() {
             Hi, Devlin again. I want to talk about the CLI command that has
             saved me more pull-request meetings than any other tool in this
             framework: <code>daloy inspect</code>. The whole premise is small
-            and a little stubborn — the reviewer should see the API surface in
+            and a little stubborn, the reviewer should see the API surface in
             plain text, before the merge, on every PR. Not after. Not next
             sprint. Now.
           </p>
@@ -502,7 +502,7 @@ export default function BlogPostPage() {
             Body / Query / Params / Headers. Each is <code>B</code>/
             <code>Q</code>/<code>P</code>/<code>H</code> if present,{" "}
             <code>-</code> if missing. This is the column I look at when the
-            diff says &quot;added a query param&quot; — it tells me whether the
+            diff says &quot;added a query param&quot;, it tells me whether the
             param has a real schema or just a doc string.
           </FlagCard>
           <FlagCard flag="--tag <tag>" use="filter to one domain.">
@@ -526,7 +526,7 @@ export default function BlogPostPage() {
           <FlagCard flag="--openapi" use="print the full OpenAPI 3.1 document.">
             The exact same generator the docs UI and your Hey API codegen use.
             Pipe to <code>generated/openapi.json</code>,
-            <code>git diff --exit-code</code>, done — your CI now blocks PRs
+            <code>git diff --exit-code</code>, done, your CI now blocks PRs
             that change the surface without checking in the new spec.
           </FlagCard>
           <FlagCard
@@ -632,7 +632,7 @@ export default function BlogPostPage() {
             disappears. A debug route quietly ships to prod. The whole reason{" "}
             <code>daloy inspect</code> exists is to turn &quot;quietly&quot;
             into &quot;loudly, in the PR, before the merge button.&quot;
-            That&apos;s it. No magic, no sprawling tool — one binary, one entry
+            That&apos;s it. No magic, no sprawling tool, one binary, one entry
             file, six flags. Wire it into CI once and never lose a quarter to
             surface drift again.
           </p>
@@ -654,7 +654,7 @@ export default function BlogPostPage() {
             double enforcement.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

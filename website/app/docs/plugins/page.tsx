@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Plugins & encapsulation",
   description:
-    "Compose DaloyJS apps with encapsulated plugins — scoped middleware, decorators, and route prefixes — for large-scale, maintainable TypeScript services.",
+    "Compose DaloyJS apps with encapsulated plugins, scoped middleware, decorators, and route prefixes, for large-scale, maintainable TypeScript services.",
   path: "/docs/plugins",
   keywords: ["DaloyJS plugins", "plugin encapsulation", "middleware composition", "scalable TypeScript framework"],
   type: "article",
@@ -17,13 +17,13 @@ export default function Page() {
       <h1>Plugins & encapsulation</h1>
       <p>
         Plugins package routes, hooks, and decorators into reusable units. Like Fastify, plugins are{" "}
-        <strong>encapsulated</strong> — what happens inside a plugin stays inside, unless you opt out.
+        <strong>encapsulated</strong>: what happens inside a plugin stays inside, unless you opt out.
       </p>
 
       <h2>Defining a plugin</h2>
       <p>
         A plugin is any object with an optional <code>name</code> and a <code>register(app)</code>{" "}
-        function — or a plain function with the same shape. No imports required.
+        function, or a plain function with the same shape. No imports required.
       </p>
       <CodeBlock code={`import type { App } from "@daloyjs/core";
 
@@ -74,7 +74,7 @@ app.route({
       <ul>
         <li>You can mount the same plugin twice under different prefixes without bleed-through.</li>
         <li>Third-party plugins can&apos;t accidentally rewrite your error handler or hooks.</li>
-        <li>Plugin-internal middleware doesn&apos;t apply to sibling routes — predictable order.</li>
+        <li>Plugin-internal middleware doesn&apos;t apply to sibling routes, predictable order.</li>
       </ul>
 
       <h2>Lifecycle events</h2>
@@ -85,14 +85,14 @@ app.route({
       </p>
       <ul>
         <li>
-          <code>app.onPluginInstalled(listener)</code> — fires once per <code>register()</code> call,
+          <code>app.onPluginInstalled(listener)</code>: fires once per <code>register()</code> call,
           after sync plugins return and after async plugins resolve. The listener receives{" "}
           <code>{`{ name?: string, prefix: string }`}</code>, where <code>prefix</code> is the
           effective mounted prefix after nesting. Awaiting <code>app.ready()</code> drains
           both async plugins and async listeners.
         </li>
         <li>
-          <code>app.onShutdown(listener)</code> — fires at the start of{" "}
+          <code>app.onShutdown(listener)</code>: fires at the start of{" "}
           <code>app.shutdown(timeoutMs, reason)</code>, <em>before</em> in-flight requests drain. Use
           this to flush metrics, publish a &ldquo;draining&rdquo; signal to a load balancer, or close
           background pollers. For post-drain cleanup (database pools, file handles), keep using{" "}

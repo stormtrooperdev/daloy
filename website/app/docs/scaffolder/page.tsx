@@ -24,7 +24,7 @@ export default function Page() {
       <h1>Scaffold a project</h1>
       <p>
         <code>create-daloy</code> is the official project generator. It
-        scaffolds a working DaloyJS app in seconds — no copy-pasting from the
+        scaffolds a working DaloyJS app in seconds, no copy-pasting from the
         docs.
       </p>
       <p>
@@ -73,52 +73,52 @@ bun  create daloy           my-api`}
       <h3>Flags</h3>
       <ul>
         <li>
-          <code>--template &lt;name&gt;</code> — <code>node-basic</code>{" "}
+          <code>--template &lt;name&gt;</code>: <code>node-basic</code>{" "}
           (default), <code>vercel-edge</code>, <code>cloudflare-worker</code>,{" "}
           <code>bun-basic</code>, or <code>deno-basic</code>.
         </li>
         <li>
-          <code>--package-manager &lt;pm&gt;</code> — <code>pnpm</code>{" "}
+          <code>--package-manager &lt;pm&gt;</code>: <code>pnpm</code>{" "}
           (default), <code>npm</code>, <code>yarn</code>, or <code>bun</code>.
         </li>
         <li>
-          <code>--list-templates</code> — print available templates with
+          <code>--list-templates</code>: print available templates with
           descriptions.
         </li>
         <li>
-          <code>--install</code> / <code>--no-install</code> — install
+          <code>--install</code> / <code>--no-install</code>: install
           dependencies after scaffolding.
         </li>
         <li>
-          <code>--git</code> / <code>--no-git</code> — initialize a git
+          <code>--git</code> / <code>--no-git</code>: initialize a git
           repository.
         </li>
         <li>
-          <code>--minimal</code> — strip the bookstore demo and the auto-mounted{" "}
+          <code>--minimal</code>: strip the bookstore demo and the auto-mounted{" "}
           <code>/docs</code> + <code>/openapi.json</code> API docs routes so the
           scaffold only ships the framework bootstrap and a health route. Useful
           when you want to start from the smallest possible app.
         </li>
         <li>
-          <code>--with-ci</code> / <code>--no-ci</code> — add hardened GitHub
+          <code>--with-ci</code> / <code>--no-ci</code>: add hardened GitHub
           Actions, Dependabot, CODEOWNERS, <code>SECURITY.md</code>, and
           lockfile-source verification.
         </li>
         <li>
-          <code>--with-deploy</code> / <code>--no-deploy</code> — add or skip
+          <code>--with-deploy</code> / <code>--no-deploy</code>: add or skip
           the manual-only starter <code>.github/workflows/deploy.yml</code>.
           Defaults to the same value as <code>--with-ci</code>.
         </li>
         <li>
-          <code>--code-owner &lt;owner&gt;</code> — replace the CODEOWNERS
+          <code>--code-owner &lt;owner&gt;</code>: replace the CODEOWNERS
           placeholder when <code>--with-ci</code> is used, for example{" "}
           <code>@acme/security</code>.
         </li>
         <li>
-          <code>--force</code> — overwrite an existing non-empty directory.
+          <code>--force</code>: overwrite an existing non-empty directory.
         </li>
         <li>
-          <code>--yes</code> — accept all defaults; never prompt.
+          <code>--yes</code>: accept all defaults; never prompt.
         </li>
       </ul>
 
@@ -210,7 +210,7 @@ bun  create daloy           my-api`}
         <code>@daloyjs/core</code> and Zod via <code>npm:</code> import-map
         specifiers, and runs with the minimum permissions Deno requires (
         <code>--allow-net --allow-env --allow-read</code>). The CLI skips
-        Node-style installs for this template — there is no{" "}
+        Node-style installs for this template, there is no{" "}
         <code>package.json</code> to patch.
       </p>
 
@@ -307,8 +307,8 @@ bun  create daloy           my-api`}
         and timeout limits.
       </p>
       <p>
-        The CLI itself ships with <strong>zero runtime dependencies</strong> —
-        only Node built-ins — so the supply-chain story stays clean. Templates
+        The CLI itself ships with <strong>zero runtime dependencies</strong>: 
+        only Node built-ins, so the supply-chain story stays clean. Templates
         are copied verbatim from the package&apos;s <code>templates/</code>{" "}
         directory and never run scripts during scaffolding. When you choose{" "}
         <code>pnpm</code>, the generated app keeps the hardened{" "}

@@ -10,7 +10,7 @@ const POST = {
   title:
     "When the Security Scanner Is the Attacker: The LiteLLM / TeamPCP Compromise, Mapped to DaloyJS",
   description:
-    "On March 24, 2026 the litellm Python package was backdoored after a poisoned Trivy GitHub Action stole the maintainer's PyPI token. The same attack pattern — compromised scanner action → exfiltrated publish token → malicious release with a startup-time payload — would have to clear nine of DaloyJS's existing CI gates before it could ship. Here's the stage-by-stage mapping.",
+    "On March 24, 2026 the litellm Python package was backdoored after a poisoned Trivy GitHub Action stole the maintainer's PyPI token. The same attack pattern - compromised scanner action → exfiltrated publish token → malicious release with a startup-time payload - would have to clear nine of DaloyJS's existing CI gates before it could ship. Here's the stage-by-stage mapping.",
   date: "2026-05-24",
   readingTime: "9 min read",
   author: "Devlin Duldulao",
@@ -42,7 +42,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const SHA_PINNED = `# .github/workflows/release.yml — every action pinned to a 40-char SHA.
+const SHA_PINNED = `# .github/workflows/release.yml, every action pinned to a 40-char SHA.
 # A maintainer rewriting the v0.69.4 tag on trivy-action does nothing to
 # a SHA-pinned reference. 'verify:actions-pinned' fails CI if anyone tries
 # to land 'uses: foo/bar@v2' without the resolved commit SHA.
@@ -73,34 +73,34 @@ const SHA_PINNED = `# .github/workflows/release.yml — every action pinned to a
   env:
     npm_config_ignore_scripts: "true"`;
 
-const SCANNER_ISOLATION = `# .github/workflows — scanners and publish are in SEPARATE workflows,
+const SCANNER_ISOLATION = `# .github/workflows, scanners and publish are in SEPARATE workflows,
 # in separate jobs, with separate permissions. A scanner job has
 # 'contents: read' and never sees a publish credential.
 #
-#   ci.yml             — pnpm install, typecheck, build, test, audit
-#   codeql.yml         — SAST (read-only)
-#   opengrep.yml       — SAST (read-only, binary cosign-verified)
-#   osv-scan.yml       — SCA (read-only)
-#   secret-scan.yml    — gitleaks (read-only)
-#   vuln-scan.yml      — pnpm audit on a daily schedule (read-only)
-#   scorecard.yml      — OpenSSF Scorecard (read-only)
-#   zizmor.yml         — workflow audit (read-only)
-#   release.yml        — split into 'verify' (no creds) and 'publish'
+#   ci.yml             - pnpm install, typecheck, build, test, audit
+#   codeql.yml         - SAST (read-only)
+#   opengrep.yml       - SAST (read-only, binary cosign-verified)
+#   osv-scan.yml       - SCA (read-only)
+#   secret-scan.yml    - gitleaks (read-only)
+#   vuln-scan.yml      - pnpm audit on a daily schedule (read-only)
+#   scorecard.yml      - OpenSSF Scorecard (read-only)
+#   zizmor.yml         - workflow audit (read-only)
+#   release.yml        - split into 'verify' (no creds) and 'publish'
 #                        (id-token: write, gated on the npm-publish
 #                        Environment with manual approval)
 #
 # Even if a scanner action were compromised the way trivy-action was,
 # the runner it executes on never has an npm publish token in scope.
 # The publish job has zero scanner steps and zero third-party scanner
-# actions — only the four pinned actions above plus 'npm stage publish
+# actions - only the four pinned actions above plus 'npm stage publish
 # --provenance'.`;
 
-const TRUSTED_PUBLISHING = `# packages.json / release.yml — npm Trusted Publishing via GitHub OIDC.
+const TRUSTED_PUBLISHING = `# packages.json / release.yml, npm Trusted Publishing via GitHub OIDC.
 # No long-lived NPM_TOKEN exists as a repo or org secret. The publish job
 # trades the short-lived OIDC token for a single-use publish credential
 # inside the gated 'npm-publish' Environment.
 #
-# Equivalent to what PyPI ships as "Trusted Publishers" — except LiteLLM
+# Equivalent to what PyPI ships as "Trusted Publishers" - except LiteLLM
 # wasn't using it, so a static PYPI_PUBLISH token was sitting in the
 # CI environment when the poisoned Trivy action ran.
 permissions:
@@ -111,7 +111,7 @@ permissions:
 # - Releases require a git tag pushed by a maintainer.
 # - Every published artifact carries a Sigstore provenance attestation.`;
 
-const NPMRC = `# .npmrc — what makes "a freshly published bad version" not auto-install.
+const NPMRC = `# .npmrc, what makes "a freshly published bad version" not auto-install.
 ignore-scripts=true            # postinstall / preinstall / prepare = no
 minimum-release-age=1440       # 24h cooldown; bad versions get unpublished
 frozen-lockfile=true
@@ -142,7 +142,7 @@ pnpm verify:sbom                       # CycloneDX SBOM generated + checked`;
 
 const HARDEN_RUNNER = `# Every job (scanner OR publish) starts with harden-runner in audit mode.
 # That alone would have flagged 'curl POST to models.litellm.cloud' as
-# anomalous egress — that domain was registered the day before the
+# anomalous egress - that domain was registered the day before the
 # compromise.
 - name: Harden runner
   uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2
@@ -251,22 +251,22 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            For the unfamiliar — the short version: on March 24, 2026, a threat
+            For the unfamiliar, the short version: on March 24, 2026, a threat
             actor known as <strong>TeamPCP</strong> published two backdoored
             versions of the <code>litellm</code> Python package (1.82.7 and
             1.82.8) to PyPI. They didn&apos;t hack PyPI. They didn&apos;t guess
             the maintainer&apos;s password. They stole the{" "}
             <code>PYPI_PUBLISH</code> token straight out of LiteLLM&apos;s
             GitHub Actions runner environment via a previously compromised{" "}
-            <strong>Trivy GitHub Action</strong> — a <em>security scanner</em>{" "}
+            <strong>Trivy GitHub Action</strong>: a <em>security scanner</em>{" "}
             that LiteLLM&apos;s CI ran during the build. Same trick was used to
             backdoor Checkmarx KICS a day earlier.
           </p>
 
           <p>
             The payload was a Python <code>.pth</code> file that fires every
-            time the interpreter starts — including during{" "}
-            <code>pip install</code> itself — harvested SSH keys, cloud
+            time the interpreter starts, including during{" "}
+            <code>pip install</code> itself, harvested SSH keys, cloud
             credentials, kubeconfigs, and crypto wallets, encrypted them with a
             hardcoded RSA key, and POSTed the bundle to{" "}
             <code>models.litellm.cloud</code> (registered the day before). Then
@@ -278,20 +278,20 @@ export default function BlogPostPage() {
 
           <p>
             DaloyJS is Node/TypeScript, not Python, so the <code>.pth</code>{" "}
-            hook is not literally applicable. But the <em>attack chain</em> —
+            hook is not literally applicable. But the <em>attack chain</em>: 
             poisoned scanner action → exfiltrated publish token → malicious
-            release that runs at install time — is platform-agnostic, and is
+            release that runs at install time, is platform-agnostic, and is
             exactly what every JS framework that publishes to npm has to defend
             against. Here is how each stage maps to what&apos;s already in this
             repo, in the order the attack ran.
           </p>
 
-          <h2>Stage 0 — The Trivy tag rewrite (March 19)</h2>
+          <h2>Stage 0: The Trivy tag rewrite (March 19)</h2>
 
           <StageCard
             stage="Initial compromise"
             litellm="Attackers rewrote the v0.69.4 git tag on the aquasecurity/trivy-action repository to point at a malicious commit. Anyone using 'uses: aquasecurity/trivy-action@v0.69.4' pulled the malicious version on their next CI run."
-            daloyjs="Every GitHub Action in this repo is pinned to a 40-character commit SHA, not a tag. A tag rewrite is a no-op. 'verify:actions-pinned' is a release-blocking gate and runs on every PR — landing 'uses: foo/bar@v2' without a resolved SHA fails CI before merge."
+            daloyjs="Every GitHub Action in this repo is pinned to a 40-character commit SHA, not a tag. A tag rewrite is a no-op. 'verify:actions-pinned' is a release-blocking gate and runs on every PR, landing 'uses: foo/bar@v2' without a resolved SHA fails CI before merge."
           />
 
           <CodeBlock language="yaml" code={SHA_PINNED} />
@@ -304,18 +304,18 @@ export default function BlogPostPage() {
               process, pulling it from apt without a pinned version&quot;
             </em>
             . That sentence describes a class of mistake DaloyJS&apos;s CI{" "}
-            <em>cannot</em> make — there are zero <code>apt install</code> calls
+            <em>cannot</em> make, there are zero <code>apt install</code> calls
             in any workflow, and the only binaries downloaded at runtime
             (opengrep) are cosign-verified against the publisher&apos;s OIDC
             identity before they are executed.
           </p>
 
-          <h2>Stage 1 — Token exfiltration from the runner</h2>
+          <h2>Stage 1: Token exfiltration from the runner</h2>
 
           <StageCard
             stage="Credential theft"
             litellm="The compromised Trivy action ran in the same job as the publish step, so it could read PYPI_PUBLISH from the process environment, base64-encode it, and POST it to the attacker's C2 domain."
-            daloyjs="Three separate defenses. (1) Scanners and publish are in different workflows; the publish workflow has zero scanner steps. (2) The publish job runs in a GitHub Environment ('npm-publish') gated on manual maintainer approval. (3) Publishing uses npm Trusted Publishing via OIDC — there is no long-lived NPM_TOKEN sitting in repo secrets to steal."
+            daloyjs="Three separate defenses. (1) Scanners and publish are in different workflows; the publish workflow has zero scanner steps. (2) The publish job runs in a GitHub Environment ('npm-publish') gated on manual maintainer approval. (3) Publishing uses npm Trusted Publishing via OIDC, there is no long-lived NPM_TOKEN sitting in repo secrets to steal."
           />
 
           <CodeBlock language="bash" code={SCANNER_ISOLATION} />
@@ -331,17 +331,17 @@ export default function BlogPostPage() {
               credentials.&quot;
             </em>{" "}
             That&apos;s the whole game. If the attacker can&apos;t get the
-            credentials, every hash check in the world still passes — because
+            credentials, every hash check in the world still passes, because
             the bad version never ships. Removing the long-lived publish token
             removes the prize.
           </p>
 
-          <h2>Stage 2 — The install-time payload</h2>
+          <h2>Stage 2: The install-time payload</h2>
 
           <StageCard
             stage="Execution on install"
-            litellm="litellm 1.82.8 added litellm_init.pth to site-packages/. Python's startup-hook mechanism fires on every interpreter launch — including 'pip install', 'python -c', and IDE language servers — with no import required. pip's hash check passed because the .pth file was correctly listed in the wheel's RECORD."
-            daloyjs="npm's equivalent execution vector is lifecycle scripts (preinstall / install / postinstall / prepare). The root .npmrc sets ignore-scripts=true, every CI install runs with --ignore-scripts, and 'verify:no-lifecycle-scripts' rejects PRs that try to add one. The create-daloy templates ship the same .npmrc. There is no in-repo equivalent of the .pth trick — and 'verify:no-encoded-payloads' would also flag a base64-embedded blob the way TeamPCP smuggled theirs."
+            litellm="litellm 1.82.8 added litellm_init.pth to site-packages/. Python's startup-hook mechanism fires on every interpreter launch, including 'pip install', 'python -c', and IDE language servers, with no import required. pip's hash check passed because the .pth file was correctly listed in the wheel's RECORD."
+            daloyjs="npm's equivalent execution vector is lifecycle scripts (preinstall / install / postinstall / prepare). The root .npmrc sets ignore-scripts=true, every CI install runs with --ignore-scripts, and 'verify:no-lifecycle-scripts' rejects PRs that try to add one. The create-daloy templates ship the same .npmrc. There is no in-repo equivalent of the .pth trick, and 'verify:no-encoded-payloads' would also flag a base64-embedded blob the way TeamPCP smuggled theirs."
           />
 
           <CodeBlock language="ini" code={NPMRC} />
@@ -352,32 +352,32 @@ export default function BlogPostPage() {
             versions were on PyPI for <strong>about three hours</strong> before
             PyPI quarantined them. A pnpm install against a registry that honors
             release-age would have refused to fetch them at all. Most worm
-            campaigns we&apos;ve seen — chalk, debug, the Shai-Hulud sweeps —
+            campaigns we&apos;ve seen, chalk, debug, the Shai-Hulud sweeps, 
             are caught and unpublished inside the same window.
           </p>
 
-          <h2>Stage 3 — Persistence and lateral movement</h2>
+          <h2>Stage 3: Persistence and lateral movement</h2>
 
           <StageCard
             stage="Persistence + Kubernetes worm"
             litellm="Wrote ~/.config/sysmon/sysmon.py, registered a 'sysmon.service' systemd user unit polling https://checkmarx.zone/raw every 5 minutes. If a Kubernetes service-account token was present, deployed privileged 'node-setup-*' pods to every node in kube-system."
-            daloyjs="Once the payload can't run at install time, none of this happens on a build runner — the systemd / pod-deployment behavior never gets a chance. For the runtime side, harden-runner runs in egress-audit mode on every job, so the first 'curl POST to models.litellm.cloud' lands in the workflow log. The publish job specifically sets disable-sudo: true so a runtime payload can't elevate even if one did slip through."
+            daloyjs="Once the payload can't run at install time, none of this happens on a build runner, the systemd / pod-deployment behavior never gets a chance. For the runtime side, harden-runner runs in egress-audit mode on every job, so the first 'curl POST to models.litellm.cloud' lands in the workflow log. The publish job specifically sets disable-sudo: true so a runtime payload can't elevate even if one did slip through."
           />
 
           <CodeBlock language="yaml" code={HARDEN_RUNNER} />
 
-          <h2>Stage 4 — The framework&apos;s own dependency surface</h2>
+          <h2>Stage 4: The framework&apos;s own dependency surface</h2>
 
           <StageCard
             stage="Blast radius"
-            litellm="litellm is downloaded ~3.4 million times a day and is a transitive dependency of DSPy, MLflow, OpenHands, CrewAI, Phoenix, langwatch, and others — every consumer inherited the .pth."
+            litellm="litellm is downloaded ~3.4 million times a day and is a transitive dependency of DSPy, MLflow, OpenHands, CrewAI, Phoenix, langwatch, and others, every consumer inherited the .pth."
             daloyjs="@daloyjs/core has zero runtime dependencies. 'verify:no-runtime-deps' fails the build if anyone adds one. The transitive blast radius is, by construction, the size of the framework itself."
           />
 
           <p>
             This is the single most boring decision in DaloyJS, and it&apos;s
             the one I&apos;m proudest of. Frameworks that pull in 30 transitive
-            packages at runtime cannot honestly claim a hardened supply chain —
+            packages at runtime cannot honestly claim a hardened supply chain, 
             the attacker only has to compromise the smallest of those 30. A
             zero-runtime-deps core has exactly one supply-chain target: the core
             itself, published through the gated OIDC pipeline above.
@@ -390,7 +390,7 @@ export default function BlogPostPage() {
           <p>
             Every one of those runs in <code>release.yml</code> before{" "}
             <code>npm stage publish</code> ever fires, and most of them run on
-            every PR too. None of them are aspirational — a failure blocks
+            every PR too. None of them are aspirational, a failure blocks
             merge. The full reasoning for each is in{" "}
             <Link href="/blog/supply-chain-hardening-for-typescript-libraries">
               the supply-chain hardening post
@@ -407,35 +407,35 @@ export default function BlogPostPage() {
               means even that wouldn&apos;t hand over a usable npm token.
             </li>
             <li>
-              Land a PR that adds an unpinned action — blocked by{" "}
+              Land a PR that adds an unpinned action, blocked by{" "}
               <code>verify:actions-pinned</code>.
             </li>
             <li>
               Land a PR that adds a lifecycle script to <em>any</em> package in
-              the tree — blocked by <code>verify:no-lifecycle-scripts</code>.
+              the tree, blocked by <code>verify:no-lifecycle-scripts</code>.
             </li>
             <li>
               Land a PR that adds a runtime dependency to{" "}
-              <code>@daloyjs/core</code> — blocked by{" "}
+              <code>@daloyjs/core</code>: blocked by{" "}
               <code>verify:no-runtime-deps</code>.
             </li>
             <li>
-              Sneak in a base64-encoded payload or invisible-unicode trick —
+              Sneak in a base64-encoded payload or invisible-unicode trick, 
               blocked by <code>verify:no-encoded-payloads</code> and{" "}
               <code>verify:no-invisible-unicode</code>.
             </li>
             <li>
               Trigger a publish without a maintainer approving it in the{" "}
-              <code>npm-publish</code> Environment — impossible by design.
+              <code>npm-publish</code> Environment, impossible by design.
             </li>
             <li>
               Beat the 24-hour <code>minimum-release-age</code> cooldown into
-              every downstream pnpm install — also impossible by design.
+              every downstream pnpm install, also impossible by design.
             </li>
           </ol>
 
           <p>
-            Could a determined attacker still find a way? Of course — security
+            Could a determined attacker still find a way? Of course, security
             is never &quot;done.&quot; But the path of least resistance the
             LiteLLM compromise took (rewrite an action tag, steal a static
             token, ship a release that auto-runs on install) is shut on all four
@@ -462,7 +462,7 @@ export default function BlogPostPage() {
             <li>
               Don&apos;t run third-party security scanners in the same job as
               your publish step. Different workflow, different permissions,
-              different runner identity. The LiteLLM team didn&apos;t —
+              different runner identity. The LiteLLM team didn&apos;t, 
               that&apos;s how they ended up here.
             </li>
             <li>
@@ -481,7 +481,7 @@ export default function BlogPostPage() {
               Are we doing anything to protect ourselves and the users of our
               framework against the LiteLLM-class supply-chain attack?
             </em>{" "}
-            Yes — and most of it was shipped before the Snyk post existed, for
+            Yes, and most of it was shipped before the Snyk post existed, for
             the same reasons that post lists. SHA-pinned actions, isolated
             publish jobs with OIDC + Environment gating,{" "}
             <code>ignore-scripts</code>, zero runtime deps, a 24h release-age

@@ -11,7 +11,7 @@ const POST = {
   title:
     "Middleware Without Mystery: Hooks, Ordering, and Response Transformation",
   description:
-    "The DaloyJS request lifecycle, end to end: onRequest → beforeHandle → handler → afterHandle → onSend → onResponse, plus onError on the error path. Where each hook fires, what it can change, how scopes compose (global → group → route), and what to put in which slot — with real short-circuit, header-stamping, and logging recipes.",
+    "The DaloyJS request lifecycle, end to end: onRequest → beforeHandle → handler → afterHandle → onSend → onResponse, plus onError on the error path. Where each hook fires, what it can change, how scopes compose (global → group → route), and what to put in which slot - with real short-circuit, header-stamping, and logging recipes.",
   date: "2026-05-31",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
@@ -43,7 +43,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const HOOKS_INTERFACE = `// @daloyjs/core — the entire Hooks interface, no surprises.
+const HOOKS_INTERFACE = `// @daloyjs/core, the entire Hooks interface, no surprises.
 export interface Hooks {
   onRequest?:    (req: Request)                        => void | Promise<void>;
   beforeHandle?: (ctx: BaseContext)                    => void | Response | Promise<void | Response>;
@@ -77,23 +77,23 @@ const LIFECYCLE_ASCII = `time ────────────────�
 
 const SCOPES = `// Three scopes. Composed in this order. No magic.
 const app = new App({
-  hooks: { /* (1) GLOBAL — runs first, every request, every route */ },
+  hooks: { /* (1) GLOBAL - runs first, every request, every route */ },
 });
 
-app.use({  /* (2) GROUP  — runs after global, on routes registered AFTER this */ });
+app.use({  /* (2) GROUP  - runs after global, on routes registered AFTER this */ });
 
 app.route({
   method: "GET",
   path: "/admin",
   handler: ...,
-  hooks: { /* (3) ROUTE — runs last, only on THIS route */ },
+  hooks: { /* (3) ROUTE - runs last, only on THIS route */ },
 });
 
 // Each hook *kind* (onRequest, beforeHandle, etc.) composes pipeline-style:
 // global onSend, then every group onSend in registration order, then route onSend.
 // First one to return a new Response wins the next stage's input.`;
 
-const SHORT_CIRCUIT = `// src/middleware/maintenance.ts — short-circuit BEFORE the handler runs.
+const SHORT_CIRCUIT = `// src/middleware/maintenance.ts, short-circuit BEFORE the handler runs.
 import type { Hooks } from "@daloyjs/core";
 
 export function maintenanceMode(opts: { enabled: () => boolean }): Hooks {
@@ -123,7 +123,7 @@ export function maintenanceMode(opts: { enabled: () => boolean }): Hooks {
 // Globally:
 app.use(maintenanceMode({ enabled: () => process.env.MAINTENANCE === "1" }));`;
 
-const AUTH_BEFORE = `// src/middleware/require-role.ts — a per-route auth gate.
+const AUTH_BEFORE = `// src/middleware/require-role.ts, a per-route auth gate.
 // beforeHandle is where authentication and authorization live, because
 // short-circuiting here means the handler never runs, never queries the DB,
 // never consumes the body, never burns its rate-limit slot.
@@ -146,7 +146,7 @@ app.route({
   hooks: { ...requireRole("admin") },   // ← scoped to THIS route only
 });`;
 
-const AFTER_HANDLE = `// afterHandle — transform the handler's return value before serialization.
+const AFTER_HANDLE = `// afterHandle, transform the handler's return value before serialization.
 // Use sparingly. 95% of the time you should just shape the body in the handler.
 // Real use case: redact PII from a generic search response across many routes.
 
@@ -167,7 +167,7 @@ export function redactEmail(): Hooks {
   };
 }`;
 
-const ON_SEND_HEADERS = `// onSend — the right place to stamp response headers on EVERY response,
+const ON_SEND_HEADERS = `// onSend, the right place to stamp response headers on EVERY response,
 // including the ones produced by error paths and OPTIONS preflights.
 
 export function stampServerTiming(): Hooks {
@@ -176,7 +176,7 @@ export function stampServerTiming(): Hooks {
       ctx.state._startedAt = performance.now();
     },
     onSend(res, ctx) {
-      // Mutate in place — no need to return a new Response.
+      // Mutate in place - no need to return a new Response.
       const elapsed = performance.now() - (ctx?.state._startedAt ?? 0);
       res.headers.set("server-timing", \`app;dur=\${elapsed.toFixed(1)}\`);
       res.headers.set("x-request-id", ctx?.requestId ?? "unknown");
@@ -195,7 +195,7 @@ app.use(stampServerTiming());
 //     });
 //   }`;
 
-const ON_RESPONSE_OBS = `// onResponse — fire-and-forget observer. Cannot change anything.
+const ON_RESPONSE_OBS = `// onResponse, fire-and-forget observer. Cannot change anything.
 // This is your logging/metrics/audit slot. By design it cannot accidentally
 // break the response because the bytes are already in flight.
 
@@ -219,7 +219,7 @@ export function accessLog(): Hooks {
 //   metrics.histogram("http_response_status").observe(res.status);
 //   metrics.counter("http_responses_total").inc({ status: res.status });`;
 
-const ON_ERROR = `// onError — runs on the error path before the response is serialized.
+const ON_ERROR = `// onError, runs on the error path before the response is serialized.
 // Return a Response to take over rendering; return nothing to fall through to
 // the framework's default RFC 9457 serialization (which is what you usually want).
 
@@ -287,7 +287,7 @@ app.route({
 // [9] group   onSend
 // [10] global onResponse`;
 
-const PLUGIN_COMPOSITION = `// src/plugins/observability.ts — encapsulated plugin.
+const PLUGIN_COMPOSITION = `// src/plugins/observability.ts, encapsulated plugin.
 // Routes/hooks registered inside \`register\` are scoped to the child app.
 import type { App, Hooks } from "@daloyjs/core";
 
@@ -297,7 +297,7 @@ export const observability = {
     child.use(stampServerTiming());
     child.use(accessLog());
 
-    // You can mount routes too — they get the prefix from the parent's call.
+    // You can mount routes too - they get the prefix from the parent's call.
     child.route({
       method: "GET",
       path: "/metrics",
@@ -319,7 +319,7 @@ app.register(observability, {
   auth: false,                // turn off global auth inside the plugin
 });`;
 
-const RECIPE_TABLE = `# What goes where — print this out, tape it to your monitor.
+const RECIPE_TABLE = `# What goes where, print this out, tape it to your monitor.
 
 onRequest      ↳ stuff that needs the raw Request (TLS termination metadata,
                  conditional request decoding). No context yet. Cannot decide.
@@ -505,7 +505,7 @@ export default function BlogPostPage() {
           <p>
             Hi, Devlin. Ten years of fullstack, currently in Norway, currently
             re-reading my own &quot;why is this middleware running twice&quot;
-            Slack threads from 2018, 2021, and 2024 — every framework, same
+            Slack threads from 2018, 2021, and 2024, every framework, same
             question, same shrug. So here is the post I wish someone had pinned
             in the channel: every DaloyJS lifecycle hook, in order, with a
             one-sentence rule for what belongs in each one.
@@ -550,7 +550,7 @@ export default function BlogPostPage() {
               <>
                 Fires before any context is built. You see the raw{" "}
                 <code>Request</code>. Use this for things that need the
-                untouched body or headers — TLS hints, conditional decode of the
+                untouched body or headers, TLS hints, conditional decode of the
                 raw byte stream. Almost everything else belongs in{" "}
                 <code>beforeHandle</code>.
               </>
@@ -593,7 +593,7 @@ export default function BlogPostPage() {
               <>
                 Transform the handler&apos;s return value <em>before</em> the
                 framework serializes and validates it. Use sparingly. Reach for
-                it when the transformation spans many routes — global PII
+                it when the transformation spans many routes, global PII
                 redaction, envelope wrapping. For a single endpoint, just shape
                 the body in the handler.
               </>
@@ -606,7 +606,7 @@ export default function BlogPostPage() {
             canReturn="a replacement Response (or mutate headers in place)"
             description={
               <>
-                Fires after the <code>Response</code> is built — on{" "}
+                Fires after the <code>Response</code> is built, on{" "}
                 <strong>every</strong> response (success, error, OPTIONS
                 preflight). This is the right place to stamp universal headers:{" "}
                 <code>X-Request-Id</code>, <code>Server-Timing</code>, security
@@ -623,7 +623,7 @@ export default function BlogPostPage() {
             description={
               <>
                 Fire-and-forget observer. By design, it cannot change the
-                response — the bytes are already on the wire. This is your
+                response, the bytes are already on the wire. This is your
                 logging, metrics, and audit-event slot. Safe to put slow stuff
                 here (within reason); it won&apos;t block the client.
               </>
@@ -639,7 +639,7 @@ export default function BlogPostPage() {
                 Runs on the error path before serialization. Log once, translate
                 library-foreign errors into your own <code>HttpError</code>{" "}
                 subclasses, then fall through to the default problem+json
-                serializer (which already does production redaction — see the{" "}
+                serializer (which already does production redaction, see the{" "}
                 <Link href="/blog/problem-details-done-right-rfc-9457-errors">
                   RFC 9457 errors post
                 </Link>
@@ -681,7 +681,7 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={ORDERING_EXAMPLE} />
           </EditorFrame>
 
-          <h2>Recipe 1 — Short-circuit with beforeHandle</h2>
+          <h2>Recipe 1: Short-circuit with beforeHandle</h2>
 
           <p>
             The maintenance-window pattern, written once, applied globally, with
@@ -705,13 +705,13 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={AUTH_BEFORE} />
           </EditorFrame>
 
-          <h2>Recipe 2 — Stamp headers with onSend</h2>
+          <h2>Recipe 2: Stamp headers with onSend</h2>
 
           <p>
             Server-Timing on every response, including errors and preflights.
             Notice the pattern: stash the start time in <code>ctx.state</code>{" "}
             from <code>beforeHandle</code>, read it from <code>onSend</code>.
-            Mutate the response headers in place — no need to return a new{" "}
+            Mutate the response headers in place, no need to return a new{" "}
             <code>Response</code>:
           </p>
 
@@ -723,7 +723,7 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={ON_SEND_HEADERS} />
           </EditorFrame>
 
-          <h2>Recipe 3 — Log with onResponse</h2>
+          <h2>Recipe 3: Log with onResponse</h2>
 
           <p>
             Anything that you&apos;d call <em>observation</em> belongs in{" "}
@@ -741,7 +741,7 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={ON_RESPONSE_OBS} />
           </EditorFrame>
 
-          <h2>Recipe 4 — Translate errors with onError</h2>
+          <h2>Recipe 4: Translate errors with onError</h2>
 
           <EditorFrame
             files={["src/middleware/error-translation.ts"]}
@@ -751,7 +751,7 @@ export default function BlogPostPage() {
             <CodeBlock language="ts" code={ON_ERROR} />
           </EditorFrame>
 
-          <h2>Recipe 5 — Transform with afterHandle (carefully)</h2>
+          <h2>Recipe 5: Transform with afterHandle (carefully)</h2>
 
           <EditorFrame
             files={["src/middleware/redact-email.ts"]}
@@ -764,9 +764,9 @@ export default function BlogPostPage() {
           <h2>Plugins: hooks + routes, encapsulated</h2>
 
           <p>
-            For anything you&apos;d ship as a unit — a metrics endpoint plus its{" "}
+            For anything you&apos;d ship as a unit, a metrics endpoint plus its{" "}
             <code>onResponse</code> observer, a sessions store plus its{" "}
-            <code>beforeHandle</code> reader — use <code>app.register()</code>.
+            <code>beforeHandle</code> reader, use <code>app.register()</code>.
             Inside the plugin you get a child <code>App</code> whose hooks and
             routes are scoped to the mount point. The plugin can ship its own
             prefix, its own hooks, and its own auth defaults without leaking
@@ -808,7 +808,7 @@ export default function BlogPostPage() {
             method slots. Three scopes, composed in a fixed order. One
             side-channel for errors. That is the whole machine. Once the mental
             model clicks, you stop asking <em>where does this go</em> and start
-            asking <em>which scope</em> — which is a far more interesting
+            asking <em>which scope</em>: which is a far more interesting
             question, and one whose answer you can usually argue about in a
             Slack thread without anyone getting hurt.
           </p>
@@ -827,7 +827,7 @@ export default function BlogPostPage() {
             shows the whole pipeline running against a real route table.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

@@ -26,7 +26,7 @@ export default function Page() {
         from one door to a shared headcount board every door reads from. With
         many doors (replicas) and a local clicker each, a guest can sneak in N
         times by trying every door. With a shared clicker (Redis), the cap is
-        honoured everywhere — no matter which door they queue at.
+        honoured everywhere, no matter which door they queue at.
       </blockquote>
       <p>
         The default <code>rateLimit()</code> middleware uses an in-process
@@ -45,7 +45,7 @@ export default function Page() {
       <h2>When to use Redis (and when not to)</h2>
       <p>
         The Redis store is built for{" "}
-        <strong>long-lived multi-replica deployments</strong> — VPS, containers,
+        <strong>long-lived multi-replica deployments</strong>: VPS, containers,
         Kubernetes, Fly.io, Render, ECS, App Runner, Railway. Anywhere you run
         more than one Node / Bun / Deno process and need a shared counter so a
         client can&apos;t get <code>N&times;</code> the limit by load-balancing
@@ -58,16 +58,16 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <strong>Cloudflare Workers</strong> — Durable Objects (strongly
+          <strong>Cloudflare Workers</strong>: Durable Objects (strongly
           consistent per-key), or KV / D1 for relaxed consistency.
         </li>
         <li>
-          <strong>Vercel Edge</strong> — Vercel KV (Upstash Redis under the
+          <strong>Vercel Edge</strong>: Vercel KV (Upstash Redis under the
           hood) is reachable from edge functions; for very high RPS prefer Edge
           Config + a Node region for the counter write path.
         </li>
         <li>
-          <strong>Fastly Compute</strong> — Edge Dictionaries for static quotas,
+          <strong>Fastly Compute</strong>: Edge Dictionaries for static quotas,
           KV Store for dynamic counters.
         </li>
       </ul>

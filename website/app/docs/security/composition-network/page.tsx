@@ -68,7 +68,7 @@ app.route({ method: "POST", path: "/password-reset", hooks: authLimit(), ... });
       </p>
 
       <h2>
-        2. <code>combine</code> primitives — <code>every</code> /{" "}
+        2. <code>combine</code> primitives, <code>every</code> /{" "}
         <code>some</code> / <code>except</code>
       </h2>
       <p>
@@ -116,7 +116,7 @@ app.use(some(
         <li>
           <code>some(...layers)</code> tries each layer&apos;s{" "}
           <code>beforeHandle</code> until one passes. A returned{" "}
-          <code>Response</code> is treated as a denial — the next layer gets a
+          <code>Response</code> is treated as a denial, the next layer gets a
           turn. The first failure wins when every layer rejects, so place the
           auth scheme whose <code>WWW-Authenticate</code> challenge you want
           clients to see first.
@@ -132,7 +132,7 @@ app.use(some(
       </ul>
 
       <h2>
-        3. <code>ipRestriction()</code> — CIDR allow / deny
+        3. <code>ipRestriction()</code>: CIDR allow / deny
       </h2>
       <p>
         Block or allow requests by source IP or CIDR range. Pairs naturally with{" "}
@@ -161,7 +161,7 @@ app.use(ipRestriction({
       <p>
         Invalid IP literals, invalid CIDR prefixes, and calls with neither an{" "}
         <code>allow</code> nor <code>deny</code> list throw at construction time
-        — bugs that would otherwise hide until production traffic hits. By
+, bugs that would otherwise hide until production traffic hits. By
         default the helper fails closed because Web-standard requests do not
         expose the peer address. Supply <code>resolveIp</code> if your adapter
         exposes connection metadata or if you sit behind a CDN that sends the
@@ -174,7 +174,7 @@ app.use(ipRestriction({
       </h2>
       <p>
         Mark a route as <code>internal: true</code> and the public{" "}
-        <code>app.fetch(...)</code> entry point returns <code>404</code> —
+        <code>app.fetch(...)</code> entry point returns <code>404</code>: 
         existence cannot be probed. The same route runs normally through{" "}
         <code>app.inject(request)</code>, which is meant for cron jobs, admin
         scripts, and integration tests. Internal routes are also excluded from
@@ -197,10 +197,10 @@ app.route({
   handler: () => ({ status: 204 }),
 });
 
-// Public adapter — 404
+// Public adapter - 404
 await app.fetch(new Request("http://app/__admin/reindex", { method: "POST" }));
 
-// In-process / cron / tests — 204
+// In-process / cron / tests - 204
 await app.inject(new Request("http://app/__admin/reindex", { method: "POST" }));`}
         language="ts"
       />

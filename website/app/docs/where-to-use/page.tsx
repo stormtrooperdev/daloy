@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Where to use DaloyJS",
   description:
-    "A beginner-friendly map of where DaloyJS fits — API server, microservice, BFF, in-app gateway, webhook receiver, WebSocket server, MCP server — and where it doesn't (SSR, load balancer, GraphQL/SOAP/gRPC servers). Plain-English definitions of every term.",
+    "A beginner-friendly map of where DaloyJS fits, API server, microservice, BFF, in-app gateway, webhook receiver, WebSocket server, MCP server, and where it doesn't (SSR, load balancer, GraphQL/SOAP/gRPC servers). Plain-English definitions of every term.",
   path: "/docs/where-to-use",
   keywords: [
     "DaloyJS use cases",
@@ -34,7 +34,7 @@ export default function Page() {
         DaloyJS is a <strong>contract-first TypeScript web framework</strong>.
         It takes an HTTP <code>Request</code> and returns a{" "}
         <code>Response</code>, with validation, OpenAPI, security, and a typed
-        client all wired in. That description fits a lot of jobs — and a few it
+        client all wired in. That description fits a lot of jobs, and a few it
         doesn&apos;t. This page is the beginner&apos;s map.
       </p>
 
@@ -44,7 +44,7 @@ export default function Page() {
           DaloyJS is excellent at the &quot;your code answers an HTTP
           request&quot; role
         </strong>{" "}
-        — API server, microservice, BFF, webhook receiver, WebSocket server, MCP
+, API server, microservice, BFF, webhook receiver, WebSocket server, MCP
         server. It is <strong>not</strong>a router that proxies traffic to other
         services, a load balancer, or a page-rendering UI framework. For those,
         pair it with something purpose-built and let DaloyJS be the smart
@@ -94,7 +94,7 @@ export default function Page() {
               <td className="px-3 py-2">API gateway (in-app)</td>
               <td className="px-3 py-2">Strong</td>
               <td className="px-3 py-2">
-                All the edge concerns — auth, rate limit, CORS, headers — minus
+                All the edge concerns, auth, rate limit, CORS, headers, minus
                 traffic proxying.
               </td>
             </tr>
@@ -138,7 +138,7 @@ export default function Page() {
               <td className="px-3 py-2">MCP server (HTTP transport)</td>
               <td className="px-3 py-2">Strong</td>
               <td className="px-3 py-2">
-                JSON-RPC over HTTP/SSE — DaloyJS handles it; the MCP framing is
+                JSON-RPC over HTTP/SSE, DaloyJS handles it; the MCP framing is
                 yours.
               </td>
             </tr>
@@ -176,85 +176,85 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <strong>API server</strong> — a process that exposes endpoints (like
+          <strong>API server</strong>: a process that exposes endpoints (like
           <code>GET /books/:id</code>) over HTTP and returns structured data
           (usually JSON). The thing your mobile app, web app, or another service
           talks to.
         </li>
         <li>
-          <strong>Web server</strong> — historically, a process that serves HTML
+          <strong>Web server</strong>: historically, a process that serves HTML
           pages, images, and static files to a browser. NGINX and Apache are web
           servers. An API server is a specialized web server.
         </li>
         <li>
-          <strong>Microservice</strong> — one small service that does one thing
+          <strong>Microservice</strong>: one small service that does one thing
           (orders, payments, search) and talks to others over the network.
           &quot;Microservice architecture&quot; just means you have many of them
           instead of one big app.
         </li>
         <li>
-          <strong>Service-to-service (S2S)</strong> — when two of your own
+          <strong>Service-to-service (S2S)</strong>: when two of your own
           backend services call each other directly, with no human in the loop.
           Usually authenticated with a shared secret or mTLS, not a user cookie.
         </li>
         <li>
-          <strong>Backend-for-Frontend (BFF)</strong> — a thin server that sits
+          <strong>Backend-for-Frontend (BFF)</strong>: a thin server that sits
           between a specific frontend (your web app, your iOS app) and your
           internal APIs. It composes upstream calls, holds the session, and
           returns exactly the shape the UI needs.
         </li>
         <li>
-          <strong>API gateway</strong> — a process at the edge of your network
+          <strong>API gateway</strong>: a process at the edge of your network
           that takes <em>all</em> incoming traffic and routes it to the right
           internal service. It usually handles auth, rate limiting, request
           translation, retries, and observability for many services at once.
         </li>
         <li>
-          <strong>Load balancer</strong> — a network-level box that takes one
+          <strong>Load balancer</strong>: a network-level box that takes one
           stream of requests and spreads them across many identical copies of
           your service. It cares about TCP connections and health checks, not
           your routes or schemas.
         </li>
         <li>
-          <strong>Server-side renderer (SSR)</strong> — a process that turns
+          <strong>Server-side renderer (SSR)</strong>: a process that turns
           components (React, Vue, Svelte) into HTML on the server, then ships
           that HTML to the browser. Next.js, Remix, and Astro are SSR
           frameworks.
         </li>
         <li>
-          <strong>Webhook receiver</strong> — an endpoint that other systems
+          <strong>Webhook receiver</strong>: an endpoint that other systems
           (Stripe, GitHub, Shopify) call to notify your app of events. Usually
           signed with HMAC so you can verify the sender.
         </li>
         <li>
-          <strong>WebSocket server</strong> — a long-lived, bidirectional
+          <strong>WebSocket server</strong>: a long-lived, bidirectional
           connection over TCP. Used for chat, live dashboards, multiplayer,
           collaborative editing.
         </li>
         <li>
-          <strong>MCP server</strong> — Model Context Protocol. A standardized
+          <strong>MCP server</strong>: Model Context Protocol. A standardized
           way for AI assistants to call tools and read resources. Transports are
           stdio or HTTP+SSE.
         </li>
         <li>
-          <strong>gRPC</strong> — a binary RPC protocol from Google, defined
+          <strong>gRPC</strong>: a binary RPC protocol from Google, defined
           with <code>.proto</code> files and running over HTTP/2 with Protobuf
           encoding. Great for fast, typed S2S inside a cluster.
         </li>
         <li>
-          <strong>GraphQL</strong> — a query language where the client picks the
+          <strong>GraphQL</strong>: a query language where the client picks the
           shape of the response from a single endpoint (usually
           <code>POST /graphql</code>).
         </li>
         <li>
-          <strong>SOAP</strong> — an older XML-based RPC protocol with WSDL
+          <strong>SOAP</strong>: an older XML-based RPC protocol with WSDL
           contracts. Still common in banking, government, and legacy enterprise.
         </li>
       </ul>
 
       <h2>Role by role</h2>
 
-      <h3>1. API server — the home position</h3>
+      <h3>1. API server: the home position</h3>
       <p>
         This is what DaloyJS was designed for. You declare a route once, get
         validation, OpenAPI docs, a typed in-process client, and an
@@ -325,7 +325,7 @@ const app = new App({
         (you don&apos;t need a fleet of services to start).
       </p>
 
-      <h3>4. Backend-for-Frontend (BFF) — the sweet spot</h3>
+      <h3>4. Backend-for-Frontend (BFF): the sweet spot</h3>
       <p>
         BFF is arguably where DaloyJS is at its best. The combination you want
         is all first-party:
@@ -340,7 +340,7 @@ const app = new App({
           <Link href="/docs/security/fetch-guard">
             <code>fetchGuard()</code>
           </Link>{" "}
-          — blocks SSRF, private CIDRs, and cloud-metadata IPs by default.
+, blocks SSRF, private CIDRs, and cloud-metadata IPs by default.
         </li>
         <li>
           <strong>Session edge</strong> via{" "}
@@ -358,7 +358,7 @@ const app = new App({
           plus <code>compression()</code> with BREACH-aware guards.
         </li>
         <li>
-          <strong>Edge runtimes</strong> — deploy on Cloudflare, Vercel Edge,
+          <strong>Edge runtimes</strong>: deploy on Cloudflare, Vercel Edge,
           Fastly Compute, or Lambda.
         </li>
       </ul>
@@ -369,7 +369,7 @@ const app = new App({
       </p>
 
       <h3>
-        5. API gateway — strong as &quot;in-app gateway&quot;, not a replacement
+        5. API gateway, strong as &quot;in-app gateway&quot;, not a replacement
         for Kong
       </h3>
       <p>DaloyJS gives you almost everything an API gateway does:</p>
@@ -415,7 +415,7 @@ const app = new App({
         / Envoy and put DaloyJS services <em>behind</em> it.
       </p>
 
-      <h3>6. Load balancer — no</h3>
+      <h3>6. Load balancer: no</h3>
       <p>
         Load balancing is a TCP-level job. Use NGINX, HAProxy, AWS ALB/NLB, GCP
         Load Balancing, or Cloudflare. DaloyJS sits <em>behind</em> the LB and
@@ -424,7 +424,7 @@ const app = new App({
         <code> X-Forwarded-*</code> headers when the LB terminates TLS.
       </p>
 
-      <h3>7. Server-side renderer (SSR) — no</h3>
+      <h3>7. Server-side renderer (SSR): no</h3>
       <p>
         There is no JSX, React, Vue, or Svelte renderer in DaloyJS. No
         <code> renderToString</code>, no hydration, no file-system page router,
@@ -434,16 +434,16 @@ const app = new App({
       <p>
         <strong>Recommended pattern:</strong> Next.js / Remix / Astro for SSR,
         DaloyJS for the API behind it. On Vercel you can even mount the same
-        DaloyJS app as a Next.js route handler — see{" "}
+        DaloyJS app as a Next.js route handler, see{" "}
         <Link href="/docs/adapters/vercel">the Vercel adapter</Link>.
       </p>
 
-      <h3>8. Webhook receiver — excellent</h3>
+      <h3>8. Webhook receiver: excellent</h3>
       <p>Webhooks are just HTTP POSTs with a signature header. DaloyJS has:</p>
       <ul>
         <li>
           <code>verifyWebhookSignature</code> / <code>signWebhookPayload</code>{" "}
-          — zero-knob HMAC helpers
+, zero-knob HMAC helpers
         </li>
         <li>
           <code>timingSafeEqual</code> for signature comparison
@@ -456,7 +456,7 @@ const app = new App({
         <li>RFC 9457 error responses that webhook senders can parse</li>
       </ul>
 
-      <h3>9. WebSocket server — excellent, with CSWSH guard</h3>
+      <h3>9. WebSocket server: excellent, with CSWSH guard</h3>
       <p>
         First-party WebSocket primitives run on the Node and Bun adapters with a
         Bun-style handler shape (<code>open</code>, <code>message</code>,{" "}
@@ -468,13 +468,13 @@ const app = new App({
         provide either a pre-upgrade authorization hook or explicitly opt out,{" "}
         <strong>and</strong> either an Origin allowlist or an explicit
         acknowledgement. That closes the Cross-Site WebSocket Hijacking (CSWSH)
-        class of bug — cookie auth alone does not protect a WebSocket handshake.
+        class of bug, cookie auth alone does not protect a WebSocket handshake.
       </p>
       <p>
         See <Link href="/docs/websocket">WebSocket primitives</Link>.
       </p>
 
-      <h3>10. MCP server (HTTP transport) — strong</h3>
+      <h3>10. MCP server (HTTP transport): strong</h3>
       <p>
         The Model Context Protocol is JSON-RPC 2.0, transported over either
         stdio or HTTP + Server-Sent Events. DaloyJS handles the HTTP/SSE half
@@ -496,12 +496,12 @@ const app = new App({
       </ul>
       <p>
         You bring the MCP framing (initialize, tools/list, tools/call) on top.
-        DaloyJS won&apos;t generate it for you — there&apos;s no{" "}
-        <code>defineTool()</code> primitive yet — but the HTTP, validation,
+        DaloyJS won&apos;t generate it for you, there&apos;s no{" "}
+        <code>defineTool()</code> primitive yet, but the HTTP, validation,
         auth, and SSE pieces are in-box.
       </p>
 
-      <h3>11. gRPC server — no</h3>
+      <h3>11. gRPC server: no</h3>
       <p>
         gRPC needs HTTP/2 with Protobuf framing and trailers. DaloyJS is a REST
         framework around web-standard <code>Request</code>/<code>Response</code>
@@ -511,7 +511,7 @@ const app = new App({
         surface to be JSON.
       </p>
 
-      <h3>12. GraphQL server — possible, not the framework&apos;s shape</h3>
+      <h3>12. GraphQL server: possible, not the framework&apos;s shape</h3>
       <p>
         DaloyJS is contract-first REST: one route, one schema, one OpenAPI
         operation. GraphQL is one route, one schema, many shapes. They&apos;re
@@ -525,7 +525,7 @@ const app = new App({
         framework).
       </p>
 
-      <h3>13. SOAP server — no</h3>
+      <h3>13. SOAP server: no</h3>
       <p>
         SOAP is XML-over-HTTP with WSDL contracts. DaloyJS speaks JSON contracts
         via Standard Schema. There is no built-in XML parser, no WSDL generator,
@@ -603,14 +603,14 @@ const app = new App({
               <td className="px-3 py-2">
                 <strong>DaloyJS</strong>
               </td>
-              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2">-</td>
             </tr>
             <tr>
               <td className="px-3 py-2">Webhook receiver with HMAC</td>
               <td className="px-3 py-2">
                 <strong>DaloyJS</strong>
               </td>
-              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2">-</td>
             </tr>
             <tr>
               <td className="px-3 py-2">
@@ -619,21 +619,21 @@ const app = new App({
               <td className="px-3 py-2">
                 <strong>DaloyJS</strong>
               </td>
-              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2">-</td>
             </tr>
             <tr>
               <td className="px-3 py-2">Real-time chat / dashboards over WS</td>
               <td className="px-3 py-2">
                 <strong>DaloyJS</strong>
               </td>
-              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2">-</td>
             </tr>
             <tr>
               <td className="px-3 py-2">MCP server over HTTP+SSE</td>
               <td className="px-3 py-2">
                 <strong>DaloyJS</strong> (you bring the MCP framing)
               </td>
-              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2">-</td>
             </tr>
           </tbody>
         </table>
@@ -657,21 +657,21 @@ const app = new App({
         ▼
 [ API gateway ]                ← Kong / APISIX / Envoy (optional, for many services)
         │
-        ├──> [ BFF — DaloyJS ]            ← session, CSRF, fetchGuard, typed upstream client
+        ├──> [ BFF - DaloyJS ]            ← session, CSRF, fetchGuard, typed upstream client
         │           │
-        │           ├──> [ Catalog API — DaloyJS, internal-service preset ]
-        │           ├──> [ Orders API  — DaloyJS, internal-service preset ]
-        │           └──> [ Search API  — could be gRPC, GraphQL, anything ]
+        │           ├──> [ Catalog API - DaloyJS, internal-service preset ]
+        │           ├──> [ Orders API  - DaloyJS, internal-service preset ]
+        │           └──> [ Search API  - could be gRPC, GraphQL, anything ]
         │
-        ├──> [ Webhook receiver — DaloyJS ] ← Stripe, GitHub, Shopify
+        ├──> [ Webhook receiver - DaloyJS ] ← Stripe, GitHub, Shopify
         │
-        ├──> [ WebSocket server — DaloyJS ] ← live updates
+        ├──> [ WebSocket server - DaloyJS ] ← live updates
         │
-        └──> [ MCP server — DaloyJS ]       ← AI assistants call tools here`}
+        └──> [ MCP server - DaloyJS ]       ← AI assistants call tools here`}
       />
       <p>
         Every box marked <em>DaloyJS</em> is the same framework, the same
-        contract style, the same security defaults — just configured for its
+        contract style, the same security defaults, just configured for its
         role. The boxes that aren&apos;t DaloyJS exist because they&apos;re
         better at their specific job.
       </p>

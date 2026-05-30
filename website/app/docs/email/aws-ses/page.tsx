@@ -27,7 +27,7 @@ export default function Page() {
           Amazon Simple Email Service
         </a>{" "}
         (SES) is AWS&apos;s pay-as-you-go transactional and bulk email service. This guide uses{" "}
-        <strong>SESv2</strong> — the current API — through the{" "}
+        <strong>SESv2</strong>: the current API, through the{" "}
         <a
           href="https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sesv2/"
           target="_blank"
@@ -54,7 +54,7 @@ export default function Page() {
         <li>
           Create an IAM principal that can call{" "}
           <code>ses:SendEmail</code>. Prefer an{" "}
-          <strong>execution role</strong> attached to your Lambda or container — avoid long-lived
+          <strong>execution role</strong> attached to your Lambda or container, avoid long-lived
           access keys.
         </li>
       </ol>
@@ -62,7 +62,7 @@ export default function Page() {
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add @aws-sdk/client-sesv2`} />
       <p>
-        The v3 SDK is modular — install only the SESv2 client. It works on Node 18+ and is
+        The v3 SDK is modular, install only the SESv2 client. It works on Node 18+ and is
         compatible with the <Link href="/docs/adapters">Lambda adapter</Link>.
       </p>
 
@@ -72,7 +72,7 @@ export default function Page() {
 AWS_REGION=us-east-1
 SES_FROM_ADDRESS="Acme <no-reply@acme.example.com>"
 
-# Local development only — in AWS, prefer the execution role
+# Local development only - in AWS, prefer the execution role
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...`}
       />
@@ -175,19 +175,19 @@ app.route({
       </p>
       <ul>
         <li>
-          <code>Content.Simple</code> — subject + text/HTML body (used above). Also supports an{" "}
+          <code>Content.Simple</code>: subject + text/HTML body (used above). Also supports an{" "}
           <code>Attachments</code> array with base64 <code>RawContent</code>,{" "}
           <code>FileName</code>, and <code>ContentType</code>.
         </li>
         <li>
-          <code>Content.Raw.Data</code> — a fully MIME-encoded message (use{" "}
+          <code>Content.Raw.Data</code>: a fully MIME-encoded message (use{" "}
           <a href="https://nodemailer.com/extras/mailcomposer/" target="_blank" rel="noreferrer">
             mailcomposer
           </a>{" "}
           or <code>nodemailer</code>&apos;s composer if you need rich attachments).
         </li>
         <li>
-          <code>Content.Template</code> — render an SES template by{" "}
+          <code>Content.Template</code>: render an SES template by{" "}
           <code>TemplateName</code> with a JSON <code>TemplateData</code> payload. Create
           templates ahead of time with <code>CreateEmailTemplateCommand</code>.
         </li>
@@ -196,11 +196,11 @@ app.route({
       <h2>Runtimes</h2>
       <ul>
         <li>
-          <strong>Node / Bun / Deno / AWS Lambda</strong> — works out of the box. On Lambda, omit
+          <strong>Node / Bun / Deno / AWS Lambda</strong>: works out of the box. On Lambda, omit
           access keys and let the execution role supply credentials.
         </li>
         <li>
-          <strong>Cloudflare Workers / Vercel Edge</strong> — the SDK can run there but uses a
+          <strong>Cloudflare Workers / Vercel Edge</strong>: the SDK can run there but uses a
           Web Crypto signer; pin <code>@aws-sdk/client-sesv2</code> ≥ 3.700 and pass{" "}
           <code>credentials</code> explicitly (the default provider chain expects Node APIs).
         </li>

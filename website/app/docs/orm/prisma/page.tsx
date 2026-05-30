@@ -230,7 +230,7 @@ const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
 export const prisma = new PrismaClient({ adapter });`}
       />
 
-      <h2>Operator injection — validate your filter shapes</h2>
+      <h2>Operator injection: validate your filter shapes</h2>
       <p>
         Prisma always emits parameterized SQL, but the <em>filter object</em>{" "}
         you pass to <code>where</code> is interpreted by Prisma. If a field
@@ -279,7 +279,7 @@ try {
       </p>
       <p>
         For serverless or edge deployments, see the{" "}
-        <Link href="/docs/databases">database hosting overview</Link> — Prisma
+        <Link href="/docs/databases">database hosting overview</Link>: Prisma
         supports <Link href="/docs/databases/neon">Neon</Link>,{" "}
         <Link href="/docs/databases/planetscale">PlanetScale</Link>, and{" "}
         <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link> through

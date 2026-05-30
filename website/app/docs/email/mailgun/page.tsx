@@ -175,10 +175,10 @@ app.route({
       <h2>Runtimes</h2>
       <ul>
         <li>
-          <strong>Node / Bun / AWS Lambda</strong> — works with the configuration above.
+          <strong>Node / Bun / AWS Lambda</strong>: works with the configuration above.
         </li>
         <li>
-          <strong>Cloudflare Workers / Vercel Edge</strong> — pass <code>useFetch: true</code> so
+          <strong>Cloudflare Workers / Vercel Edge</strong>: pass <code>useFetch: true</code> so
           the SDK uses the platform&apos;s native <code>fetch</code> instead of <code>request</code>{" "}
           (which depends on Node&apos;s HTTP module):
           <CodeBlock

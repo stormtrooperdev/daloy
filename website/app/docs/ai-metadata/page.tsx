@@ -39,7 +39,7 @@ export default function Page() {
 
       <p>
         <strong>Additive and non-breaking.</strong> Existing routes keep working
-        unchanged — <code>meta</code> is optional everywhere.
+        unchanged, <code>meta</code> is optional everywhere.
       </p>
 
       <h2>Author examples</h2>
@@ -90,18 +90,18 @@ app.route({
       <h2>Shape of a meta block</h2>
       <ul>
         <li>
-          <code>summary</code> / <code>description</code> / <code>tags</code> —
+          <code>summary</code> / <code>description</code> / <code>tags</code>: 
           augment the route-level fields of the same name. Route-level values
           win when both are set; tags are de-duplicated and concatenated.
         </li>
         <li>
-          <code>examples</code> — record of named{" "}
+          <code>examples</code>: record of named{" "}
           <code>{`{ summary?, description?, request?: { params?, query?, headers?, body? }, response?: { status, body?, headers? } }`}</code>{" "}
           pairs. Every field is optional individually; pass only the parts you
           want documented.
         </li>
         <li>
-          <code>extensions</code> — free-form bag emitted onto the OpenAPI
+          <code>extensions</code>: free-form bag emitted onto the OpenAPI
           Operation Object. Keys without an <code>x-</code> prefix are prefixed
           automatically for spec compliance.
         </li>
@@ -179,8 +179,8 @@ app.route({
         <code>daloy inspect --ai</code>
       </h2>
       <p>
-        Dump the whole route catalog — with JSON Schema for every input and
-        output and every <code>meta.examples</code> entry — as a single,
+        Dump the whole route catalog, with JSON Schema for every input and
+        output and every <code>meta.examples</code> entry, as a single,
         self-describing JSON document. It is the format Daloy recommends for
         feeding to an LLM or a codegen agent that needs more than the OpenAPI
         spec alone:
@@ -190,7 +190,7 @@ app.route({
         code={`pnpm daloy inspect --ai > routes.json
 pnpm daloy inspect --ai --json | jq '.routes[].operationId'
 
-# Emit YAML instead of JSON — typically ~30% smaller, which matters
+# Emit YAML instead of JSON - typically ~30% smaller, which matters
 # when you are pasting the dump into an LLM system prompt.
 pnpm daloy inspect --ai --yaml > routes.yaml
 pnpm daloy inspect --ai --format yaml > routes.yaml
@@ -231,7 +231,7 @@ pnpm daloy inspect --ai --tag Books`}
         emitter is a tiny built-in YAML 1.2 serializer with no runtime
         dependencies. Because YAML drops braces, commas, and most quotes, the
         dump is typically <strong>about 30% smaller</strong> than the equivalent
-        pretty-printed JSON — a meaningful saving when the file becomes part of
+        pretty-printed JSON, a meaningful saving when the file becomes part of
         an LLM system prompt.
       </p>
       <CodeBlock
@@ -300,7 +300,7 @@ routes:
           me a fetch call that hits the books endpoint”.
         </li>
         <li>
-          A custom code generator (Python client, Go SDK, Postman collection) —
+          A custom code generator (Python client, Go SDK, Postman collection), 
           every field is plain JSON.
         </li>
       </ul>

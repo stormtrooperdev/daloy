@@ -31,7 +31,7 @@ export default function Page() {
           Cloudflare D1
         </a>{" "}
         is a serverless SQLite-compatible database built into Cloudflare Workers. You access it through a
-        Worker binding (no network driver, no auth token, no TCP) — making it the lowest-friction
+        Worker binding (no network driver, no auth token, no TCP), making it the lowest-friction
         database for the <Link href="/docs/adapters">Cloudflare adapter</Link>.
       </p>
 
@@ -130,7 +130,7 @@ export const createDb = (env: Env) => drizzle(env.DB);`}
 
       <h2>Limitations to know</h2>
       <ul>
-        <li>D1 only runs in Cloudflare Workers — no Node.js, Lambda, or Edge runtime support.</li>
+        <li>D1 only runs in Cloudflare Workers, no Node.js, Lambda, or Edge runtime support.</li>
         <li>
           Local development uses <code>wrangler dev</code> with a local SQLite file; behavior is close
           but not identical to production.

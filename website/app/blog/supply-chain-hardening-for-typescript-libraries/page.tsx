@@ -11,7 +11,7 @@ const POST = {
   title:
     "Supply-Chain Hardening for TypeScript Libraries: Everything We Did and Why",
   description:
-    "A maintainer's field guide to the supply-chain posture we shipped for DaloyJS — .npmrc that says no by default, pnpm 11 workspace keys (blockExoticSubdeps / strictDepBuilds / verifyDepsBeforeRun), SHA-pinned actions, permissions: {}, no Actions cache on installs, zizmor + Scorecard + CodeQL, npm trusted publishing with provenance, and the create-daloy --with-ci bundle that drops the app-safe parts into your project.",
+    "A maintainer's field guide to the supply-chain posture we shipped for DaloyJS, .npmrc that says no by default, pnpm 11 workspace keys (blockExoticSubdeps / strictDepBuilds / verifyDepsBeforeRun), SHA-pinned actions, permissions: {}, no Actions cache on installs, zizmor + Scorecard + CodeQL, npm trusted publishing with provenance, and the create-daloy --with-ci bundle that drops the app-safe parts into your project.",
   date: "2026-05-19",
   readingTime: "16 min read",
   author: "Devlin Duldulao",
@@ -45,7 +45,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const NPMRC = `# .npmrc — DaloyJS root npm/pnpm config (supply-chain hardening)
+const NPMRC = `# .npmrc, DaloyJS root npm/pnpm config (supply-chain hardening)
 
 # ---------------------------------------------------------------------------
 # Lifecycle scripts
@@ -81,7 +81,7 @@ provenance=true
 audit-level=moderate
 fund=false`;
 
-const PNPM_WORKSPACE = `# pnpm-workspace.yaml — pnpm 11 supply-chain keys
+const PNPM_WORKSPACE = `# pnpm-workspace.yaml, pnpm 11 supply-chain keys
 packages:
   - "packages/*"
 
@@ -98,7 +98,7 @@ blockExoticSubdeps: true
 strictDepBuilds: true
 
 # Re-check dependency state before \`pnpm run\` / \`pnpm exec\` so scripts
-# never run against a stale node_modules — which is how cache-poisoning
+# never run against a stale node_modules - which is how cache-poisoning
 # chains achieve persistence on CI.
 verifyDepsBeforeRun: install
 
@@ -107,7 +107,7 @@ verifyDepsBeforeRun: install
 allowBuilds:
   esbuild: true`;
 
-const RELEASE_WORKFLOW = `# .github/workflows/release.yml — npm publish with OIDC + provenance
+const RELEASE_WORKFLOW = `# .github/workflows/release.yml, npm publish with OIDC + provenance
 name: release
 
 on:
@@ -136,7 +136,7 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 20
-          # NOTE: deliberately no \`cache: pnpm\` — the GHA cache is a known
+          # NOTE: deliberately no \`cache: pnpm\` - the GHA cache is a known
           # exfiltration channel and a known persistence channel.
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm typecheck
@@ -152,7 +152,7 @@ jobs:
     permissions:
       contents: read
       # id-token: write is required by npm trusted publishing (OIDC).
-      # It is granted on THIS job only — never to verify, never globally,
+      # It is granted on THIS job only - never to verify, never globally,
       # and never on a workflow that a fork PR could run.
       id-token: write
     steps:
@@ -172,7 +172,7 @@ jobs:
           # NOTE: no NODE_AUTH_TOKEN. Trusted publishing gets the credential
           # from the OIDC exchange. Long-lived npm tokens have been retired.`;
 
-const ZIZMOR_WORKFLOW = `# .github/workflows/zizmor.yml — static analysis on the workflows themselves
+const ZIZMOR_WORKFLOW = `# .github/workflows/zizmor.yml, static analysis on the workflows themselves
 name: zizmor
 on:
   push: { branches: [main] }
@@ -191,7 +191,7 @@ jobs:
         uses: woodruffw/zizmor-action@0c4ee94d3ea53cd6fd34a05dd07a4ba14e1f9b4c # v0.4.1
         with: { upload-sarif: true }`;
 
-const SCORECARD_WORKFLOW = `# .github/workflows/scorecard.yml — OpenSSF Scorecard weekly
+const SCORECARD_WORKFLOW = `# .github/workflows/scorecard.yml, OpenSSF Scorecard weekly
 name: scorecard
 on:
   branch_protection_rule:
@@ -213,7 +213,7 @@ jobs:
       - uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda
         with: { sarif_file: results.sarif }`;
 
-const VERIFY_LOCKFILE = `// scripts/verify-lockfile-sources.mjs — run in CI before install
+const VERIFY_LOCKFILE = `// scripts/verify-lockfile-sources.mjs, run in CI before install
 // Catches "registry override sneaks into pnpm-lock.yaml" attacks.
 
 import { readFileSync } from "node:fs";
@@ -244,17 +244,17 @@ pnpm create daloy@latest my-api \\
   --code-owner @acme/security
 
 # What this drops into the new repo:
-#   .github/workflows/ci.yml         — pinned actions, no cache, --ignore-scripts
-#   .github/workflows/codeql.yml     — TS/JS static analysis
-#   .github/workflows/deploy.yml     — manual-only app deployment starter
-#   .github/workflows/container-scan.yml — runs Trivy scans on your dockerfile
-#   .github/workflows/scorecard.yml  — weekly OpenSSF Scorecard
-#   .github/workflows/vuln-scan.yml  — checks for known vulnerabilities
-#   .github/workflows/zizmor.yml     — workflow lint on every push
-#   .github/dependabot.yml           — weekly bumps, grouped by ecosystem
-#   .github/CODEOWNERS               — @acme/security on workflow files
-#   SECURITY.md                      — disclosure policy + supported versions
-#   scripts/verify-lockfile-sources.mjs — the script above, runnable as
+#   .github/workflows/ci.yml         - pinned actions, no cache, --ignore-scripts
+#   .github/workflows/codeql.yml     - TS/JS static analysis
+#   .github/workflows/deploy.yml     - manual-only app deployment starter
+#   .github/workflows/container-scan.yml - runs Trivy scans on your dockerfile
+#   .github/workflows/scorecard.yml  - weekly OpenSSF Scorecard
+#   .github/workflows/vuln-scan.yml  - checks for known vulnerabilities
+#   .github/workflows/zizmor.yml     - workflow lint on every push
+#   .github/dependabot.yml           - weekly bumps, grouped by ecosystem
+#   .github/CODEOWNERS               - @acme/security on workflow files
+#   SECURITY.md                      - disclosure policy + supported versions
+#   scripts/verify-lockfile-sources.mjs - the script above, runnable as
 #                                        pnpm verify:lockfile`;
 
 const ATTACK_PATHS = `# A short, opinionated map of the attack paths the above shuts down:
@@ -350,7 +350,7 @@ function EditorFrame({
 }
 
 /**
- * ControlCard — three-column card per hardening control.
+ * ControlCard - three-column card per hardening control.
  */
 function ControlCard({
   name,
@@ -427,7 +427,7 @@ export default function BlogPostPage() {
             Hi, Devlin. Ten years of fullstack, currently in Norway, currently
             wishing I could un-read the changelogs of three different npm worm
             campaigns. The 2025 and 2026 supply-chain news has been
-            <em> rough</em> — chalk/debug, node-ipc, Shai-Hulud, TanStack — and
+            <em> rough</em>: chalk/debug, node-ipc, Shai-Hulud, TanStack, and
             if you maintain a TypeScript library that other people install, you
             probably had the same thought I did:{" "}
             <em>
@@ -442,7 +442,7 @@ export default function BlogPostPage() {
             control we shipped for DaloyJS, plus the
             <code> create-daloy --with-ci</code> flag that drops the app-safe
             pieces into a brand-new user project. Nothing here is
-            DaloyJS-specific — these are reusable defaults for pnpm-based
+            DaloyJS-specific, these are reusable defaults for pnpm-based
             TypeScript projects in 2026. Steal what you need.
           </p>
 
@@ -486,7 +486,7 @@ export default function BlogPostPage() {
 
           <p>
             Three lines do most of the work. <code>ignore-scripts=true</code>{" "}
-            stops every transitive postinstall hook — the canonical execution
+            stops every transitive postinstall hook, the canonical execution
             channel for the recent worm campaigns.{" "}
             <code>frozen-lockfile=true</code> makes a tampered lockfile cause an
             install failure, not a silent &quot;sure, let me grab a different
@@ -516,7 +516,7 @@ export default function BlogPostPage() {
 
           <ControlCard
             name="blockExoticSubdeps: true"
-            blocks="A transitive dep specified as a git URL or tarball. That's how a hijacked maintainer's GitHub fork has been smuggled into apps before — the direct dep on npm looks clean, the transitive one resolves to a git fork the attacker controls."
+            blocks="A transitive dep specified as a git URL or tarball. That's how a hijacked maintainer's GitHub fork has been smuggled into apps before, the direct dep on npm looks clean, the transitive one resolves to a git fork the attacker controls."
             cost="Approximately zero. If you genuinely need a git dep, declare it directly. Indirect git deps are almost never intentional."
           />
 
@@ -532,7 +532,7 @@ export default function BlogPostPage() {
             cost="A handful of ms per script invocation. You will not notice."
           />
 
-          <h2>Layer 3: GitHub Actions — three rules that matter</h2>
+          <h2>Layer 3: GitHub Actions: three rules that matter</h2>
 
           <p>
             Most of the Actions security advice on the internet is some variant
@@ -547,7 +547,7 @@ export default function BlogPostPage() {
               </strong>
               . Every workflow starts with zero scopes. Each job opts in to the
               minimum it needs. <code>id-token: write</code> in particular is
-              granted on the publish job only — it&apos;s the credential the
+              granted on the publish job only, it&apos;s the credential the
               TanStack attackers extracted in 2026-05.
             </li>
             <li>
@@ -600,7 +600,7 @@ export default function BlogPostPage() {
             <CodeBlock language="bash" code={ZIZMOR_WORKFLOW} />
           </EditorFrame>
 
-          <h2>Layer 5: continuous scoring — Scorecard + CodeQL</h2>
+          <h2>Layer 5: continuous scoring: Scorecard + CodeQL</h2>
 
           <p>
             <strong>OpenSSF Scorecard</strong> gives you a weekly numeric score
@@ -619,13 +619,13 @@ export default function BlogPostPage() {
             <CodeBlock language="bash" code={SCORECARD_WORKFLOW} />
           </EditorFrame>
 
-          <h2>Layer 6: trusted publishing + provenance — bye, npm tokens</h2>
+          <h2>Layer 6: trusted publishing + provenance: bye, npm tokens</h2>
 
           <p>
             For most of npm&apos;s history, publishing meant{" "}
             <code>NODE_AUTH_TOKEN</code> sitting in GitHub Actions secrets. That
             token is the keys to the kingdom: anyone with it can publish
-            anything to your package. When it leaks — and tokens leak — the
+            anything to your package. When it leaks, and tokens leak, the
             attacker has minutes before anyone notices.
           </p>
 
@@ -666,7 +666,7 @@ export default function BlogPostPage() {
 
           <p>
             It&apos;s 20 lines and it has caught a real PR mistake (not
-            malicious — a contributor pasted a tarball URL into a{" "}
+            malicious, a contributor pasted a tarball URL into a{" "}
             <code>packageManager</code> override). Worth the 20 lines.
           </p>
 
@@ -722,12 +722,12 @@ export default function BlogPostPage() {
           <p>
             Honest section. Supply-chain hardening protects against{" "}
             <em>install-time</em> and <em>build-time</em> compromise. It does
-            nothing for runtime vulnerabilities in your own code — write tests,
+            nothing for runtime vulnerabilities in your own code, write tests,
             run CodeQL, treat input as untrusted. It does nothing for a
-            maintainer&apos;s laptop being compromised — use a hardware key,
+            maintainer&apos;s laptop being compromised, use a hardware key,
             separate publish identities, and read the audit log of your npm
             account every so often. And it does nothing for the case where your{" "}
-            <em>upstream</em> language ecosystem ships a bad release — the{" "}
+            <em>upstream</em> language ecosystem ships a bad release, the{" "}
             <code>minimum-release-age</code> cooldown helps with that, but
             isn&apos;t a guarantee. Layered defenses, applied where the cost is
             reasonable.
@@ -772,7 +772,7 @@ export default function BlogPostPage() {
             forever, until Dependabot does it for you.)
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

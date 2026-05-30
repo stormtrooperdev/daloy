@@ -30,7 +30,7 @@ export default function Page() {
         The Node adapter runs your REST API on the built-in{" "}
         <code>node:http</code> server. It&apos;s the default target for
         containers, VMs, and any Node-based PaaS (Heroku, Railway, Render,
-        Fly.io). Use it when you control the process — long-lived, observable,
+        Fly.io). Use it when you control the process, long-lived, observable,
         and easy to debug.
       </p>
 
@@ -86,7 +86,7 @@ const { port, close } = serve(app, {
 
 console.log(\`listening on :\${port}\`);
 
-// later — drain in-flight requests, then close
+// later - drain in-flight requests, then close
 await close();`}
       />
 
@@ -99,7 +99,7 @@ await close();`}
         <li>
           SIGTERM / SIGINT handlers that call <code>server.close()</code>{" "}
           followed by <code>server.closeAllConnections()</code> after{" "}
-          <code>shutdownTimeoutMs</code> — the pattern that became stable in
+          <code>shutdownTimeoutMs</code>: the pattern that became stable in
           Node 18.2 and is recommended on Node 24+.
         </li>
         <li>
@@ -119,7 +119,7 @@ await close();`}
         </li>
         <li>
           Make DaloyJS&apos;s <code>keepAliveTimeout</code>{" "}
-          <strong>greater</strong> than the load balancer&apos;s — the Node
+          <strong>greater</strong> than the load balancer&apos;s, the Node
           adapter does this for you.
         </li>
       </ul>
@@ -128,7 +128,7 @@ await close();`}
       <p>
         Steady-state throughput is only half the story. Once a Node process is
         pushed <em>past</em> saturation, the multi-second part of the tail
-        latency no longer lives in your handler — it lives in the{" "}
+        latency no longer lives in your handler, it lives in the{" "}
         <strong>accept queue</strong>, where overflow connections sit waiting
         for the event loop to get to them. A connection sweep makes this
         visible: at high concurrency an unbounded server&apos;s p99.9 can{" "}
@@ -162,13 +162,13 @@ serve(app, {
         Pick the cap empirically: run a connection sweep against your real
         routes and set <code>maxConnections</code> at (or just below) the
         concurrency where p99/p99.9 latency stays in its healthy range. The
-        right value is workload-specific — CPU-bound JSON validation saturates
+        right value is workload-specific, CPU-bound JSON validation saturates
         at a very different point than I/O-bound proxying.
       </p>
 
       <h3>Pair it with an upstream gateway</h3>
       <p>
-        When the cap is hit, the overflow socket is refused at the TCP layer —
+        When the cap is hit, the overflow socket is refused at the TCP layer, 
         the client sees a connection reset, not an HTTP response. In production
         you want a load balancer or API gateway in front that translates that
         refusal into a clean <code>503 Service Unavailable</code> with a{" "}
@@ -196,8 +196,8 @@ serve(app, {
           <strong>
             <code>loadShedding()</code>
           </strong>{" "}
-          (application layer) sheds requests when an honest overload signal —
-          event-loop <em>delay</em> (queue backlog) or in-flight concurrency —
+          (application layer) sheds requests when an honest overload signal, 
+          event-loop <em>delay</em> (queue backlog) or in-flight concurrency, 
           trips a threshold.
         </li>
       </ul>
@@ -213,7 +213,7 @@ serve(app, {
       </p>
       <p>
         Treat <code>maxConnections</code> as a resilience/latency lever, not a
-        throughput lever — under overload it turns &ldquo;everyone waits
+        throughput lever, under overload it turns &ldquo;everyone waits
         seconds&rdquo; into &ldquo;admitted traffic stays fast, overflow is
         refused fast.&rdquo;
       </p>
@@ -243,7 +243,7 @@ CMD ["dist/server.js"]`}
       <h2>Gotchas</h2>
       <ul>
         <li>
-          Don&apos;t put <code>process.exit()</code> in a SIGTERM handler — let{" "}
+          Don&apos;t put <code>process.exit()</code> in a SIGTERM handler, let{" "}
           <code>close()</code> drain. The adapter handles the hard kill after
           the timeout.
         </li>

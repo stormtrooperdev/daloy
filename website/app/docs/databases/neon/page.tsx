@@ -29,7 +29,7 @@ export default function Page() {
           Neon
         </a>{" "}
         is a serverless Postgres host with database branching, scale-to-zero, and an HTTP/WebSocket driver
-        that runs in <em>every</em> runtime DaloyJS targets — including Cloudflare Workers and Vercel
+        that runs in <em>every</em> runtime DaloyJS targets, including Cloudflare Workers and Vercel
         Edge where raw TCP isn&apos;t available.
       </p>
 

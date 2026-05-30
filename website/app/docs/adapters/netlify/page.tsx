@@ -88,7 +88,7 @@ export const config: Config = {
       </p>
       <CodeBlock
         language="ts"
-        code={`// netlify/functions/api.ts (legacy v1 — only if you can't move to v2)
+        code={`// netlify/functions/api.ts (legacy v1, only if you can't move to v2)
 import { toLambdaHandler } from "@daloyjs/core/lambda";
 import { app } from "../../src/server.js";
 

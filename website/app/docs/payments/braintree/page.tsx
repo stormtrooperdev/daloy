@@ -58,18 +58,18 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <strong><code>braintree</code> (this guide)</strong> — the long-standing Braintree
+          <strong><code>braintree</code> (this guide)</strong>: the long-standing Braintree
           server SDK. Uses the classic REST/XML gateway with a polished promise-based API.
           Production-ready, actively maintained, and what every Braintree docs example uses.
         </li>
         <li>
-          <strong><code>@braintree/graphql-client-node</code></strong> — a thin GraphQL client
+          <strong><code>@braintree/graphql-client-node</code></strong>: a thin GraphQL client
           for the same gateway. Useful if you want to write GraphQL queries directly, but
           you&apos;ll re-implement a lot that the classic SDK gives you for free. Skip unless
           you have a reason.
         </li>
         <li>
-          <strong><code>@paypal/paypal-server-sdk</code></strong> — the <em>PayPal REST</em> SDK
+          <strong><code>@paypal/paypal-server-sdk</code></strong>: the <em>PayPal REST</em> SDK
           (Checkout / Orders v2). Different product, different account, different API. Don&apos;t
           install it for a Braintree integration.
         </li>
@@ -109,7 +109,7 @@ export default function Page() {
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add braintree`} />
       <p>
-        The package bundles its own TypeScript declarations — no <code>@types/braintree</code>{" "}
+        The package bundles its own TypeScript declarations, no <code>@types/braintree</code>{" "}
         needed.
       </p>
 
@@ -122,7 +122,7 @@ BRAINTREE_PUBLIC_KEY=use_your_public_key
 BRAINTREE_PRIVATE_KEY=use_your_private_key`}
       />
       <p>
-        Public and private keys are <em>both</em> server-side secrets despite the names — the
+        Public and private keys are <em>both</em> server-side secrets despite the names, the
         word &ldquo;public&rdquo; here means &ldquo;safe to log alongside the merchant ID&rdquo;,
         not &ldquo;safe to ship to the browser&rdquo;. Keep both out of client bundles.
       </p>
@@ -158,7 +158,7 @@ export interface BraintreeClient {
   gateway: BraintreeGateway;
   clientToken(customerId?: string): Promise<string>;
   sale(input: {
-    amount: string;            // string, two-decimal — e.g. "10.00"
+    amount: string;            // string, two-decimal - e.g. "10.00"
     paymentMethodNonce: string;
     deviceData?: string;
     orderId?: string;
@@ -254,7 +254,7 @@ app.route({
           target="_blank"
           rel="noreferrer"
         ><code>deviceData</code></a>), submit a sale. Always send <code>amount</code> as a
-        string with two decimals — floats lose pennies.
+        string with two decimals, floats lose pennies.
       </p>
       <CodeBlock
         code={`app.route({
@@ -342,7 +342,7 @@ app.route({
 
       <h2>Errors &amp; result objects</h2>
       <p>
-        The SDK doesn&apos;t throw on declined transactions — it resolves with{" "}
+        The SDK doesn&apos;t throw on declined transactions, it resolves with{" "}
         <code>result.success === false</code> and details under <code>result.message</code>,{" "}
         <code>result.transaction.processorResponseCode</code>, and{" "}
         <code>result.errors.deepErrors()</code>. The plugin above turns the unsuccessful result
@@ -379,7 +379,7 @@ app.route({
           server SDK deprecation policy
         </a>
         : major versions are supported for 3 years and you should pin a recent major in
-        <code>package.json</code>. Stay current — old SDKs lose support for new payment methods,
+        <code>package.json</code>. Stay current, old SDKs lose support for new payment methods,
         new fields, and security patches.
       </p>
 

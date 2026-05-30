@@ -47,7 +47,7 @@ export default function Page() {
           <strong>The official SDK is callback-based with positional array arguments.</strong>{" "}
           It works, but it&apos;s noisy. We&apos;ll wrap{" "}
           <code>createPaymentPage</code> once in a Promise-returning function with named
-          object arguments — every route handler stays clean after that.
+          object arguments, every route handler stays clean after that.
         </li>
         <li>
           <strong>Regions are not interchangeable.</strong> Your profile lives in one of{" "}
@@ -60,7 +60,7 @@ export default function Page() {
           <strong>It&apos;s a redirect flow.</strong> You call{" "}
           <code>createPaymentPage</code>, PayTabs returns a <code>redirect_url</code>, the
           customer pays there and comes back to your <em>return</em> URL. The{" "}
-          <em>callback</em> URL is the server-side IPN — that&apos;s the only signal you
+          <em>callback</em> URL is the server-side IPN, that&apos;s the only signal you
           should mark an order paid on.
         </li>
         <li>
@@ -90,7 +90,7 @@ export default function Page() {
         </li>
         <li>
           Enable the payment methods you need (Mada, KNET, BenefitPay, STC Pay all require
-          explicit activation — some need extra paperwork).
+          explicit activation, some need extra paperwork).
         </li>
         <li>
           In Developers → IPN, point the IPN URL at your DaloyJS webhook endpoint.
@@ -262,7 +262,7 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        The signature check uses the <em>raw</em> request body — if you JSON.parse and
+        The signature check uses the <em>raw</em> request body, if you JSON.parse and
         re-stringify, the byte order changes and the HMAC won&apos;t match.
       </p>
 
@@ -406,7 +406,7 @@ await state.paytabs.refund({
         outcome (e.g. <code>200</code> success, <code>481</code> 3-D Secure failed,{" "}
         <code>500</code> generic decline). Surface declines through{" "}
         <Link href="/docs/errors">problem+json</Link> with the PayTabs{" "}
-        <code>response_message</code> in the <code>detail</code> field — don&apos;t pass it
+        <code>response_message</code> in the <code>detail</code> field, don&apos;t pass it
         verbatim to end users; declines often include scheme-specific text the customer
         can&apos;t act on.
       </p>
@@ -420,7 +420,7 @@ await state.paytabs.refund({
         </li>
         <li>
           <strong>Verify the IPN signature, always.</strong> Don&apos;t fall back to
-          &quot;the IP is from PayTabs&quot; — IPs change, and HMAC over the raw body is
+          &quot;the IP is from PayTabs&quot;, IPs change, and HMAC over the raw body is
           the only verification PayTabs actually publishes a contract for.
         </li>
         <li>
@@ -431,7 +431,7 @@ await state.paytabs.refund({
         <li>
           <strong>Consider the REST API directly if you need edge.</strong> The Node SDK
           predates the wide adoption of edge runtimes. A 30-line <code>fetch</code> wrapper
-          gives you the same shape and works on Workers/Edge — at the cost of maintaining
+          gives you the same shape and works on Workers/Edge, at the cost of maintaining
           the request shape yourself.
         </li>
       </ul>

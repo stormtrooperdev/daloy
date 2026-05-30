@@ -27,7 +27,7 @@ export default function Page() {
         <strong>Think of it like…</strong> a corporate firewall on your office
         laptop. You can still browse the public internet, but the firewall
         won&apos;t let you dial the building&apos;s admin console at
-        <code> 10.0.0.5</code> — even if a phishing email tells you to. SSRF is
+        <code> 10.0.0.5</code>: even if a phishing email tells you to. SSRF is
         the exact same trick aimed at your server: an attacker gives your code a
         URL, hoping it&apos;ll quietly fetch your own internal admin panel or
         the cloud provider&apos;s metadata endpoint. <code>fetchGuard()</code>

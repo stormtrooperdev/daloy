@@ -11,7 +11,7 @@ const POST = {
   title:
     "Scaffolding a Production-Ready DaloyJS App in 60 Seconds with create-daloy",
   description:
-    "A tour of pnpm create daloy@latest — the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel Edge), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
+    "A tour of pnpm create daloy@latest, the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel Edge), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
   date: "2026-05-27",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -63,7 +63,7 @@ pnpm create daloy@latest [project-name] [options]
   --package-manager <pm>     pnpm | npm | yarn | bun       (default: pnpm)
   --list-templates           Print available templates and exit.
   --install / --no-install   Install deps after scaffolding.
-                             (default: Y, except pnpm — N to respect
+                             (default: Y, except pnpm - N to respect
                              minimumReleaseAge + onlyBuiltDependencies)
   --git / --no-git           Initialize a git repository.
   --minimal                  Strip the bookstore + OpenAPI docs demo routes.
@@ -76,7 +76,7 @@ pnpm create daloy@latest [project-name] [options]
 
 const INTERACTIVE_FLOW = `$ pnpm create daloy@latest
 
-  ✦  create-daloy — scaffold a DaloyJS project
+  ✦  create-daloy - scaffold a DaloyJS project
 
   ?  Project name › my-api
   ?  Template
@@ -121,7 +121,7 @@ const MINIMAL_VS_DEMO = `# What you get out of the box
     + health.ts       (GET /healthz)      |
                                           |
   src/schemas/                            |   src/schemas/
-    + book.ts, author.ts, review.ts       |     (empty — add your own)
+    + book.ts, author.ts, review.ts       |     (empty - add your own)
                                           |
   tests/                                  |   tests/
     + books.test.ts, authors.test.ts      |     + health.test.ts
@@ -142,7 +142,7 @@ cloudflare-worker/src/index.ts   → export default { fetch: handle.fetch }
 vercel-edge/api/[...path].ts     → export const config = { runtime: "edge" }
 
 The buildApp() in src/app.ts is byte-identical across all five templates.
-That is on purpose — and it's the same property the "Same App on Five
+That is on purpose - and it's the same property the "Same App on Five
 Runtimes" post explored. Pick the one that matches where you deploy today;
 you can copy the buildApp() to a different template tomorrow without
 touching a single route or schema file.`;
@@ -187,13 +187,13 @@ single declaration. Do not introduce parallel schema sources.
 3. Every mutating route requires a session OR an explicit \`csrf({ ... })\`
    bypass with a reason.
 4. Throw typed errors (NotFoundError, BadRequestError, ...) from
-   @daloyjs/core — never return raw error responses.
+   @daloyjs/core - never return raw error responses.
 
-For the full workflow — adding routes step-by-step, schema conventions,
-testing patterns, security guidance, and deployment notes — read
+For the full workflow - adding routes step-by-step, schema conventions,
+testing patterns, security guidance, and deployment notes - read
 .agents/skills/daloyjs-best-practices/SKILL.md.`;
 
-const STARTUP_BANNER = `// src/index.ts — what pnpm dev actually prints
+const STARTUP_BANNER = `// src/index.ts, what pnpm dev actually prints
 import { serve } from "@daloyjs/core/node";
 import { printStartupBanner } from "@daloyjs/core";
 import { buildApp } from "./app.js";
@@ -214,7 +214,7 @@ printStartupBanner({
 });`;
 
 const BANNER_OUTPUT = `╭───────────────────────────────────────────────────────────╮
-│  ✦  my-api  — v0.1.0  · Node.js v20.18.0                   │
+│  ✦  my-api  - v0.1.0  · Node.js v20.18.0                   │
 │                                                            │
 │  ➜  Local    http://localhost:3000                         │
 │  ➜  Docs     http://localhost:3000/docs                    │
@@ -321,7 +321,7 @@ function EditorFrame({
 }
 
 /**
- * TemplateCard — concise card for each runtime template.
+ * TemplateCard - concise card for each runtime template.
  */
 function TemplateCard({
   name,
@@ -394,7 +394,7 @@ export default function BlogPostPage() {
           <p>
             Hi, Devlin. Ten years of fullstack, currently in Norway. I have
             spent a frankly embarrassing amount of my career on the first sixty
-            seconds of a project — the part where you go from{" "}
+            seconds of a project, the part where you go from{" "}
             <em>I have an idea</em> to{" "}
             <em>
               I have a running server with tests, types, OpenAPI, and a CI
@@ -411,7 +411,7 @@ export default function BlogPostPage() {
             and the cosmetic-but-important
             <code> printStartupBanner()</code> that tells you the dev server is
             alive. Then, at the end, I&apos;ll hand you off to the
-            contract-first post for the next sixty seconds — wiring up the typed
+            contract-first post for the next sixty seconds, wiring up the typed
             client.
           </p>
 
@@ -438,7 +438,7 @@ export default function BlogPostPage() {
 
           <p>
             If you skip the project name, <code>create-daloy</code> walks you
-            through a tiny terminal wizard — template picker, package manager
+            through a tiny terminal wizard, template picker, package manager
             picker, git/CI yes-or-no. Arrow keys, enter, done. It&apos;s the
             part I personally use most because I always forget which template ID
             maps to Workers vs Vercel.
@@ -479,8 +479,8 @@ export default function BlogPostPage() {
           <h2>--minimal vs the bookstore demo</h2>
 
           <p>
-            By default the scaffold drops in a small <em>bookstore</em> API —
-            books, authors, reviews — that exercises every contract-first
+            By default the scaffold drops in a small <em>bookstore</em> API, 
+            books, authors, reviews, that exercises every contract-first
             pattern we want you to copy: nested resources, JSON Schema
             validation, pagination, typed errors, integration tests. Read it
             twice, then either delete the routes by hand or pass{" "}
@@ -502,7 +502,7 @@ export default function BlogPostPage() {
             DaloyJS is runtime-portable, and the scaffolder is where that
             promise becomes a directory you can <code>cd</code> into. The{" "}
             <code>buildApp()</code> in <code>src/app.ts</code> is byte-identical
-            across every template — the only thing that changes is the
+            across every template, the only thing that changes is the
             entrypoint file that hands a <code>Request</code> to that app:
           </p>
 
@@ -518,7 +518,7 @@ export default function BlogPostPage() {
             name="node-basic"
             tag="--template node-basic"
             blurb="Default. Long-lived Node process, classic REST API shape, Hey API codegen wired in. Pick this when you're deploying to a normal container, a VM, or a Node-on-rails platform."
-            entrypoint="serve(app) — from @daloyjs/core/node"
+            entrypoint="serve(app), from @daloyjs/core/node"
           />
           <TemplateCard
             name="bun-basic"
@@ -529,7 +529,7 @@ export default function BlogPostPage() {
           <TemplateCard
             name="deno-basic"
             tag="--template deno-basic"
-            blurb="Deno-native. deno.json with tasks, npm: imports for @daloyjs/core, no node_modules. The only template with no package.json — which is exactly the point."
+            blurb="Deno-native. deno.json with tasks, npm: imports for @daloyjs/core, no node_modules. The only template with no package.json, which is exactly the point."
             entrypoint="Deno.serve(handle.url)"
           />
           <TemplateCard
@@ -550,7 +550,7 @@ export default function BlogPostPage() {
           <p>
             One of the things I personally enjoy about the 2026 ecosystem is
             that <em>every</em> project also has, in practice, a coding agent
-            looking at it — Copilot, Cursor, Claude Code, the JetBrains
+            looking at it, Copilot, Cursor, Claude Code, the JetBrains
             assistant, whatever you like. The scaffolder ships them their own
             briefing document so they don&apos;t have to guess at your
             conventions:
@@ -565,13 +565,13 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            <code>AGENTS.md</code> is short and opinionated — it&apos;s the
+            <code>AGENTS.md</code> is short and opinionated, it&apos;s the
             two-page summary every agent should read first. The real meat is in{" "}
             <code>.agents/skills/daloyjs-best-practices/SKILL.md</code>, which
             is the full ~600-line workflow doc: how to add a route, schema
             conventions, the testing recipe, security defaults, deployment notes
             per runtime. An agent that follows it produces code that looks like
-            the rest of the codebase — which is the only kind of agent output
+            the rest of the codebase, which is the only kind of agent output
             that ages well.
           </p>
 
@@ -583,7 +583,7 @@ export default function BlogPostPage() {
             <CodeBlock language="bash" code={AGENTS_MD_EXCERPT} />
           </EditorFrame>
 
-          <h2>printStartupBanner() — small but important</h2>
+          <h2>printStartupBanner(): small but important</h2>
 
           <p>
             The boring truth about devtools is that the moment you trust them is
@@ -645,7 +645,7 @@ export default function BlogPostPage() {
 
           <p>
             Pass <code>--code-owner @your-team/security</code> and CODEOWNERS
-            gets that team on every workflow file — small detail, big payoff the
+            gets that team on every workflow file, small detail, big payoff the
             first time someone tries to PR a change to <code>ci.yml</code> or{" "}
             <code>deploy.yml</code>.
           </p>
@@ -654,7 +654,7 @@ export default function BlogPostPage() {
 
           <p>
             You now have a running server, a contract, security middleware, and
-            a CI pipeline. The next sixty seconds is the typed-client handoff —
+            a CI pipeline. The next sixty seconds is the typed-client handoff, 
             running <code>pnpm gen</code>, importing the SDK in your frontend,
             getting compile-time errors when your route changes shape.
             That&apos;s the entire subject of{" "}
@@ -666,8 +666,8 @@ export default function BlogPostPage() {
 
           <p>
             If you&apos;d rather see how the same <code>buildApp()</code>{" "}
-            deploys to all five runtimes — and what the differences feel like in
-            practice — the{" "}
+            deploys to all five runtimes, and what the differences feel like in
+            practice, the{" "}
             <Link href="/blog/same-app-five-runtimes-verified">
               Same App on Five Runtimes
             </Link>{" "}
@@ -684,7 +684,7 @@ export default function BlogPostPage() {
             act on.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

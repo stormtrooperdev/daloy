@@ -31,7 +31,7 @@ export default function Page() {
           Aurora DSQL
         </a>{" "}
         is AWS&apos;s serverless, distributed PostgreSQL service. It speaks the Postgres wire protocol,
-        so you use the standard <code>pg</code> driver — but auth is short-lived IAM tokens instead of a
+        so you use the standard <code>pg</code> driver, but auth is short-lived IAM tokens instead of a
         static password. Pair it with the <Link href="/docs/adapters">Lambda adapter</Link> for a fully
         managed AWS-native stack.
       </p>
@@ -160,7 +160,7 @@ export async function createDb() {
           <Link href="/docs/databases/planetscale">PlanetScale</Link> there.
         </li>
         <li>
-          IAM tokens expire — refresh on every Lambda invocation, or wrap re-connection logic around
+          IAM tokens expire, refresh on every Lambda invocation, or wrap re-connection logic around
           long-lived Node processes.
         </li>
         <li>

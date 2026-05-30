@@ -54,7 +54,7 @@ export default function Page() {
 MAILTRAP_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 MAILTRAP_FROM_EMAIL=no-reply@acme.example.com
 MAILTRAP_FROM_NAME=Acme
-# Sandbox mode (testing) — set both to enable
+# Sandbox mode (testing) - set both to enable
 MAILTRAP_SANDBOX=true
 MAILTRAP_TEST_INBOX_ID=1234567`}
       />
@@ -110,7 +110,7 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        The same plugin works for dev, staging, and prod — flip{" "}
+        The same plugin works for dev, staging, and prod, flip{" "}
         <code>MAILTRAP_SANDBOX</code> per environment.
       </p>
 

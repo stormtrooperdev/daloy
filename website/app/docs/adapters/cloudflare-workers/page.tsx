@@ -77,7 +77,7 @@ export default toFetchHandler(app);`}
         Cloudflare now recommends <code>wrangler.jsonc</code> over{" "}
         <code>wrangler.toml</code> for new projects; both are still supported.
         The single <code>nodejs_compat</code> flag is all you need on a recent
-        compatibility date — there&apos;s no separate{" "}
+        compatibility date, there&apos;s no separate{" "}
         <code>nodejs_compat_v2</code> to add.
       </p>
       <CodeBlock

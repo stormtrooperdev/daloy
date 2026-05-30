@@ -8,9 +8,9 @@ import { buildMetadata, serializeJsonLd, SITE_URL } from "@/lib/seo";
 const POST = {
   slug: "ghost-cms-clickfix-campaign-mapped-to-daloyjs",
   title:
-    "The Ghost CMS / ClickFix Campaign, Mapped to DaloyJS — Plus the One Default We Just Tightened",
+    "The Ghost CMS / ClickFix Campaign, Mapped to DaloyJS, Plus the One Default We Just Tightened",
   description:
-    "A pre-auth SQL injection in Ghost CMS (CVE-2026-26980) is being exploited at scale to hijack 700+ sites — including Harvard, Oxford, and DuckDuckGo — and serve a fake Cloudflare \"verify you are human\" prompt that silently stuffs a PowerShell one-liner into the visitor's clipboard. Most of the chain was already blocked by DaloyJS defaults; the last mile (the clipboard write) wasn't. Here's the stage-by-stage mapping and the one-line default we changed in response.",
+    "A pre-auth SQL injection in Ghost CMS (CVE-2026-26980) is being exploited at scale to hijack 700+ sites, including Harvard, Oxford, and DuckDuckGo, and serve a fake Cloudflare \"verify you are human\" prompt that silently stuffs a PowerShell one-liner into the visitor's clipboard. Most of the chain was already blocked by DaloyJS defaults; the last mile (the clipboard write) wasn't. Here's the stage-by-stage mapping and the one-line default we changed in response.",
   date: "2026-05-25",
   readingTime: "8 min read",
   author: "Devlin Duldulao",
@@ -42,7 +42,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const DEFAULT_HEADERS = `# What 'app.use(secureHeaders())' actually sends — auto-installed on
+const DEFAULT_HEADERS = `# What 'app.use(secureHeaders())' actually sends, auto-installed on
 # every App() unless you pass 'secureDefaults: false'.
 content-security-policy: default-src 'self'; frame-ancestors 'none'
 strict-transport-security: max-age=31536000; includeSubDomains
@@ -59,7 +59,7 @@ const CLIPBOARD_WRITE = `// In the Ghost CMS / ClickFix attack chain, this is th
 await navigator.clipboard.writeText(
   "powershell -nop -w hidden -e <base64 blob>"
 );
-// The victim is then told to press Win+R, paste, and hit Enter — and
+// The victim is then told to press Win+R, paste, and hit Enter - and
 // they run the attacker's command without ever seeing a prompt.
 //
 // With 'permissions-policy: clipboard-write=()' set on the parent
@@ -100,12 +100,12 @@ const JWT_DEFENSES = `// What lets Ghost-style "steal the admin API key, then pu
 import { createJwtVerifier } from "@daloyjs/core";
 
 const verifier = createJwtVerifier({
-  // 1. Alg allowlist — no 'alg: none', no HS256-from-RS256 confusion.
+  // 1. Alg allowlist - no 'alg: none', no HS256-from-RS256 confusion.
   algorithms: ["RS256"],
   // 2. JWKS rotation with kid-pinning (src/jwk.ts).
   jwksUrl: "https://idp.example.com/.well-known/jwks.json",
   // 3. RSA keys < 2048 bits refused at construction (weak_rsa_key).
-  // 4. Revocation hook — point at Redis/DB; runs LAST so forged tokens
+  // 4. Revocation hook - point at Redis/DB; runs LAST so forged tokens
   //    never get to enumerate the blocklist.
   isRevoked: async (verified) => redis.sIsMember("revoked:jti", verified.jti),
   issuer: "https://idp.example.com/",
@@ -213,11 +213,11 @@ export default function BlogPostPage() {
               campaign
             </a>{" "}
             and asked:{" "}
-            <em>are we doing anything about this — and if not, can we?</em> I
+            <em>are we doing anything about this, and if not, can we?</em> I
             love that question because it forces me to actually look at the
             framework instead of telling myself nice stories about it. So I
             looked. The answer was &quot;mostly yes, but there was one default I
-            hadn&apos;t closed&quot; — which is a polite way of saying I missed
+            hadn&apos;t closed&quot;, which is a polite way of saying I missed
             it. This post is the stage-by-stage mapping plus the one-line change
             I shipped to
             <code> secureHeaders()</code> after I stopped feeling embarrassed.
@@ -233,7 +233,7 @@ export default function BlogPostPage() {
             >
               CVE-2026-26980
             </a>{" "}
-            — a pre-auth SQL injection in Ghost CMS 3.24.0 → 6.19.0 — across
+            - a pre-auth SQL injection in Ghost CMS 3.24.0 → 6.19.0 - across
             more than <strong>700 domains</strong>, including Harvard, Oxford,
             Auburn, and DuckDuckGo. Ghost shipped the fix in 6.19.1 back on
             February&nbsp;19, 2026. Three months later, plenty of sites were
@@ -246,23 +246,23 @@ export default function BlogPostPage() {
 
           <ol>
             <li>
-              <strong>SQLi</strong> — read arbitrary rows from the Ghost
+              <strong>SQLi</strong>: read arbitrary rows from the Ghost
               database, including the <strong>admin API keys</strong>.
             </li>
             <li>
-              <strong>Privilege escalation via stolen API key</strong> — use the
+              <strong>Privilege escalation via stolen API key</strong>: use the
               admin key to log into the admin API as a manager.
             </li>
             <li>
-              <strong>Stored XSS</strong> — inject <code>&lt;script&gt;</code>{" "}
+              <strong>Stored XSS</strong>: inject <code>&lt;script&gt;</code>{" "}
               tags into published articles.
             </li>
             <li>
-              <strong>Fake Cloudflare iframe</strong> — overlay a &quot;Verify
+              <strong>Fake Cloudflare iframe</strong>: overlay a &quot;Verify
               you are human&quot; prompt loaded from attacker infrastructure.
             </li>
             <li>
-              <strong>ClickFix clipboard stuffing</strong> — when the visitor
+              <strong>ClickFix clipboard stuffing</strong>: when the visitor
               clicks the fake checkbox, silently call{" "}
               <code>navigator.clipboard.writeText()</code> with a PowerShell
               payload and instruct the victim to paste it into Win+R.
@@ -270,34 +270,34 @@ export default function BlogPostPage() {
           </ol>
 
           <p>
-            DaloyJS isn&apos;t a CMS — it&apos;s an HTTP framework — so stages 1
+            DaloyJS isn&apos;t a CMS, it&apos;s an HTTP framework, so stages 1
             and 2 only matter for users who build a Ghost-shaped app on top of
             Daloy. Stages 3, 4, and 5 matter for <em>any</em> HTML surface Daloy
             serves. Here&apos;s how each stage maps to what was already in the
             box, and the one default we tightened in response to stage 5.
           </p>
 
-          <h2>Stage 1 — Pre-auth SQL injection</h2>
+          <h2>Stage 1: Pre-auth SQL injection</h2>
 
           <StageCard
             stage="Database read via injection"
             ghost="A query parameter on a public Ghost endpoint was concatenated into a SQL string. Unauthenticated attackers could dump arbitrary tables, including 'mobiledoc_revisions' and the row holding admin API keys."
-            daloyjs="DaloyJS doesn't ship an ORM (zero runtime deps in @daloyjs/core), but every docs example uses parameterised queries — pg tagged templates, postgres.js, better-sqlite3 prepared statements, or Prisma. 'website/app/docs/security/sql-injection' walks through each, and explicitly calls out the 'knex.raw(`${input}`)' template-literal footgun. The Standard Schema .strict() validator on params/query/body rejects unknown shapes before the handler runs, which removes the 'unexpected JSON in a query param' attack surface that often leads to SQLi in the first place."
+            daloyjs="DaloyJS doesn't ship an ORM (zero runtime deps in @daloyjs/core), but every docs example uses parameterised queries, pg tagged templates, postgres.js, better-sqlite3 prepared statements, or Prisma. 'website/app/docs/security/sql-injection' walks through each, and explicitly calls out the 'knex.raw(`${input}`)' template-literal footgun. The Standard Schema .strict() validator on params/query/body rejects unknown shapes before the handler runs, which removes the 'unexpected JSON in a query param' attack surface that often leads to SQLi in the first place."
           />
 
           <CodeBlock language="typescript" code={PARAMETERIZED_SQL} />
 
-          <h2>Stage 2 — Stolen admin API key</h2>
+          <h2>Stage 2: Stolen admin API key</h2>
 
           <StageCard
             stage="Privilege escalation via leaked credential"
-            ghost="Ghost's admin API keys were sitting in the table the SQLi could read, and the API verified them with a non-constant-time string compare. Once stolen, the keys gave full management access — create users, edit themes, publish posts."
-            daloyjs="Every bytes-vs-bytes comparison in the framework goes through 'timingSafeEqual' — enforced by 'verify:secret-comparisons' at publish time, so we structurally can't reintroduce the bug. JWT verification ships an algorithm allowlist (no 'alg: none', no HS256-vs-RS256 confusion), a 2048-bit RSA floor ('weak_rsa_key'), JWKS rotation with kid-pinning, and an 'isRevoked' hook that runs LAST so forged tokens never enumerate the blocklist. The 'assertStrongSecret' guard refuses weak HMAC secrets at boot."
+            ghost="Ghost's admin API keys were sitting in the table the SQLi could read, and the API verified them with a non-constant-time string compare. Once stolen, the keys gave full management access, create users, edit themes, publish posts."
+            daloyjs="Every bytes-vs-bytes comparison in the framework goes through 'timingSafeEqual', enforced by 'verify:secret-comparisons' at publish time, so we structurally can't reintroduce the bug. JWT verification ships an algorithm allowlist (no 'alg: none', no HS256-vs-RS256 confusion), a 2048-bit RSA floor ('weak_rsa_key'), JWKS rotation with kid-pinning, and an 'isRevoked' hook that runs LAST so forged tokens never enumerate the blocklist. The 'assertStrongSecret' guard refuses weak HMAC secrets at boot."
           />
 
           <CodeBlock language="typescript" code={JWT_DEFENSES} />
 
-          <h2>Stage 3 — Stored XSS via admin API</h2>
+          <h2>Stage 3: Stored XSS via admin API</h2>
 
           <StageCard
             stage="Injected <script> on every article view"
@@ -305,20 +305,20 @@ export default function BlogPostPage() {
             daloyjs="The default 'content-security-policy: default-src \\'self\\'; frame-ancestors \\'none\\'' refuses inline scripts and cross-origin script sources out of the box. The CSP nonce + Trusted Types path ('csp-nonces-and-trusted-types-without-tears' blog post) lets you serve necessary inline scripts without 'unsafe-inline'. 'frame-ancestors \\'none\\'' blocks the page from being embedded by an attacker, and the dual-knob refuse-to-boot guard in secureHeaders() refuses to construct if you disable BOTH X-Frame-Options AND frame-ancestors at once. For user-generated HTML specifically, the response-body schema validator + .strict() on body params + 'isForbiddenObjectKey' parser guard reduce the surface where unsanitised HTML can sneak in."
           />
 
-          <h2>Stage 4 — Fake Cloudflare iframe overlay</h2>
+          <h2>Stage 4: Fake Cloudflare iframe overlay</h2>
 
           <StageCard
             stage="Cross-origin iframe loaded over the article"
             ghost="The injected loader fetched a second-stage script that built an iframe pointing at the attacker's 'verify-you-are-human' page and overlaid it on top of the article."
-            daloyjs="The default CSP 'frame-ancestors none' stops attacker pages from embedding YOUR Daloy app. The mirror — stopping YOUR Daloy app from embedding attacker pages — is a one-line opt-in: pass a 'frame-src' allowlist (e.g. just 'self') in secureHeaders() contentSecurityPolicy directives. Combined with COOP: same-origin and CORP: same-origin (both defaults), this neutralises the cross-window communication channel the overlay needs."
+            daloyjs="The default CSP 'frame-ancestors none' stops attacker pages from embedding YOUR Daloy app. The mirror, stopping YOUR Daloy app from embedding attacker pages, is a one-line opt-in: pass a 'frame-src' allowlist (e.g. just 'self') in secureHeaders() contentSecurityPolicy directives. Combined with COOP: same-origin and CORP: same-origin (both defaults), this neutralises the cross-window communication channel the overlay needs."
           />
 
-          <h2>Stage 5 — ClickFix clipboard stuffing</h2>
+          <h2>Stage 5: ClickFix clipboard stuffing</h2>
 
           <StageCard
             stage="navigator.clipboard.writeText() called silently"
             ghost="When the visitor clicks the fake 'Verify you are human' checkbox (which counts as user activation), the page silently calls navigator.clipboard.writeText() with a base64-encoded PowerShell one-liner, then displays 'Press Win+R, paste, hit Enter'. Most victims paste without reading. I would probably paste without reading on a bad day too."
-            daloyjs="This is the gap I missed. CSP doesn't cover the Clipboard API — it controls WHERE script can come from, not WHAT script can do once it's running. The right defence is the Permissions-Policy header, and 'clipboard-write' has been in the spec for years. I just hadn't put it in the default string. Now I have: secureHeaders() ships 'clipboard-write=()' alongside the existing camera/microphone/geolocation denials. Override only if your HTML surface legitimately needs 'Copy' buttons."
+            daloyjs="This is the gap I missed. CSP doesn't cover the Clipboard API, it controls WHERE script can come from, not WHAT script can do once it's running. The right defence is the Permissions-Policy header, and 'clipboard-write' has been in the spec for years. I just hadn't put it in the default string. Now I have: secureHeaders() ships 'clipboard-write=()' alongside the existing camera/microphone/geolocation denials. Override only if your HTML surface legitimately needs 'Copy' buttons."
           />
 
           <CodeBlock language="javascript" code={CLIPBOARD_WRITE} />
@@ -342,7 +342,7 @@ export default function BlogPostPage() {
 
           <p>
             If your app is a CMS, an admin UI, or anything else where users
-            click &quot;Copy&quot; buttons, opt back in explicitly — the
+            click &quot;Copy&quot; buttons, opt back in explicitly, the
             override fully replaces the default (no merging), so be deliberate:
           </p>
 
@@ -361,28 +361,28 @@ app.use(secureHeaders({
 
           <ol>
             <li>
-              Hand-roll a SQL string with user input — the docs example uses
+              Hand-roll a SQL string with user input, the docs example uses
               parameterised queries, and <code>.strict()</code> schemas reject
               the unexpected-shape inputs that often start SQLi.
             </li>
             <li>
               Compare the stolen admin key with <code>===</code> instead of{" "}
-              <code>timingSafeEqual</code> — blocked by{" "}
+              <code>timingSafeEqual</code>: blocked by{" "}
               <code>verify:secret-comparisons</code> at publish time.
             </li>
             <li>
-              Render attacker HTML without CSP — the default{" "}
+              Render attacker HTML without CSP, the default{" "}
               <code>default-src &apos;self&apos;</code> + Trusted Types path
               refuses inline + cross-origin scripts.
             </li>
             <li>
-              Let attacker iframes load — opt in to <code>frame-src</code>{" "}
+              Let attacker iframes load, opt in to <code>frame-src</code>{" "}
               allowlist; <code>frame-ancestors &apos;none&apos;</code> already
               stops the inverse (your page being embedded).
             </li>
             <li>
               Allow <code>navigator.clipboard.writeText()</code> from injected
-              JS — blocked by the new{" "}
+              JS, blocked by the new{" "}
               <code>permissions-policy: clipboard-write=()</code> default.
             </li>
           </ol>
@@ -430,12 +430,12 @@ app.use(secureHeaders({
               Are we doing anything to protect ourselves and the users of our
               framework against the Ghost CMS / ClickFix campaign?
             </em>{" "}
-            Stages 1 through 4 were already covered — parameterised queries in
+            Stages 1 through 4 were already covered, parameterised queries in
             every docs example, <code>timingSafeEqual</code> + JWT alg allowlist
             + revocation hook, CSP <code>default-src &apos;self&apos;</code>{" "}
             with the Trusted-Types path, and{" "}
-            <code>frame-ancestors &apos;none&apos;</code>. Stage 5 — the silent
-            clipboard write that makes the whole social engineering trick land —
+            <code>frame-ancestors &apos;none&apos;</code>. Stage 5, the silent
+            clipboard write that makes the whole social engineering trick land, 
             wasn&apos;t. So I changed the default. Add{" "}
             <code>clipboard-write=()</code> to the Permissions-Policy string,
             write the regression test, document the override pattern, ship it.

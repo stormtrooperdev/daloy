@@ -10,7 +10,7 @@ const POST = {
   slug: "introducing-daloyjs",
   title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
   description:
-    "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests — and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
+    "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
   date: "2026-05-18",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -96,13 +96,13 @@ import { createInProcessClient } from "@daloyjs/core/client";
 
 const api = createInProcessClient(app);
 
-// 1) Happy path — body is narrowed to { id: string; title: string }
+// 1) Happy path - body is narrowed to { id: string; title: string }
 const ok = await api.getBookById({ params: { id: "42" } });
 if (ok.status === 200) {
   console.log(ok.body.title.toUpperCase()); // ✅ string method, fully typed
 }
 
-// 2) Unhappy path — TS knows there's no body to read
+// 2) Unhappy path - TS knows there's no body to read
 const miss = await api.getBookById({ params: { id: "missing" } });
 if (miss.status === 404) {
   // miss.body // ❌ TS error: Property 'body' does not exist on type { status: 404 }
@@ -175,7 +175,7 @@ const jsonLd = {
 };
 
 /**
- * EditorFrame — a purely visual "VS Code-ish" chrome around a code sample.
+ * EditorFrame - a purely visual "VS Code-ish" chrome around a code sample.
  * Adds traffic-light dots, a fake tab bar, and an optional status strip.
  * This is decoration, not a real editor; it's just a nicer way to anchor a
  * code snippet visually in a long-form post.
@@ -281,7 +281,7 @@ export default function BlogPostPage() {
         <div className="docs-prose max-w-full">
           <p>
             Hi, I&apos;m Devlin. I&apos;ve been writing fullstack web apps for
-            about ten years — long enough to have shipped to production using
+            about ten years, long enough to have shipped to production using
             Express, Koa, Hapi, NestJS, Fastify, and Hono, and long enough to
             have written the same little &quot;just a tiny wrapper&quot; library
             around all of them, six times, in three different jobs. I live in
@@ -306,7 +306,7 @@ export default function BlogPostPage() {
             for <em>validation</em>, <em>TypeScript types</em>,<em> OpenAPI</em>
             , the <em>typed client</em>, and your <em>contract tests</em>. And
             that same <code>app</code> runs on Node, Bun, Deno, Cloudflare
-            Workers, and Vercel Edge — the same file, no rewrites, no
+            Workers, and Vercel Edge, the same file, no rewrites, no
             &quot;works on my Node version&quot; magic.
           </p>
 
@@ -322,12 +322,12 @@ export default function BlogPostPage() {
           <p>
             I&apos;m going to define a single route, start a server, hit{" "}
             <code>/openapi.json</code>, and then call the same route through the
-            typed client — without a network in the middle, because the typed
+            typed client, without a network in the middle, because the typed
             client knows it&apos;s the same process. Four things, one source of
             truth, no codegen step. Let&apos;s go.
           </p>
 
-          <h3>Step 1 — Define the route</h3>
+          <h3>Step 1: Define the route</h3>
 
           <p>
             Open your editor. (I&apos;m going to draw mine for you, so we look
@@ -337,7 +337,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/app.ts", "src/server.ts", "scripts/smoke.ts"]}
             activeFile="src/app.ts"
-            status="● src/app.ts — saved"
+            status="● src/app.ts, saved"
           >
             <CodeBlock language="ts" code={HELLO_DALOY} />
           </EditorFrame>
@@ -358,7 +358,7 @@ export default function BlogPostPage() {
                 Standard Schema
               </a>
               . I used Zod here, but you can swap in Valibot or ArkType without
-              changing the framework. The schema isn&apos;t a decoration —
+              changing the framework. The schema isn&apos;t a decoration, 
               it&apos;s the validator, the OpenAPI body, <em>and</em> the
               TypeScript type of <code>params</code> inside <code>handler</code>
               .
@@ -379,12 +379,12 @@ export default function BlogPostPage() {
             </li>
           </ul>
 
-          <h3>Step 2 — Serve it (on Node, for now)</h3>
+          <h3>Step 2: Serve it (on Node, for now)</h3>
 
           <EditorFrame
             files={["src/app.ts", "src/server.ts", "scripts/smoke.ts"]}
             activeFile="src/server.ts"
-            status="▶ pnpm dev — listening on :3000"
+            status="▶ pnpm dev, listening on :3000"
           >
             <CodeBlock language="ts" code={SERVE_NODE} />
           </EditorFrame>
@@ -396,7 +396,7 @@ export default function BlogPostPage() {
 
           <CodeBlock language="bash" code={`pnpm dev`} />
 
-          <h3>Step 3 — Hit /openapi.json (the spec was free)</h3>
+          <h3>Step 3: Hit /openapi.json (the spec was free)</h3>
 
           <p>
             You did not write an OpenAPI document. You did not run a codegen.
@@ -416,14 +416,14 @@ export default function BlogPostPage() {
             default is: open your browser, see your API.
           </p>
 
-          <h3>Step 4 — Call it through the typed in-process client</h3>
+          <h3>Step 4: Call it through the typed in-process client</h3>
 
           <p>
             Now for the part that, the first time I saw it work, made me say a
             word I will not type here because my mother reads this blog.
             We&apos;re going to call the route{" "}
             <em>without going through HTTP</em>. Same app object, same
-            validation, same response shape — just no socket in the middle.
+            validation, same response shape, just no socket in the middle.
             Perfect for tests, scripts, and anywhere you want speed without
             spinning up a server.
           </p>
@@ -431,13 +431,13 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["src/app.ts", "src/server.ts", "scripts/smoke.ts"]}
             activeFile="scripts/smoke.ts"
-            status="✓ tsc --noEmit — 0 errors"
+            status="✓ tsc --noEmit, 0 errors"
           >
             <CodeBlock language="ts" code={TYPED_CLIENT} />
           </EditorFrame>
 
           <p>
-            Read the comments carefully — that{" "}
+            Read the comments carefully, that{" "}
             <code>if (ok.status === 200)</code> branch is a real discriminated
             union. Inside it, TypeScript narrows <code>ok.body</code> to{" "}
             <code>&#123; id: string; title: string &#125;</code>. Outside of it,{" "}
@@ -449,7 +449,7 @@ export default function BlogPostPage() {
 
           <p>
             (If you do want a real over-the-wire fetch SDK to ship to a separate
-            frontend repo, you also get that — run <code>pnpm gen</code> and you
+            frontend repo, you also get that, run <code>pnpm gen</code> and you
             get a typed fetch client off the generated OpenAPI. The in-process
             one above is what I reach for in tests.)
           </p>
@@ -461,9 +461,9 @@ export default function BlogPostPage() {
             The <code>app</code> object you defined above never imported a
             runtime. It only knows about <code>Request</code> in and{" "}
             <code>Response</code> out. The runtime quirks live in adapters at
-            the edges, where they belong. So when your platform changes —
+            the edges, where they belong. So when your platform changes, 
             because your CFO discovered Cloudflare, or your team migrated to
-            Bun, or your boss said the word &quot;edge&quot; in a meeting — you
+            Bun, or your boss said the word &quot;edge&quot; in a meeting, you
             change exactly <em>one import</em>.
           </p>
 
@@ -514,7 +514,7 @@ export default function BlogPostPage() {
             server. There is no mocked schema, no parallel type definition, no
             re-derived response shape. If someone changes the route&apos;s 200
             body to remove <code>title</code>, this test fails to compile. Not
-            fails to run — fails to <em>compile</em>. That&apos;s the bug being
+            fails to run, fails to <em>compile</em>. That&apos;s the bug being
             caught at the earliest possible moment in the lifecycle, which is
             roughly nine months earlier than I usually catch them.
           </p>
@@ -549,7 +549,7 @@ export default function BlogPostPage() {
               path-traversal rejection, and 5xx redaction in production are
               defaults. <code>secureHeaders()</code>, <code>rateLimit()</code>,{" "}
               <code>requestId()</code>, CSRF, sessions, and tracing are
-              first-party — same repo, same release cadence, same test suite.
+              first-party, same repo, same release cadence, same test suite.
             </li>
             <li>
               <strong>No runtime lock-in.</strong> Same app, five adapters.
@@ -562,10 +562,10 @@ export default function BlogPostPage() {
             This is the launch post, and every later post on this blog will
             point back here, because everything we build sits on this one idea:
             the route is the contract, and the contract is the route. The next
-            posts will dig into specific pieces — the typed client in depth,
+            posts will dig into specific pieces, the typed client in depth,
             running on Cloudflare Workers in production, how we keep the supply
             chain hardened with pnpm and SHA-pinned actions, OpenTelemetry
-            without a 60-page setup doc — but they all assume the example you
+            without a 60-page setup doc, but they all assume the example you
             just read.
           </p>
 
@@ -582,7 +582,7 @@ export default function BlogPostPage() {
             Then open <Link href="/docs/getting-started">Getting started</Link>,
             poke at <code>/openapi.json</code>, change one field in the route
             and watch the typed client complain at you in red squiggles. If
-            something breaks, please tell me — the only way a framework earns
+            something breaks, please tell me, the only way a framework earns
             the right to exist is by surviving other people&apos;s real code.
           </p>
 
@@ -593,8 +593,8 @@ export default function BlogPostPage() {
             overnight, and it is definitely not going to make my coffee any
             cheaper. What it <em>is</em> is the framework I would have wanted
             ten years ago, eight years ago, five years ago, and last Thursday.
-            It removes a stack of recurring, boring, soul-eroding problems — the
-            kind that cost you a Saturday at 2am — so you can spend your energy
+            It removes a stack of recurring, boring, soul-eroding problems, the
+            kind that cost you a Saturday at 2am, so you can spend your energy
             on the actually interesting parts of your product. That&apos;s the
             whole promise. One route, many runtimes, zero ceremony.
           </p>
@@ -604,7 +604,7 @@ export default function BlogPostPage() {
             the sun refuse to set, very politely.
           </p>
 
-          <p>— Devlin</p>
+          <p>Devlin</p>
         </div>
 
         <Separator className="my-12" />

@@ -90,7 +90,7 @@ UserSchema.setClass(User);`}
 
       <h2>3. Configure the ORM</h2>
       <p>
-        Import <code>defineConfig</code> from your driver package — it infers
+        Import <code>defineConfig</code> from your driver package, it infers
         the driver and gives you IntelliSense without extra type hints.
       </p>
       <CodeBlock

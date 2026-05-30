@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Use Supabase with DaloyJS",
   description:
-    "Build a DaloyJS API on top of Supabase: hosted Postgres, row-level security, and auth via @supabase/supabase-js — works on Node.js and every edge runtime DaloyJS supports.",
+    "Build a DaloyJS API on top of Supabase: hosted Postgres, row-level security, and auth via @supabase/supabase-js, works on Node.js and every edge runtime DaloyJS supports.",
   path: "/docs/orm/supabase",
   keywords: [
     "Supabase DaloyJS",
@@ -30,7 +30,7 @@ export default function Page() {
         <a href="https://supabase.com/docs/reference/javascript" target="_blank" rel="noreferrer">
           <code>@supabase/supabase-js</code>
         </a>{" "}
-        client is fetch-based, so it runs on every runtime DaloyJS supports — Node.js, Bun, Deno, Cloudflare
+        client is fetch-based, so it runs on every runtime DaloyJS supports, Node.js, Bun, Deno, Cloudflare
         Workers, and Vercel Edge.
       </p>
       <p>
@@ -188,7 +188,7 @@ app.use({
       <h2>Realtime, storage, and edge functions</h2>
       <p>
         The same <code>supabase</code> client exposes <code>storage</code>, <code>functions</code>, and{" "}
-        <code>realtime</code>. Use them inside handlers exactly the same way — DaloyJS doesn&apos;t care.
+        <code>realtime</code>. Use them inside handlers exactly the same way, DaloyJS doesn&apos;t care.
       </p>
 
       <h2>Mapping Supabase errors</h2>
@@ -210,12 +210,12 @@ if (error) throw new HttpError(500, { title: error.message });`}
         <Link href="/docs/orm/drizzle">Drizzle</Link>, <Link href="/docs/orm/sequelize">Sequelize</Link>, or the <Link href="/docs/odm">ODM overview</Link> if you are on a document database.
       </p>
       <p>
-        For other managed Postgres / MySQL hosts —{" "}
+        For other managed Postgres / MySQL hosts, {" "}
         <Link href="/docs/databases/neon">Neon</Link>,{" "}
         <Link href="/docs/databases/planetscale">PlanetScale</Link>,{" "}
         <Link href="/docs/databases/turso">Turso</Link>,{" "}
         <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link>, and{" "}
-        <Link href="/docs/databases/aurora-dsql">Aurora DSQL</Link> — see the{" "}
+        <Link href="/docs/databases/aurora-dsql">Aurora DSQL</Link>: see the{" "}
         <Link href="/docs/databases">database hosting overview</Link>.
       </p>
     </>
