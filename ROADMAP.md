@@ -158,7 +158,7 @@ DaloyJS deliberately delegates pure L3/L4 network DoS to the operator's CDN/WAF 
 
 Builds on shipped supply-chain work (`fetchGuard()` SSRF, lockfile-source gates, SBOM, `verify:*` IOC corpus, SHA-pinned Actions, provenance publishing).
 
-- [ ] **Subresource Integrity (SRI) for CDN-loaded docs assets** — `src/docs.ts` injects Scalar / Swagger UI via `<script src="https://cdn.jsdelivr.net/...">` with **no `integrity` hash**. A compromised/poisoned jsDelivr asset would execute in the docs page. Pin version-exact `sha384-` SRI hashes (+ `crossorigin`), or document a self-hosted-asset mode, so the docs UI inherits the same supply-chain posture as the rest of the framework.
+- [x] **Subresource Integrity (SRI) for CDN-loaded docs assets** — `src/docs.ts` injects Scalar / Swagger UI via `<script src="https://cdn.jsdelivr.net/...">` with **no `integrity` hash**. A compromised/poisoned jsDelivr asset would execute in the docs page. Pin version-exact `sha384-` SRI hashes (+ `crossorigin`), or document a self-hosted-asset mode, so the docs UI inherits the same supply-chain posture as the rest of the framework. _(Shipped in 0.37.0: `DocsAssetOptions` adds validated `*Integrity` hashes + `crossOrigin` to `scalarHtml` / `swaggerUiHtml` and the `docs: { assets }` auto-mount; malformed SRI values throw; docs cover pinning, hash computation, and self-hosting.)_
 - [ ] **HTTP Message Signatures (RFC 9421)** — first-class sign/verify for server-to-server request authentication (`Signature` / `Signature-Input`), complementing the existing inbound-only webhook HMAC and the proposed mTLS path. The standards-based answer to "prove this internal call came from a trusted peer."
 
 ### Roadmap hygiene

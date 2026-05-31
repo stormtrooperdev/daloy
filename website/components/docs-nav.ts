@@ -148,6 +148,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Concurrency limits + queueing", href: "/docs/concurrency-limit" as Route },
       { title: "Request decompression guard", href: "/docs/request-decompression" as Route },
       { title: "WAF-lite inspection", href: "/docs/waf" as Route },
+      { title: "Docs UI asset integrity (SRI)", href: "/docs/docs-asset-integrity" as Route },
       { title: "Secure admin panels", href: "/docs/security/admin-panels" as Route },
       { title: "Sessions", href: "/docs/security/session" },
       {

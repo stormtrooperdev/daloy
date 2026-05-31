@@ -119,6 +119,31 @@ test("docs: { scalar } forwards Scalar UI configuration", async () => {
   assert.match(html, /&quot;url&quot;:&quot;\/reference\/openapi\.json&quot;/);
 });
 
+test("docs: { assets } pins SRI hashes on the auto-mounted docs UI", async () => {
+  const app = withRoute(
+    new App({
+      logger: false,
+      docs: {
+        assets: {
+          scalarScriptUrl:
+            "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.25.0",
+          scalarScriptIntegrity:
+            "sha384-abcDEF123+/456ghiJKL789mnoPQR012stuVWX",
+        },
+      },
+      openapi: { info: { title: "Pinned Docs", version: "1.0.0" } },
+    }),
+  );
+
+  const docs = await app.request("/docs");
+  assert.equal(docs.status, 200);
+  const html = await docs.text();
+  assert.match(
+    html,
+    /src="https:\/\/cdn\.jsdelivr\.net\/npm\/@scalar\/api-reference@1\.25\.0" integrity="sha384-abcDEF123\+\/456ghiJKL789mnoPQR012stuVWX" crossorigin="anonymous"/,
+  );
+});
+
 test("docs: { path, openapiPath } honours custom mount points", async () => {
   const app = withRoute(
     new App({

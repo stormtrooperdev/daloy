@@ -349,6 +349,7 @@ export type {
   ScalarJsonValue,
   ScalarReferenceConfiguration,
   ScalarTheme,
+  DocsAssetOptions,
 } from "./docs.js";
 
 export { formatStartupBanner, printStartupBanner } from "./banner.js";

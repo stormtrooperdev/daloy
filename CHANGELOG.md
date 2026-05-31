@@ -16,6 +16,17 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Subresource Integrity (SRI) for the CDN-loaded docs UI assets.** The
+  built-in `/docs` page loads Scalar / Swagger UI bundles from jsDelivr; the
+  new `DocsAssetOptions` lets you pin version-exact `*Integrity` hashes
+  (`scalarScriptIntegrity`, `swaggerUiCssIntegrity`, `swaggerUiBundleIntegrity`)
+  plus a `crossOrigin` value (default `"anonymous"`) so `scalarHtml()` /
+  `swaggerUiHtml()` and the `docs: { assets }` auto-mount emit
+  `integrity="…" crossorigin="…"` on the external `<script>` / `<link>` tags.
+  A malformed SRI value throws a `TypeError` at startup (browsers silently
+  ignore unparseable `integrity`, so failing loud prevents a false sense of
+  protection). Self-hosting the assets remains supported via the same `assets`
+  URLs. New docs page: **Docs UI asset integrity (SRI)**.
 - **Opt-in WAF-lite signature/anomaly inspection middleware.** New
   dependency-free `@daloyjs/core/waf` module adds `waf()` — a first-party
   defense-in-depth layer for teams without an edge WAF (it does **not** replace

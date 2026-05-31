@@ -73,6 +73,94 @@ test("docs helpers escape malicious self-hosted asset URLs", () => {
   assert.match(html, /\/docs\.js&quot; onerror=&quot;alert\(1\)/);
 });
 
+test("scalarHtml emits pinned SRI integrity and crossorigin attributes", () => {
+  const html = scalarHtml({
+    specUrl: "/openapi.json",
+    assets: {
+      scalarScriptUrl:
+        "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.25.0",
+      scalarScriptIntegrity: "sha384-abcDEF123+/456ghiJKL789mnoPQR012stuVWX",
+    },
+  });
+  assert.match(
+    html,
+    /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@scalar\/api-reference@1\.25\.0" integrity="sha384-abcDEF123\+\/456ghiJKL789mnoPQR012stuVWX" crossorigin="anonymous">/,
+  );
+});
+
+test("swaggerUiHtml emits SRI on both the stylesheet and the bundle", () => {
+  const html = swaggerUiHtml({
+    specUrl: "/openapi.json",
+    assets: {
+      swaggerUiCssUrl:
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css",
+      swaggerUiCssIntegrity: "sha512-cssHASH+/value0123456789ABCDEFabcdef==",
+      swaggerUiBundleUrl:
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js",
+      swaggerUiBundleIntegrity: "sha256-jsHASHvalue0123456789ABCDEFabcdef0=",
+      crossOrigin: "use-credentials",
+    },
+  });
+  assert.match(
+    html,
+    /<link rel="stylesheet" href="[^"]+swagger-ui\.css" integrity="sha512-cssHASH\+\/value0123456789ABCDEFabcdef==" crossorigin="use-credentials" \/>/,
+  );
+  assert.match(
+    html,
+    /<script src="[^"]+swagger-ui-bundle\.js" integrity="sha256-jsHASHvalue0123456789ABCDEFabcdef0=" crossorigin="use-credentials">/,
+  );
+});
+
+test("docs helpers omit SRI attributes when no integrity hash is supplied", () => {
+  const scalar = scalarHtml({ specUrl: "/openapi.json" });
+  assert.doesNotMatch(scalar, /integrity=/);
+  assert.doesNotMatch(scalar, /crossorigin=/);
+
+  const swagger = swaggerUiHtml({ specUrl: "/openapi.json" });
+  assert.doesNotMatch(swagger, /integrity=/);
+  assert.doesNotMatch(swagger, /crossorigin=/);
+});
+
+test("docs helpers support multiple space-separated SRI digests", () => {
+  const html = scalarHtml({
+    specUrl: "/openapi.json",
+    assets: {
+      scalarScriptUrl: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.0.0",
+      scalarScriptIntegrity:
+        "sha384-AAAA+/0123456789abcdef sha512-BBBB+/0123456789abcdef==",
+    },
+  });
+  assert.match(
+    html,
+    /integrity="sha384-AAAA\+\/0123456789abcdef sha512-BBBB\+\/0123456789abcdef=="/,
+  );
+});
+
+test("docs helpers reject a malformed SRI integrity value", () => {
+  assert.throws(
+    () =>
+      scalarHtml({
+        specUrl: "/openapi.json",
+        assets: {
+          scalarScriptUrl: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.0.0",
+          scalarScriptIntegrity: "md5-notallowed",
+        },
+      }),
+    /Invalid Subresource Integrity value/,
+  );
+  assert.throws(
+    () =>
+      swaggerUiHtml({
+        specUrl: "/openapi.json",
+        assets: {
+          swaggerUiBundleUrl: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.0.0/swagger-ui-bundle.js",
+          swaggerUiBundleIntegrity: "   ",
+        },
+      }),
+    /Invalid Subresource Integrity value/,
+  );
+});
+
 test("scalarHtml serializes custom Scalar UI configuration safely", () => {
   const html = scalarHtml({
     title: "Docs",

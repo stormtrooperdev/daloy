@@ -99,18 +99,70 @@ export interface ScalarReferenceConfiguration {
   url?: never;
 }
 
+/**
+ * Override CDN URLs and pin Subresource Integrity (SRI) hashes for the docs
+ * UI assets.
+ *
+ * Supplying an `*Integrity` value emits an `integrity="…"` attribute plus a
+ * `crossorigin` attribute on the matching `<script>` / `<link>` tag so the
+ * browser refuses to execute a CDN asset whose bytes don't match the pinned
+ * hash. SRI is only meaningful against a **version-pinned** URL
+ * (e.g. `…/@scalar/api-reference@1.25.0`); pair each integrity hash with a
+ * pinned `*Url`, since the framework's default URLs intentionally track the
+ * latest upstream release and therefore cannot carry a stable hash.
+ *
+ * @since 0.37.0
+ */
+export interface DocsAssetOptions {
+  /** Override the Scalar API Reference bundle URL (useful for self-hosting). */
+  scalarScriptUrl?: string;
+  /**
+   * SRI hash for {@link scalarScriptUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.37.0
+   */
+  scalarScriptIntegrity?: string;
+  /** Override the Swagger UI stylesheet URL (useful for self-hosting). */
+  swaggerUiCssUrl?: string;
+  /**
+   * SRI hash for {@link swaggerUiCssUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.37.0
+   */
+  swaggerUiCssIntegrity?: string;
+  /** Override the Swagger UI bundle URL (useful for self-hosting). */
+  swaggerUiBundleUrl?: string;
+  /**
+   * SRI hash for {@link swaggerUiBundleUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.37.0
+   */
+  swaggerUiBundleIntegrity?: string;
+  /**
+   * `crossorigin` attribute value emitted alongside any pinned integrity
+   * hash. SRI on a cross-origin asset requires CORS, so this defaults to
+   * `"anonymous"`; use `"use-credentials"` only when the asset host needs
+   * credentialed requests.
+   *
+   * @since 0.37.0
+   */
+  crossOrigin?: "anonymous" | "use-credentials";
+}
+
 /** Shared options for {@link scalarHtml} and {@link swaggerUiHtml}. */
 export interface DocsOptions {
   /** Absolute or relative URL of the OpenAPI document to render. */
   specUrl: string;
   /** `<title>` of the generated HTML page. */
   title?: string;
-  /** Override CDN URLs for the docs UI assets (useful for self-hosting). */
-  assets?: {
-    scalarScriptUrl?: string;
-    swaggerUiCssUrl?: string;
-    swaggerUiBundleUrl?: string;
-  };
+  /**
+   * Override CDN URLs and pin SRI hashes for the docs UI assets (useful for
+   * self-hosting or supply-chain hardening). See {@link DocsAssetOptions}.
+   */
+  assets?: DocsAssetOptions;
   /** CSP `nonce` to apply to inline/script tags; must match the response CSP. */
   scriptNonce?: string;
 }
@@ -139,8 +191,42 @@ export interface HtmlResponseOptions extends DocsContentSecurityPolicyOptions {
 
 const JSDELIVR_ORIGIN = "https://cdn.jsdelivr.net";
 
+/**
+ * Matches a single Subresource Integrity digest: a `sha256-`/`sha384-`/
+ * `sha512-` prefix followed by standard base64 (with up to two `=` pads).
+ * Linear-time / ReDoS-safe (no nested or overlapping quantifiers).
+ */
+const SRI_HASH = /^sha(?:256|384|512)-[A-Za-z0-9+/]+={0,2}$/;
+
 function nonceAttr(nonce: string | undefined): string {
   return nonce ? ` nonce="${escapeHtml(nonce)}"` : "";
+}
+
+/**
+ * Build the `integrity`/`crossorigin` attribute fragment for a docs asset.
+ *
+ * Returns an empty string when no `integrity` value is supplied. When one is
+ * supplied it is validated as one or more space-separated SRI digests and a
+ * `crossorigin` attribute (default `"anonymous"`) is emitted alongside it.
+ * A malformed integrity value throws a {@link TypeError} so a typo fails
+ * loudly instead of silently shipping a docs page with no SRI protection.
+ *
+ * @throws {TypeError} when `integrity` is provided but is not a valid SRI value.
+ */
+function integrityAttr(
+  integrity: string | undefined,
+  crossOrigin: DocsAssetOptions["crossOrigin"],
+): string {
+  if (integrity === undefined) return "";
+  const tokens = integrity.trim().split(/\s+/);
+  if (integrity.trim() === "" || tokens.some((t) => !SRI_HASH.test(t))) {
+    throw new TypeError(
+      `Invalid Subresource Integrity value: ${JSON.stringify(integrity)}. ` +
+        `Expected one or more space-separated "sha256-"/"sha384-"/"sha512-" base64 hashes.`,
+    );
+  }
+  const co = crossOrigin ?? "anonymous";
+  return ` integrity="${escapeHtml(integrity.trim())}" crossorigin="${escapeHtml(co)}"`;
 }
 
 /**
@@ -157,6 +243,10 @@ export function scalarHtml(opts: ScalarHtmlOptions): string {
     opts.assets?.scalarScriptUrl ??
       `${JSDELIVR_ORIGIN}/npm/@scalar/api-reference`,
   );
+  const scriptSri = integrityAttr(
+    opts.assets?.scalarScriptIntegrity,
+    opts.assets?.crossOrigin,
+  );
   const nonce = nonceAttr(opts.scriptNonce);
   const configuration = scalarConfigurationAttr(
     opts.specUrl,
@@ -169,7 +259,7 @@ export function scalarHtml(opts: ScalarHtmlOptions): string {
 <title>${title}</title>
 </head><body>
 <script id="api-reference" data-url="${url}"${configuration}${nonce}></script>
-<script src="${scriptUrl}"${nonce}></script>
+<script src="${scriptUrl}"${scriptSri}${nonce}></script>
 </body></html>`;
 }
 
@@ -188,16 +278,24 @@ export function swaggerUiHtml(opts: DocsOptions): string {
     opts.assets?.swaggerUiBundleUrl ??
       `${JSDELIVR_ORIGIN}/npm/swagger-ui-dist/swagger-ui-bundle.js`,
   );
+  const cssSri = integrityAttr(
+    opts.assets?.swaggerUiCssIntegrity,
+    opts.assets?.crossOrigin,
+  );
+  const bundleSri = integrityAttr(
+    opts.assets?.swaggerUiBundleIntegrity,
+    opts.assets?.crossOrigin,
+  );
   const nonce = nonceAttr(opts.scriptNonce);
   return `<!doctype html>
 <html><head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${title}</title>
-<link rel="stylesheet" href="${cssUrl}" />
+<link rel="stylesheet" href="${cssUrl}"${cssSri} />
 </head><body>
 <div id="swagger"></div>
-<script src="${bundleUrl}"${nonce}></script>
+<script src="${bundleUrl}"${bundleSri}${nonce}></script>
 <script${nonce}>window.onload=()=>SwaggerUIBundle({url:"${url}",dom_id:"#swagger"});</script>
 </body></html>`;
 }

@@ -40,6 +40,7 @@ import {
   docsContentSecurityPolicy,
   scalarHtml,
   swaggerUiHtml,
+  type DocsAssetOptions,
   type DocsContentSecurityPolicyOptions,
   type ScalarReferenceConfiguration,
 } from "./docs.js";
@@ -553,6 +554,15 @@ export interface DocsRouteOptions {
    * Forwarded to {@link docsContentSecurityPolicy}.
    */
   csp?: DocsContentSecurityPolicyOptions;
+  /**
+   * Override the docs UI asset URLs and pin Subresource Integrity (SRI)
+   * hashes so the browser refuses to execute a CDN asset whose bytes don't
+   * match. Pair each `*Integrity` hash with a version-pinned `*Url`, or point
+   * the URLs at self-hosted copies. See {@link DocsAssetOptions}.
+   *
+   * @since 0.37.0
+   */
+  assets?: DocsAssetOptions;
 }
 
 /** Information passed to {@link App.onPluginInstalled} listeners. */
@@ -1635,11 +1645,16 @@ export class App {
         const title = opts.title ?? (await resolveInfo()).title;
         const html =
           ui === "swagger"
-            ? swaggerUiHtml({ specUrl: openapiPath, title })
+            ? swaggerUiHtml({
+                specUrl: openapiPath,
+                title,
+                assets: opts.assets,
+              })
             : scalarHtml({
                 specUrl: openapiPath,
                 title,
                 configuration: opts.scalar,
+                assets: opts.assets,
               });
         return {
           status: 200 as const,
