@@ -188,7 +188,7 @@ removes a surface.
 Open items for this track:
 
 - [x] **GeoIP / geo-blocking docs** — add a deployment-platform note once the GeoIP / geo-blocking hook (above) ships. _(Shipped in 0.37.0: the **GeoIP / geo-blocking** docs page covers the `lookupCountry` (MaxMind) and `resolveCountry` (edge-header) strategies and includes a deployment-platform header table — Cloudflare `CF-IPCountry`, AWS CloudFront `CloudFront-Viewer-Country`, Vercel `x-vercel-ip-country`, Fastly — plus the bare-runtime MaxMind fallback.)_
-- [ ] **Per-surface freshness sweep** — keep provider SDK versions, env-var names, and webhook-signature notes current as upstreams change; re-run the docs build's link/anchor checks each minor.
+- [x] **Per-surface freshness sweep** — keep provider SDK versions, env-var names, and webhook-signature notes current as upstreams change; re-run the docs build's link/anchor checks each minor. _(Shipped in 0.37.0: the new `pnpm verify:docs-links` gate (`scripts/verify-docs-links.ts`) statically checks every internal `/docs` link, sidebar nav entry, sitemap entry, and `#anchor` target against the real `website/app/docs/**/page.tsx` tree — failing on broken links, dangling nav/sitemap entries, pages missing from the sitemap, and nav↔sitemap drift. The first sweep across all 119 docs pages passed clean; the check is wired into CI so each minor re-runs it automatically.)_
 
 ---
 

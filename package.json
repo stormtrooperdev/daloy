@@ -278,6 +278,7 @@
     "verify:routing-hardening-audits": "node --import tsx scripts/verify-routing-hardening-audits.ts",
     "verify:sbom": "node --import tsx scripts/verify-sbom.ts",
     "verify:breaking-changes": "node --import tsx scripts/verify-breaking-changes.ts",
+    "verify:docs-links": "node --import tsx scripts/verify-docs-links.ts",
     "scan:staged-secrets": "node --import tsx scripts/scan-staged-secrets.ts",
     "hooks:install": "node --import tsx scripts/install-git-hooks.ts",
     "audit": "pnpm audit --prod",

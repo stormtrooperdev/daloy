@@ -369,6 +369,16 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Docs
 
+- **`pnpm verify:docs-links` — docs link / nav / sitemap parity gate.** New
+  dependency-free `scripts/verify-docs-links.ts` statically validates the
+  documentation site: every internal `/docs/...` link inside a docs page, every
+  `docsNav` sidebar entry, every `sitemap.ts` path, and every `#anchor` target
+  is checked against the real `website/app/docs/**/page.tsx` tree. It fails CI
+  on broken links, dangling nav/sitemap entries, docs pages missing from the
+  sitemap, and nav↔sitemap drift — replacing the manual "navigation, sitemap,
+  and search discovery are manually maintained" process noted in
+  `website/AGENTS.md`. The first per-surface freshness sweep across all 119 docs
+  pages passed clean.
 - **Roadmap "Integrations & docs" standing track.** `ROADMAP.md` now carries a
   dedicated track enumerating the documentation surfaces the core release log
   never tracked — Email (6 providers), Payments (9), Database hosting (5), ORM
