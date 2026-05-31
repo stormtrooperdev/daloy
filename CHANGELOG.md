@@ -12,7 +12,7 @@ For the forward-looking plan and the full thematic release log, see
 > `create-daloy` are published together — a new core release always ships a
 > matching scaffolder so generated projects pin the latest peer.
 
-## [Unreleased]
+## [0.37.0] — 2026-05-31
 
 ### Added
 
@@ -366,6 +366,32 @@ For the forward-looking plan and the full thematic release log, see
   `daloy inspect --asyncapi` flag (with `--format yaml`) prints the document.
   This extends the contract-first story past HTTP, mirroring the built-in
   OpenAPI generator.
+
+### Security
+
+- **Safe percent-decoding of path segments.** The router now decodes each URL
+  path segment defensively: a malformed percent-escape (e.g. a stray `%` or an
+  invalid `%XY` sequence) no longer throws a `URIError` that would surface as an
+  unhandled `500`, and an over-decoded segment can no longer smuggle a path
+  separator. Malformed segments are rejected at the boundary instead of being
+  passed through, keeping route matching and downstream handlers from operating
+  on attacker-shaped paths.
+- **`fetchGuard()` drains intermediate 3xx redirect bodies.** When following a
+  redirect chain the guard now fully drains each intermediate `3xx` response
+  body before issuing the next hop, preventing a slow/never-ending redirect
+  response body from pinning a socket open (a resource-exhaustion vector).
+
+### Fixed
+
+- **Redis rate-limit fail-open posture is now documented.** The Redis-backed
+  `rateLimit()` store clarifies in its docs and code comments that a Redis
+  outage degrades **open** (requests are allowed rather than blocked), so
+  operators can make an informed availability-vs-enforcement trade-off.
+- **4xx error-detail security note clarified.** The error module documents that
+  `4xx` problem details are returned to the client by design and must not carry
+  internal/sensitive context, matching the prod-mode redaction posture.
+- **Multipart `fileField()` format-option assignment normalized.** Internal
+  cleanup so the `format` option is assigned consistently; no behavior change.
 
 ### Docs
 
@@ -882,7 +908,8 @@ For the forward-looking plan and the full thematic release log, see
   publish with provenance, `pnpm create daloy` scaffolder (`node-basic`,
   `vercel-edge`, `cloudflare-worker`), docs metadata + ORM guides.
 
-[Unreleased]: https://github.com/daloyjs/daloy/compare/f37ce20...HEAD
+[Unreleased]: https://github.com/daloyjs/daloy/compare/v0.37.0...HEAD
+[0.37.0]: https://github.com/daloyjs/daloy/compare/f37ce20...v0.37.0
 [0.36.0]: https://github.com/daloyjs/daloy/compare/10de2f5...f37ce20
 [0.35.2]: https://github.com/daloyjs/daloy/compare/f4a9733...10de2f5
 [0.35.1]: https://github.com/daloyjs/daloy/compare/70592cb...f4a9733

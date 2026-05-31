@@ -252,7 +252,7 @@ export default function HomePage() {
               with Hey API typed client codegen, streaming and OpenTelemetry
               tracing, edge-friendly sessions, a security-focused runtime by
               default, and a supply-chain-hardened release pipeline for the
-              framework itself. One line on the <code>App</code> constructor, {" "}
+              framework itself. One line on the <code>App</code> constructor,{" "}
               <code>docs: true</code>: auto-mounts a Scalar API reference at{" "}
               <code>/docs</code> and the live OpenAPI 3.1 spec at{" "}
               <code>/openapi.json</code>, the same DX as FastAPI.
@@ -296,7 +296,7 @@ export default function HomePage() {
               <code className="text-sm">$ {CREATE_COMMAND}</code>
             </div>
             <div className='flex flex-wrap justify-center gap-x-6 gap-y-2 font-features-["tnum"] text-xs text-muted-foreground'>
-              <span>1,184/1,184 tests passing</span>
+              <span>1,866/1,866 tests passing</span>
               <span aria-hidden>·</span>
               <span>≥90% line, function, and branch coverage gates</span>
               <span aria-hidden>·</span>

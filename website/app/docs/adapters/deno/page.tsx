@@ -24,8 +24,8 @@ export default function Page() {
     <>
       <h1>Deno</h1>
       <p>
-        The Deno adapter wraps <code>Deno.serve</code>: the stable, modern
-        entry point that replaced the old <code>Deno.serveHttp</code>. Graceful
+        The Deno adapter wraps <code>Deno.serve</code>: the stable, modern entry
+        point that replaced the old <code>Deno.serveHttp</code>. Graceful
         shutdown uses an <code>AbortController</code>, which is the pattern Deno
         itself recommends.
       </p>
@@ -71,8 +71,8 @@ deno task dev    # deno run --allow-net --allow-env --allow-read --watch`}
         code={`// deno.json
 {
   "imports": {
-    "@daloyjs/core":  "npm:@daloyjs/core@^0.36.0",
-    "@daloyjs/core/": "npm:@daloyjs/core@^0.36.0/",
+    "@daloyjs/core":  "npm:@daloyjs/core@^0.37.0",
+    "@daloyjs/core/": "npm:@daloyjs/core@^0.37.0/",
     "zod":            "npm:zod@^4.4.3"
   }
 }`}
@@ -156,7 +156,7 @@ CMD ["run", "--allow-net", "--allow-env", "--allow-read", "src/server.ts"]`}
           <Link href="/docs/adapters">Adapters overview</Link>
         </li>
         <li>
-          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link>: 
+          <Link href="/docs/adapters/netlify">Netlify Edge Functions</Link>:
           also Deno-based.
         </li>
       </ul>
