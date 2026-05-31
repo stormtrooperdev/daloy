@@ -16,6 +16,34 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Adaptive auto-ban (fail2ban-style).** New dependency-free
+  `@daloyjs/core/auto-ban` module adds `autoBan()`, a reusable escalating /
+  decaying ban primitive that generalizes `loginThrottle()` beyond credential
+  routes. It observes the outgoing response status via the `onSend` hook — so it
+  counts suspicious statuses (default `401` / `403` / `429`, configurable via
+  `watchStatuses`) produced by **any** downstream middleware or handler — and
+  enforces the ban in `beforeHandle` before the handler runs. Each watched
+  response is a strike; strikes accumulate inside a rolling `windowMs`
+  (default 10 min) and reaching `maxStrikes` (default 5) issues a ban for `banMs`
+  (default 15 min). With `escalate` (default `true`) each repeat ban doubles —
+  `banMs` → `2×` → `4×`, capped at `maxBanMs` (default 24 h) — and the whole
+  record **decays** once the client goes quiet, so a one-off burst is forgiven
+  while a persistent attacker is locked out for progressively longer. Identity
+  attribution is **secure-by-default**: the middleware refuses to construct
+  unless a `keyGenerator` or `trustProxyHeaders: true` is provided, so a single
+  offender can never collapse every caller into one `"global"` bucket; requests
+  the key generator cannot attribute are skipped (never counted, never banned).
+  A banned request returns `429 Too Many Requests` with `Retry-After` and
+  `Cache-Control: no-store` by default, or `403 Forbidden` with a custom
+  `message` when `banStatus: 403`. The pluggable `AutoBanStore` (`get` / `set`
+  with variable TTL / `delete`) mirrors the `rateLimit()` store contract and is
+  Redis-backable for multi-instance deployments; the in-memory default lazily
+  expires records and opportunistically prunes. A shared `groupId` (default
+  `"auto-ban"`) means a client banned on one route group is banned on all of
+  them, and `onBan` / `onStrike` callbacks feed logging, alerting, or an external
+  denylist. Exports `autoBan`, `MemoryAutoBanStore`, and the `AutoBanOptions`,
+  `AutoBanStore`, `AutoBanRecord`, `AutoBanEvent`, and `AutoBanStrikeEvent`
+  types.
 - **mTLS / client-certificate auth.** New dependency-free `@daloyjs/core/mtls`
   module adds `clientCertAuth()`, a middleware that authenticates a request by
   its TLS client certificate for zero-trust / service-to-service deployments.

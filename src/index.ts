@@ -248,6 +248,18 @@ export type {
   ClientCertHeaderConfig,
   PeerCertificateLike,
 } from "./mtls.js";
+export {
+  autoBan,
+  MemoryAutoBanStore,
+  _resetAutoBanStoresForTests,
+} from "./auto-ban.js";
+export type {
+  AutoBanOptions,
+  AutoBanStore,
+  AutoBanRecord,
+  AutoBanEvent,
+  AutoBanStrikeEvent,
+} from "./auto-ban.js";
 export { safeRedirect, OpenRedirectBlockedError } from "./safe-redirect.js";
 export type {
   SafeRedirectOptions,
