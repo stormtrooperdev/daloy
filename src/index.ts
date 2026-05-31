@@ -326,6 +326,17 @@ export type {
 } from "./idempotency.js";
 
 export {
+  responseCache,
+  MemoryResponseCacheStore,
+  _resetSharedResponseCacheStoresForTests,
+} from "./response-cache.js";
+export type {
+  ResponseCacheOptions,
+  ResponseCacheStore,
+  CachedResponse,
+} from "./response-cache.js";
+
+export {
   fileField,
   multipartObject,
   isFileFieldSchema,

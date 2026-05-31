@@ -109,8 +109,8 @@ app.route({
       </ul>
       <p>
         Responses that are not safe to cache are never stored, and the
-        reservation is released so the client can retry: server errors
-        (<code>5xx</code> by default, see <code>cacheableStatus</code>) and
+        reservation is released so the client can retry: server errors (
+        <code>5xx</code> by default, see <code>cacheableStatus</code>) and
         responses larger than <code>maxResponseBytes</code> (1&nbsp;MiB by
         default).
       </p>
@@ -206,8 +206,8 @@ async function createChargeWithRetries(amount: number) {
       <h2>Security notes</h2>
       <ul>
         <li>
-          Keys are validated up front: empty, over-long
-          (<code>maxKeyLength</code>), or non-printable keys are rejected with{" "}
+          Keys are validated up front: empty, over-long (
+          <code>maxKeyLength</code>), or non-printable keys are rejected with{" "}
           <code>400 Bad Request</code> before any store lookup.
         </li>
         <li>

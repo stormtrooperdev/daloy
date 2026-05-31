@@ -16,6 +16,20 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Response caching.** New dependency-free `responseCache()` middleware (also
+  exported from `@daloyjs/core/response-cache`) caches rendered response bodies
+  server-side so a fresh hit skips the handler entirely — the missing third
+  piece alongside `etag()` (conditional `304`s) and `compression()` (wire
+  bytes), neither of which cache bodies. Freshness is orchestrated from the
+  response's own `Cache-Control` (`s-maxage` &gt; `max-age`) with a
+  `ttlSeconds` fallback; request `Cache-Control: no-store`/`no-cache` bypass the
+  cache; and `staleWhileRevalidateSeconds` + a `revalidate` callback serve stale
+  content while a recursion-safe background refresh repopulates the entry. Ships
+  a pluggable `ResponseCacheStore` (mirroring `SessionStore`) with an in-memory
+  `MemoryResponseCacheStore` default, `Vary`-aware keying, a body-size cap, and
+  an `X-Cache` HIT/MISS/STALE marker. Secure-by-default: responses carrying
+  `Set-Cookie` or `Cache-Control: private`/`no-store`/`no-cache`, non-`200`
+  statuses, and oversized bodies are never cached.
 - **Idempotency keys.** New dependency-free `idempotency()` middleware (also
   exported from `@daloyjs/core/idempotency`) gives unsafe methods
   (`POST`/`PUT`/`PATCH`/`DELETE`) exactly-once semantics under retries. A

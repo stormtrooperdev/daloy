@@ -133,6 +133,10 @@
       "types": "./dist/idempotency.d.ts",
       "import": "./dist/idempotency.js"
     },
+    "./response-cache": {
+      "types": "./dist/response-cache.d.ts",
+      "import": "./dist/response-cache.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"
