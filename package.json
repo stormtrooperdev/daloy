@@ -173,6 +173,10 @@
       "types": "./dist/ip-reputation.d.ts",
       "import": "./dist/ip-reputation.js"
     },
+    "./concurrency-limit": {
+      "types": "./dist/concurrency-limit.d.ts",
+      "import": "./dist/concurrency-limit.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"

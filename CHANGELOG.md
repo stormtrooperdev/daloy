@@ -16,6 +16,27 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Per-route / per-client concurrency limits + queueing.** New dependency-free
+  `@daloyjs/core/concurrency-limit` module adds `concurrencyLimit()`, HAProxy
+  `maxconn` + request-queue parity at the app layer. Where the Node adapter's
+  `maxConnections` caps sockets at accept time and `loadShedding()` rejects
+  traffic under process pressure, `concurrencyLimit()` bounds the number of
+  requests in flight through a given surface: each request acquires a slot from a
+  per-bucket semaphore (`maxConcurrent`); if all slots are busy it waits in a
+  bounded FIFO queue (`maxQueue`) for up to `queueTimeoutMs`; and it is rejected
+  with a fast `503 Service Unavailable` (+ `Retry-After`) once the queue is full
+  or the wait times out. The budget is partitioned by `scope`: `"global"`
+  (default), `"route"` (per `method + path`, so one hot endpoint can't starve the
+  others), `"client"` (per identity — requires `trustProxyHeaders` or a
+  `keyGenerator`, so a heavy client can't consume everyone else's slots), or a
+  custom function (return a bucket key, or `undefined` to skip limiting —
+  fail-open). The slot is acquired in `beforeHandle` and released in `onSend`,
+  which the framework runs on the success, error, and short-circuit response
+  paths alike, so a slot is never leaked. Offers an `onReject` observability hook
+  (bucket key, `"queue-full"` / `"queue-timeout"` reason, live active/queued
+  counts) and configurable `retryAfterSeconds` / `message`. Exports
+  `concurrencyLimit` and the `ConcurrencyLimitOptions` and `ConcurrencyRejection`
+  types.
 - **IP reputation / dynamic denylist feed.** New dependency-free
   `@daloyjs/core/ip-reputation` module adds `ipReputation()`. Where
   `ipRestriction()` enforces a static allow/deny list compiled once at startup,

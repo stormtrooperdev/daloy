@@ -275,6 +275,11 @@ export type {
   IpReputationController,
   UrlFeedOptions,
 } from "./ip-reputation.js";
+export { concurrencyLimit } from "./concurrency-limit.js";
+export type {
+  ConcurrencyLimitOptions,
+  ConcurrencyRejection,
+} from "./concurrency-limit.js";
 export { safeRedirect, OpenRedirectBlockedError } from "./safe-redirect.js";
 export type {
   SafeRedirectOptions,
