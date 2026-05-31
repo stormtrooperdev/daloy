@@ -67,6 +67,11 @@ import {
   PROMETHEUS_CONTENT_TYPE,
   type HttpMetricsOptions,
 } from "./metrics.js";
+import {
+  Scheduler,
+  type TaskDefinition,
+  type TaskHandler,
+} from "./scheduler.js";
 import { securitySchemeRequiresPayloadAuth } from "./security-schemes.js";
 import { assertBehindProxy, type BehindProxyConfig } from "./conn-info.js";
 
@@ -957,6 +962,12 @@ export class App {
   private installedPlugins = new Set<string>();
   private closeHooks: Array<() => void | Promise<void>> = [];
   private closeHooksRun = false;
+  /**
+   * Lazily-created in-process scheduler backing {@link App.cron}. Started on
+   * the first `cron()` call and stopped from an `onClose` hook so its lifecycle
+   * is tied to graceful shutdown.
+   */
+  private scheduler?: Scheduler;
   /** Idle-connection close hooks (adapter-registered, sync). */
   private idleConnectionCloseHooks: Array<() => void> = [];
   private pluginInstalledListeners: Array<
@@ -2018,6 +2029,56 @@ export class App {
       },
     });
     return this;
+  }
+
+  /**
+   * Register an in-process scheduled task (cron). The first call lazily creates
+   * an app-managed {@link Scheduler}, wires it to the app logger, starts it,
+   * and registers an `onClose` hook so it is drained on graceful shutdown
+   * (in-flight runs are awaited, then aborted if they outlast the shutdown
+   * grace period).
+   *
+   * The schedule is **queue-agnostic** — it runs work in *this* process on a
+   * fixed interval or cron expression. Use it for periodic maintenance
+   * (cache sweeps, token refresh, reconciliation) rather than as a distributed
+   * job queue. Each task is **single-flight**: if a tick fires while the
+   * previous run is still in progress, the tick is skipped and counted, so a
+   * slow task can never pile up overlapping runs.
+   *
+   * @example
+   * ```ts
+   * app.cron({ name: "sweep", cron: "0 * * * *" }, async ({ signal }) => {
+   *   await purgeExpiredSessions({ signal });
+   * });
+   * ```
+   *
+   * @param def - The task definition. Exactly one of `intervalMs` or `cron`.
+   * @param handler - The function to run on each tick.
+   * @returns This `App` instance for chaining.
+   * @throws {RangeError} on invalid options (see {@link Scheduler.define}).
+   * @throws {@link CronParseError} if a `cron` expression is malformed.
+   */
+  cron(def: TaskDefinition, handler: TaskHandler): this {
+    if (this.scheduler === undefined) {
+      const scheduler = new Scheduler({ logger: this.log.child({ component: "scheduler" }) });
+      this.scheduler = scheduler;
+      scheduler.start();
+      // Drain the scheduler during the post-drain close phase so periodic
+      // work stops cleanly alongside database pools and other resources.
+      this.onClose(() => scheduler.stop());
+    }
+    this.scheduler.define(def, handler);
+    return this;
+  }
+
+  /**
+   * The app-managed {@link Scheduler} backing {@link App.cron}, or `undefined`
+   * if no scheduled task has been registered. Exposed for inspection
+   * (`getState()` / `list()`) and manual triggering (`runNow()`); the lifecycle
+   * is owned by the app.
+   */
+  get scheduledTasks(): Scheduler | undefined {
+    return this.scheduler;
   }
 
   private registerHealthRoute(

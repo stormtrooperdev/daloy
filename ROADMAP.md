@@ -139,7 +139,7 @@ Capabilities a contract-first, production-grade API framework is expected to shi
 ### Integrations the framework should own
 
 - [x] **Outbound webhook delivery** — counterpart to the existing inbound `verifyWebhookSignature` / `signWebhookPayload`: signed delivery with retry/backoff, timestamped signatures, and dead-letter semantics. _(Shipped in 0.37.0: `createWebhookSender()` + `MemoryWebhookDeadLetterSink` at `@daloyjs/core/webhook-delivery` — timestamped HMAC-signed POSTs reused across retries, exponential backoff honouring `Retry-After`, per-attempt timeout, dead-letter sink, and SSRF-safe `fetchGuard()` transport by default.)_
-- [ ] **Scheduled tasks / in-process cron** — a queue-agnostic schedule primitive (distinct from the "background-job interface" research bullet below), with graceful-shutdown integration and single-flight guarantees.
+- [x] **Scheduled tasks / in-process cron** — a queue-agnostic schedule primitive (distinct from the "background-job interface" research bullet below), with graceful-shutdown integration and single-flight guarantees. _(Shipped in 0.37.0: `app.cron()` + standalone `Scheduler` at `@daloyjs/core/scheduler` — interval or 5-field cron schedules with aliases/named fields/IANA `timeZone`, arithmetic cron parsing, fixed-rate single-flight, per-run `timeoutMs` with `AbortSignal`, `unref`'d timers, graceful-shutdown drain, and exported `parseCron()` / `nextCronRun()`. Zero runtime deps.)_
 - [ ] **mTLS / client-certificate auth** — `conn-info.ts` already detects TLS; add a client-certificate authentication path for zero-trust / service-to-service deployments.
 
 ### Edge / WAF-parity hardening (in-app layer)

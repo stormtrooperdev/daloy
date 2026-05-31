@@ -140,6 +140,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "SSRF guard (fetchGuard)", href: "/docs/security/fetch-guard" as Route },
       { title: "Outbound resilience (fetch)", href: "/docs/fetch-resilience" as Route },
       { title: "Outbound webhooks", href: "/docs/webhook-delivery" as Route },
+      { title: "Scheduled tasks (cron)", href: "/docs/scheduler" as Route },
       { title: "Secure admin panels", href: "/docs/security/admin-panels" as Route },
       { title: "Sessions", href: "/docs/security/session" },
       {

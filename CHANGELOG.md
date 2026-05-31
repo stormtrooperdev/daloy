@@ -16,6 +16,29 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **In-process scheduled tasks (cron).** New dependency-free
+  `@daloyjs/core/scheduler` module adds a queue-agnostic schedule primitive for
+  periodic housekeeping (cache sweeps, token refresh, reconciliation). Register
+  tasks with `app.cron(def, handler)` — the first call lazily creates an
+  app-managed `Scheduler`, starts it, and wires the graceful-shutdown drain — or
+  drive a standalone `Scheduler` directly. Tasks run on a fixed `intervalMs` or
+  a 5-field `cron` expression supporting wildcards, lists, ranges, steps
+  (`*/5`), case-insensitive month/day names, `0`/`7` Sunday, and the
+  `@yearly`/`@monthly`/`@weekly`/`@daily`/`@hourly` aliases, plus an optional
+  IANA `timeZone`. Cron parsing is purely arithmetic (no backtracking regex) and
+  rejects malformed or unsatisfiable expressions with a `CronParseError` at
+  registration time. Scheduling is **fixed-rate with single-flight**: the next
+  tick is armed before each run, and a tick that fires while the previous run is
+  still in progress is skipped (and counted) rather than run concurrently, so a
+  slow task can never pile up. An optional per-run `timeoutMs` aborts the run's
+  `AbortSignal` and records the run as a timed-out failure. Timers are
+  `unref`'d, so a scheduler never keeps an otherwise-idle process alive. On
+  shutdown the scheduler stops arming new runs, awaits in-flight runs, and
+  aborts any that outlast the grace period. The cron utilities `parseCron()` and
+  `nextCronRun()` are exported standalone, and `app.scheduledTasks` exposes
+  `list()` / `getState(name)` / `runNow(name)` for inspection and out-of-band
+  runs. Zero runtime dependencies. _(`@since 0.37.0`)_
+
 - **Outbound webhook delivery.** New dependency-free
   `@daloyjs/core/webhook-delivery` module adds `createWebhookSender()` — the
   outbound counterpart to the inbound `verifyWebhookSignature()` /

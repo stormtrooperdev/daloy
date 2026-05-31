@@ -153,6 +153,10 @@
       "types": "./dist/webhook-delivery.d.ts",
       "import": "./dist/webhook-delivery.js"
     },
+    "./scheduler": {
+      "types": "./dist/scheduler.d.ts",
+      "import": "./dist/scheduler.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"
