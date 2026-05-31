@@ -280,6 +280,19 @@ export type {
   ConcurrencyLimitOptions,
   ConcurrencyRejection,
 } from "./concurrency-limit.js";
+export {
+  requestDecompression,
+  decompressRequestBody,
+  DecompressionBombError,
+  UnsupportedContentEncodingError,
+  MalformedCompressedBodyError,
+  _resetRequestDecompressionProbeForTests,
+} from "./request-decompression.js";
+export type {
+  RequestDecompressionOptions,
+  RequestDecompressionEncoding,
+  DecompressionBombInfo,
+} from "./request-decompression.js";
 export { safeRedirect, OpenRedirectBlockedError } from "./safe-redirect.js";
 export type {
   SafeRedirectOptions,

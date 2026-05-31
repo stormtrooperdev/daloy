@@ -16,6 +16,34 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Inbound request-decompression bomb guard.** New dependency-free
+  `@daloyjs/core/request-decompression` module adds `requestDecompression()`.
+  DaloyJS core deliberately does not decompress request bodies (safe by
+  omission), so a `Content-Encoding: gzip` body is read as-is and a schema parse
+  simply fails on the compressed bytes. For services that genuinely must accept
+  compressed uploads, this opt-in middleware inflates `gzip` / `deflate` bodies
+  **with the decompression-bomb (zip-bomb) guard baked in**: two independent caps
+  are enforced *during* inflation so a bomb is aborted long before it is fully
+  materialised — a required absolute `maxDecompressedBytes` cap and an
+  expansion-`maxRatio` cap (default `100`, the inflated size may never exceed
+  `compressedBytes * maxRatio`), both rejecting with `413`. The compressed upload
+  itself is bounded by `maxCompressedBytes` (default 1 MiB) before a single byte
+  is inflated. Unknown, non-allowlisted, runtime-unsupported, or **layered**
+  (`gzip, gzip`) encodings are refused `415` (with an `Accept-Encoding` header);
+  malformed / truncated streams `400` (never silently treated as empty, to avoid
+  request-smuggling-style desync); and requests without a `Content-Encoding` (or
+  `identity`), as well as `GET` / `HEAD`, pass through untouched. The middleware
+  runs in the `onRequest` phase and stashes the inflated bytes on the request so
+  schema-validated bodies and raw-body handlers both see the decompressed
+  payload. Offers an `onBomb` observability hook (encoding, compressed size,
+  inflated bytes produced before the abort, `"absolute"` / `"ratio"` reason) and
+  exports a low-level `decompressRequestBody()` guard for custom raw-body flows.
+  Built on the web-standard `DecompressionStream` (works on Node, Bun, Deno,
+  Workers, Edge; brotli intentionally excluded — not in the Compression Streams
+  spec). Exports `requestDecompression`, `decompressRequestBody`,
+  `DecompressionBombError`, `UnsupportedContentEncodingError`,
+  `MalformedCompressedBodyError`, and the `RequestDecompressionOptions`,
+  `RequestDecompressionEncoding`, and `DecompressionBombInfo` types.
 - **Per-route / per-client concurrency limits + queueing.** New dependency-free
   `@daloyjs/core/concurrency-limit` module adds `concurrencyLimit()`, HAProxy
   `maxconn` + request-queue parity at the app layer. Where the Node adapter's

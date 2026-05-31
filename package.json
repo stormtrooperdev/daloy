@@ -177,6 +177,10 @@
       "types": "./dist/concurrency-limit.d.ts",
       "import": "./dist/concurrency-limit.js"
     },
+    "./request-decompression": {
+      "types": "./dist/request-decompression.d.ts",
+      "import": "./dist/request-decompression.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"
