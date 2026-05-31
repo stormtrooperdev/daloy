@@ -59,3 +59,15 @@ paths = [
 regexes = [
   '''AIzaSyA0123456789abcdefghijklmnopqrstuv''',
 ]
+
+[[allowlists]]
+description = "Allow the intentionally fake webhook signing-secret fixture used in webhook-delivery tests."
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''(?:^|/)tests/webhook-delivery\.test\.ts$''',
+]
+regexes = [
+  '''whsec_test_0123456789abcdef0123456789abcdef''',
+]
