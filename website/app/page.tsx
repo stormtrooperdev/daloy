@@ -296,7 +296,7 @@ export default function HomePage() {
               <code className="text-sm">$ {CREATE_COMMAND}</code>
             </div>
             <div className='flex flex-wrap justify-center gap-x-6 gap-y-2 font-features-["tnum"] text-xs text-muted-foreground'>
-              <span>1,866/1,866 tests passing</span>
+              <span>1,870/1,870 tests passing</span>
               <span aria-hidden>·</span>
               <span>≥90% line, function, and branch coverage gates</span>
               <span aria-hidden>·</span>

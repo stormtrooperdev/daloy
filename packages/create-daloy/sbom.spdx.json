@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "create-daloy-0.37.0",
-  "documentNamespace": "https://github.com/daloyjs/daloy/sbom/create-daloy-0.37.0-d8a238ae-1bab-58cd-a879-27f34e4e05e1",
+  "documentNamespace": "https://github.com/daloyjs/daloy/sbom/create-daloy-0.37.0-a79eabf7-52a9-5ec5-8e8d-ab660e044d85",
   "creationInfo": {
-    "created": "2026-05-31T19:37:22.481Z",
+    "created": "2026-05-31T20:19:33.076Z",
     "creators": [
       "Tool: daloy-generate-sbom",
       "Organization: DaloyJS"

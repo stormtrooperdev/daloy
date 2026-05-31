@@ -380,6 +380,14 @@ For the forward-looking plan and the full thematic release log, see
   redirect chain the guard now fully drains each intermediate `3xx` response
   body before issuing the next hop, preventing a slow/never-ending redirect
   response body from pinning a socket open (a resource-exhaustion vector).
+- **Hardened defenses against AI-agent credential theft and expanded
+  agent-instruction surface scanning.** The supply-chain governance gates grew
+  new coverage: `verify-no-registry-exfiltration.ts` now flags registry
+  credential-exfiltration patterns, and the `verify-no-leaky-agent-skills.ts` /
+  `verify-no-toxic-agent-skills.ts` scanners broadened the agent-instruction
+  surfaces they inspect (each backed by new tests). A new
+  `examples/residential-proxy-defense.ts` demonstrates blocking residential-proxy
+  credential-harvesting traffic.
 
 ### Fixed
 
