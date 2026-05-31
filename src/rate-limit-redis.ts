@@ -108,6 +108,14 @@ function toNumber(value: unknown): number {
  * The returned store is safe to share between requests and replicas. Errors
  * from Redis are fail-open by default (see {@link RedisRateLimitStoreOptions.onError});
  * pass a custom handler to fail-closed (return `"fail-closed"`).
+ *
+ * @remarks
+ * Security: the default fail-open posture biases toward availability — while
+ * Redis is unreachable the limiter stops enforcing and every request is
+ * allowed (reported as the first hit of a fresh local window). For
+ * abuse-sensitive limiters in front of auth, password-reset, or other
+ * credential endpoints, pass `onError: () => "fail-closed"` so a Redis
+ * outage rejects rather than silently disables the limit.
  */
 export function redisRateLimitStore(opts: RedisRateLimitStoreOptions): RateLimitStore {
   const prefix = opts.prefix ?? "daloy:rl:";

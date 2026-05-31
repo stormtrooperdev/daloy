@@ -244,6 +244,11 @@ export function httpError(opts: HttpErrorOptions): HttpError {
  * `Retry-After` or `Allow`. In production mode, 5xx `detail` is scrubbed to
  * avoid information disclosure.
  *
+ * **Security note:** only **5xx** `detail` is scrubbed in production. A `4xx`
+ * `detail` is always returned to the client (it is assumed to be
+ * client-actionable), so never place secrets or internal diagnostics in the
+ * `detail` of a 4xx error.
+ *
  * Prefer the dedicated subclasses (`BadRequestError`, `NotFoundError`, ...)
  * for common statuses; instantiate `HttpError` directly only for unusual
  * status codes or fully-custom problem documents.

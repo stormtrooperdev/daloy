@@ -366,8 +366,8 @@ export function fileField(
   options: FileFieldOptions = {}
 ): FileFieldSchema<UploadedFile | null | undefined> {
   const opts: Required<Pick<FileFieldOptions, "format">> & FileFieldOptions = {
-    format: options.format ?? "binary",
     ...options,
+    format: options.format ?? "binary",
   };
   const magicSignatures = normalizeMagicBytesOption(opts.magicBytes, opts.accept);
   const scriptableImagesEnabled =

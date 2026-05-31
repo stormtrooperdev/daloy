@@ -371,6 +371,10 @@ export function fetchGuard(options: FetchGuardOptions = {}): typeof fetch {
       const shouldDowngrade =
         res.status === 303 ||
         ((res.status === 301 || res.status === 302) && method !== "GET" && method !== "HEAD");
+      // Committed to following this hop. Drain the intermediate 3xx body so
+      // the underlying socket isn't pinned until GC (Node/undici keep the
+      // connection open while an un-consumed body stream is outstanding).
+      void res.body?.cancel();
       request = shouldDowngrade
         ? new Request(next, {
             method: "GET",

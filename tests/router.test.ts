@@ -58,3 +58,22 @@ test("path traversal and empty path segments are rejected", () => {
   assert.equal(router.find("GET", "/files/../secret"), undefined);
   assert.equal(router.find("GET", "/files//secret"), undefined);
 });
+
+test("malformed percent-escapes miss cleanly instead of throwing", () => {
+  const router = new Router<string>();
+  router.add("GET", "/files/:name", "file");
+  router.add("GET", "/assets/*path", "asset");
+
+  // A lone or invalid percent-escape would make decodeURIComponent throw a
+  // URIError; the router must swallow it and report no match (clean 404).
+  assert.doesNotThrow(() => router.find("GET", "/files/%zz"));
+  assert.equal(router.find("GET", "/files/%zz"), undefined);
+  assert.equal(router.find("GET", "/files/%"), undefined);
+  // Wildcard tails with a malformed segment must also miss without throwing.
+  assert.doesNotThrow(() => router.find("GET", "/assets/css/%e0%a4%a"));
+  assert.equal(router.find("GET", "/assets/css/%e0%a4%a"), undefined);
+  // allowedMethods walks the same trie and must not throw either.
+  assert.doesNotThrow(() => router.allowedMethods("/files/%zz"));
+  assert.deepEqual(router.allowedMethods("/files/%zz"), []);
+});
+

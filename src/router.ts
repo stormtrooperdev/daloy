@@ -163,18 +163,54 @@ export class Router<T> {
       if (r) return r;
     }
     if (node.paramChild) {
-      params[node.paramChild.name] = decodeURIComponent(seg);
-      const r = this.walk(node.paramChild.node, segs, i + 1, params);
-      if (r) return r;
-      delete params[node.paramChild.name];
+      const decoded = safeDecodeURIComponent(seg);
+      if (decoded !== undefined) {
+        params[node.paramChild.name] = decoded;
+        const r = this.walk(node.paramChild.node, segs, i + 1, params);
+        if (r) return r;
+        delete params[node.paramChild.name];
+      }
     }
     if (node.wildcardChild) {
-      params[node.wildcardChild.name] = segs.slice(i).map(decodeURIComponent).join("/");
-      return node.wildcardChild.node;
+      const rest = decodeSegments(segs, i);
+      if (rest !== undefined) {
+        params[node.wildcardChild.name] = rest;
+        return node.wildcardChild.node;
+      }
     }
     return undefined;
   }
 }
+
+/**
+ * Decode a single path segment, returning `undefined` instead of throwing when
+ * the segment contains a malformed percent-escape (e.g. `%zz` or a lone `%`).
+ * A malformed segment therefore fails to match and yields a clean 404 rather
+ * than letting a `URIError` bubble up as a generic 500.
+ */
+function safeDecodeURIComponent(segment: string): string | undefined {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Decode and join the wildcard tail starting at `index`. Returns `undefined`
+ * if any captured segment carries a malformed percent-escape, so the lookup
+ * misses cleanly instead of throwing.
+ */
+function decodeSegments(segs: string[], index: number): string | undefined {
+  const parts: string[] = [];
+  for (let i = index; i < segs.length; i++) {
+    const decoded = safeDecodeURIComponent(segs[i]!);
+    if (decoded === undefined) return undefined;
+    parts.push(decoded);
+  }
+  return parts.join("/");
+}
+
 
 function splitPath(path: string): string[] {
   const clean = path.replace(/\/+$/, "") || "/";
