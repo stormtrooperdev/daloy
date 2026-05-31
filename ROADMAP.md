@@ -163,7 +163,32 @@ Builds on shipped supply-chain work (`fetchGuard()` SSRF, lockfile-source gates,
 
 ### Roadmap hygiene
 
-- [ ] **Add an "Integrations & docs" track** — the docs site already ships and maintains large surfaces the release log never tracks: Email (7 providers), Payments (9), Databases (5), ORM (7), ODM (2), Auth providers (5), Deployment platforms (4), Compliance, and Tutorials. Capture this ongoing work in the roadmap so it is visible to planning instead of invisible.
+- [x] **Add an "Integrations & docs" track** — the docs site already ships and maintains large surfaces the release log never tracks: Email, Payments, Databases, ORM, ODM, Auth providers, Deployment platforms, Adapters/runtimes, Compliance, and Tutorials. Captured below as a standing "Integrations & docs" track so this ongoing work is visible to planning instead of invisible. _(Shipped in 0.37.0: the standing track below, enumerating each documented provider against the `website/app/docs/**` surfaces so additions/removals are reviewed as roadmap changes.)_
+
+### Integrations & docs (standing track)
+
+A standing, never-"done" track for the integration and documentation surfaces the
+core release log doesn't otherwise capture. These live under `website/app/docs/**`
+and the `docs/security/**` slice; each new provider, platform, or tutorial is a
+roadmap-visible change. Counts below mirror the live docs navigation
+(`website/components/docs-nav.ts`); update this list in the same PR that adds or
+removes a surface.
+
+- **Email (6 providers)** — AWS SES, Mailgun, Mailtrap, Postmark, Resend, SendGrid.
+- **Payments (9 providers)** — Adyen, Authorize.Net, Braintree (PayPal), Mollie, PayTabs, Razorpay, Shopify, Square, Tap Payments.
+- **Database hosting (5 platforms)** — AWS Aurora DSQL, Cloudflare D1, Neon, PlanetScale, Turso (libSQL).
+- **ORM (6 integrations)** — Drizzle, MikroORM, Prisma, Sequelize, Supabase, TypeORM.
+- **ODM (2 integrations)** — Mongoose, Ottoman.
+- **Authentication providers (5)** — Auth0, AWS Cognito, Clerk, Microsoft Entra ID, Okta.
+- **Deployment platforms (4)** — Fly.io, Heroku, Railway, Render.
+- **Adapters / runtimes (8)** — AWS Lambda, Bun, Cloudflare Workers, Deno, Fastly Compute, Netlify, Node.js, Vercel.
+- **Compliance & security posture** — OWASP API Top 10 mapping, secure-by-default enforcement, supply-chain, scanning tools (Socket / Snyk / Aikido), and the compliance-posture doc.
+- **Tutorials** — Build a bookstore API, large fake REST demo.
+
+Open items for this track:
+
+- [ ] **GeoIP / geo-blocking docs** — add a deployment-platform note once the GeoIP / geo-blocking hook (above) ships.
+- [ ] **Per-surface freshness sweep** — keep provider SDK versions, env-var names, and webhook-signature notes current as upstreams change; re-run the docs build's link/anchor checks each minor.
 
 ---
 

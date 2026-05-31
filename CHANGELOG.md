@@ -349,6 +349,17 @@ For the forward-looking plan and the full thematic release log, see
   This extends the contract-first story past HTTP, mirroring the built-in
   OpenAPI generator.
 
+### Docs
+
+- **Roadmap "Integrations & docs" standing track.** `ROADMAP.md` now carries a
+  dedicated track enumerating the documentation surfaces the core release log
+  never tracked — Email (6 providers), Payments (9), Database hosting (5), ORM
+  (6), ODM (2), Authentication (5), Deployment platforms (4), Adapters/runtimes
+  (8), the compliance/security-posture slice, and the tutorials — so adding or
+  removing a documented provider is reviewed as a roadmap change instead of
+  staying invisible to planning. Counts mirror the live docs navigation
+  (`website/components/docs-nav.ts`).
+
 ## [0.36.0] — 2026-05-28 to 2026-05-30
 
 ### Added
