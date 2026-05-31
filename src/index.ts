@@ -337,6 +337,24 @@ export type {
 } from "./response-cache.js";
 
 export {
+  encodeCursor,
+  decodeCursor,
+  buildLinkHeader,
+  buildPageLinks,
+  paginationQuery,
+  MAX_CURSOR_LENGTH,
+} from "./pagination.js";
+export type {
+  PaginationLink,
+  PageLinkOptions,
+  PageLinks,
+  PaginationQueryOptions,
+  PaginationParams,
+  PaginationQuerySchema,
+} from "./pagination.js";
+
+
+export {
   fileField,
   multipartObject,
   isFileFieldSchema,

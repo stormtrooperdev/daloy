@@ -16,6 +16,21 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Pagination &amp; cursor helpers.** New dependency-free
+  `@daloyjs/core/pagination` module for cursor-paginated list endpoints.
+  `encodeCursor()` / `decodeCursor()` turn an arbitrary JSON-serializable sort
+  key into an opaque, URL-safe base64url token and back; decoding is hardened
+  with a 4 KiB length cap, malformed-input rejection, and prototype-pollution
+  key stripping, so a tampered cursor surfaces as a `400` rather than a `500`.
+  `buildLinkHeader()` / `buildPageLinks()` assemble an RFC 8288 `Link` header
+  (with `next`/`prev`/`first` rels) from the current request URL — preserving
+  all other query parameters — and reject CRLF, angle brackets, and quote
+  characters to block header-injection. `paginationQuery()` is a Standard Schema
+  for the `cursor` + `limit` query parameters that validates and clamps `limit`
+  to a configurable `[minLimit, maxLimit]` range at the request boundary **and**
+  advertises both parameters to the OpenAPI generator (and typed client) through
+  a `toJSONSchema()` method — so `request: { query: paginationQuery() }` wires
+  the contract with no duplicate declarations.
 - **Response caching.** New dependency-free `responseCache()` middleware (also
   exported from `@daloyjs/core/response-cache`) caches rendered response bodies
   server-side so a fresh hit skips the handler entirely — the missing third

@@ -137,6 +137,10 @@
       "types": "./dist/response-cache.d.ts",
       "import": "./dist/response-cache.js"
     },
+    "./pagination": {
+      "types": "./dist/pagination.d.ts",
+      "import": "./dist/pagination.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"

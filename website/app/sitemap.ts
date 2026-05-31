@@ -182,6 +182,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/multipart", changeFrequency: "monthly", priority: 0.7 },
   { path: "/docs/idempotency", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/response-cache", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/docs/pagination", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/openapi", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/api-lifecycle", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/ai-metadata", changeFrequency: "monthly", priority: 0.7 },
