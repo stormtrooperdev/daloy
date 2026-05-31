@@ -5,7 +5,7 @@
  * - safeJsonParse: JSON parser that strips __proto__ / constructor / prototype
  *   keys to prevent prototype-pollution attacks.
  * - sanitizeHeaderName / sanitizeHeaderValue: prevent CRLF header injection.
- * - timingSafeEqual: constant-time string comparison for token checks.
+ * - timingSafeEqual: length-independent string compare for fixed-length token checks.
  * - randomId: cryptographically strong request id.
  */
 
@@ -170,12 +170,32 @@ export function sanitizeHeaderValue(value: string): string {
 }
 
 /**
- * Constant-time string comparison resistant to timing attacks. Use whenever
- * comparing secrets such as CSRF tokens, HMAC signatures, or API keys; never
- * use `===` for those comparisons.
+ * Length-independent string comparison resistant to the *first-mismatch*
+ * timing leak. Use whenever comparing secrets such as CSRF tokens, HMAC
+ * signatures, or API keys; never use `===` for those comparisons.
  *
- * @param a - First string.
- * @param b - Second string.
+ * The comparison always folds every character of the longer input into a
+ * single accumulator (no early return), so it does not reveal the position
+ * of the first differing character the way `===` does. The byte lengths are
+ * mixed in too, so inputs of different lengths can never compare equal.
+ *
+ * Caveats — read before using for anything other than fixed-length tokens:
+ *
+ *  - **Length is not hidden.** The loop runs `max(a.length, b.length)`
+ *    iterations, so the running time grows with the longer input. Intended
+ *    for values whose length is fixed and public (hex/base64 tokens, HMAC
+ *    digests, API keys). Do not rely on it to conceal the length of a
+ *    secret from an attacker who controls the other side.
+ *  - **Not a hardware constant-time primitive.** It compares UTF-16 code
+ *    units via `charCodeAt`, and the engine's per-character access time is
+ *    not provably uniform. For raw bytes you already hold in memory, prefer
+ *    Node's `crypto.timingSafeEqual(Buffer, Buffer)`, which also rejects
+ *    length mismatches outright.
+ *  - **Compares code units, not bytes.** Fine for ASCII tokens; for
+ *    arbitrary binary, compare `Uint8Array`s instead.
+ *
+ * @param a - First string (typically the attacker-supplied candidate).
+ * @param b - Second string (typically the expected secret).
  * @returns `true` when the strings have the same length and contents.
  * @since 0.1.0
  */
