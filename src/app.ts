@@ -61,6 +61,12 @@ import {
   SESSION_SECRETS_MARKER,
 } from "./session.js";
 import { loadShedding as loadSheddingMiddleware, type LoadSheddingOptions } from "./load-shedding.js";
+import {
+  httpMetrics,
+  MetricsRegistry,
+  PROMETHEUS_CONTENT_TYPE,
+  type HttpMetricsOptions,
+} from "./metrics.js";
 import { securitySchemeRequiresPayloadAuth } from "./security-schemes.js";
 import { assertBehindProxy, type BehindProxyConfig } from "./conn-info.js";
 
@@ -617,6 +623,66 @@ export interface HealthRouteOptions {
    * `token` is omitted; otherwise registration throws.
    */
   acknowledgeUnauthenticated?: boolean;
+}
+
+/**
+ * Configuration accepted by {@link App.metrics}. Every field is optional.
+ *
+ * The `/metrics` route inherits the same hardened posture as
+ * {@link App.healthcheck}: an optional `Authorization: Bearer <token>`
+ * compared via {@link timingSafeEqual}, a per-IP fixed-window rate limit,
+ * and a refuse-to-boot guard that blocks an unauthenticated scrape endpoint
+ * in production (metrics leak internal route names, latency, and request
+ * volume) unless a token is set or {@link MetricsRouteOptions.acknowledgeUnauthenticated}
+ * is `true`.
+ *
+ * @since 0.37.0
+ */
+export interface MetricsRouteOptions {
+  /** Override the default path (`/metrics`). */
+  path?: PathString;
+  /**
+   * Require `Authorization: Bearer <token>` on the scrape request, compared
+   * via {@link timingSafeEqual}. When set in production with
+   * `secureDefaults: true`, no further opt-in is required.
+   */
+  token?: string;
+  /**
+   * Per-IP fixed-window rate limit. Defaults to `{ limit: 60, windowMs:
+   * 60_000 }` (in-memory, per-process). Pass `false` to disable.
+   */
+  rateLimit?: { limit?: number; windowMs?: number } | false;
+  /**
+   * Acknowledge that the scrape endpoint is intentionally reachable without
+   * credentials in production. Required when `secureDefaults` is on and
+   * `token` is omitted; otherwise registration throws.
+   */
+  acknowledgeUnauthenticated?: boolean;
+  /**
+   * Registry the RED metrics are recorded into and rendered from. Defaults
+   * to a fresh {@link MetricsRegistry}. Pass your own to register custom
+   * application metrics alongside the built-in HTTP series.
+   */
+  registry?: MetricsRegistry;
+  /**
+   * Resolve the low-cardinality `route` label. Strongly recommended: return
+   * the route template (e.g. `/books/:id`) instead of the raw path.
+   * Forwarded to {@link httpMetrics}.
+   */
+  route?: HttpMetricsOptions["route"];
+  /**
+   * Maximum distinct values for the default pathname-derived `route` label
+   * before further values collapse to `"<other>"`. Forwarded to
+   * {@link httpMetrics}. Default `100`.
+   */
+  maxRouteCardinality?: number;
+  /** Latency histogram buckets, in seconds. Forwarded to {@link httpMetrics}. */
+  buckets?: readonly number[];
+  /**
+   * Skip RED instrumentation for matching request paths, in addition to the
+   * scrape path itself (always excluded). Forwarded to {@link httpMetrics}.
+   */
+  exclude?: (path: string) => boolean;
 }
 
 /**
@@ -1820,6 +1886,136 @@ export class App {
         status: 200 as const,
         body: { status: "ready" as const },
       };
+    });
+    return this;
+  }
+
+  /**
+   * Register an opt-in, auth-guarded Prometheus / OpenMetrics scrape route
+   * and install RED (Rate / Errors / Duration) instrumentation for every
+   * route registered **after** this call. The third observability pillar
+   * alongside the structured logger and the OpenTelemetry tracer.
+   *
+   * Exposes, in the Prometheus text exposition format:
+   * - `<prefix>http_requests_total{method,route,status}` — request counter,
+   * - `<prefix>http_request_duration_seconds{method,route}` — latency histogram,
+   * - `<prefix>http_requests_in_flight` — concurrency gauge,
+   * - process gauges (resident memory, heap used, uptime) on Node-like runtimes.
+   *
+   * The scrape route inherits the same hardened posture as
+   * {@link App.healthcheck}: optional bearer token compared via
+   * {@link timingSafeEqual}, a per-IP fixed-window rate limit, and a
+   * refuse-to-boot guard in production (an unauthenticated `/metrics`
+   * endpoint leaks internal route names, latency, and traffic volume) unless
+   * a token is supplied or `acknowledgeUnauthenticated: true` is passed.
+   *
+   * Call this **before** registering the routes you want measured — like any
+   * `app.use(...)` middleware, the instrumentation only wraps routes added
+   * afterwards. Pass `opts.registry` to register custom application metrics
+   * that are rendered alongside the built-in HTTP series.
+   *
+   * @param opts - Path, auth, rate-limit, registry, and label configuration.
+   * @returns `this` for chaining.
+   * @since 0.37.0
+   */
+  metrics(opts: MetricsRouteOptions = {}): this {
+    const path = (opts.path ?? "/metrics") as PathString;
+    const registry = opts.registry ?? new MetricsRegistry();
+    const rateLimitConfig =
+      opts.rateLimit === false
+        ? null
+        : { limit: 60, windowMs: 60_000, ...(opts.rateLimit ?? {}) };
+    const token = opts.token;
+
+    // Refuse-to-boot: an unauthenticated metrics scrape in production is a
+    // documented info-disclosure surface (route inventory, latency
+    // distributions, request volume, process memory). Force an explicit
+    // acknowledgement, mirroring app.healthcheck().
+    if (
+      this.options.secureDefaults !== false &&
+      this.isProduction() &&
+      token === undefined &&
+      opts.acknowledgeUnauthenticated !== true
+    ) {
+      throw new Error(
+        `app.metrics() refused in production: provide opts.token to require ` +
+          `Authorization: Bearer <token>, or pass acknowledgeUnauthenticated: true ` +
+          `to acknowledge that this scrape endpoint is reachable without credentials.`,
+      );
+    }
+
+    // Install RED instrumentation as a group hook so it wraps every route
+    // registered after this call. Always exclude the scrape path itself, plus
+    // any caller-supplied predicate.
+    const exclude = (p: string): boolean =>
+      p === path || (opts.exclude ? opts.exclude(p) : false);
+    this.groupHooks.push(
+      httpMetrics({
+        registry,
+        route: opts.route,
+        maxRouteCardinality: opts.maxRouteCardinality,
+        buckets: opts.buckets,
+        exclude,
+      }),
+    );
+
+    const buckets = rateLimitConfig
+      ? new Map<string, { count: number; resetMs: number }>()
+      : null;
+
+    this.route({
+      method: "GET",
+      path,
+      operationId: "metrics",
+      tags: ["Observability"],
+      summary: "Prometheus metrics scrape endpoint",
+      handler: async ({ request }: BaseContext<any, any>) => {
+        if (buckets && rateLimitConfig) {
+          const key = healthRouteKey(request);
+          const now = Date.now();
+          const entry = buckets.get(key);
+          if (!entry || entry.resetMs <= now) {
+            buckets.set(key, { count: 1, resetMs: now + rateLimitConfig.windowMs });
+          } else {
+            entry.count++;
+            if (entry.count > rateLimitConfig.limit) {
+              throw new TooManyRequestsError(
+                Math.ceil((entry.resetMs - now) / 1000),
+              );
+            }
+          }
+        }
+        if (token !== undefined) {
+          const h = request.headers.get("authorization") ?? "";
+          const m = /^Bearer\s+(.+)$/i.exec(h);
+          if (!m) {
+            throw new HttpError(
+              401,
+              {
+                type: "https://daloyjs.dev/errors/unauthorized",
+                title: "Unauthorized",
+                detail: "Metrics scrape requires a bearer token.",
+              },
+              { "www-authenticate": 'Bearer realm="metrics"' },
+            );
+          }
+          if (!timingSafeEqual(m[1]!, token)) {
+            throw new ForbiddenError("Invalid metrics scrape token.");
+          }
+        }
+        return {
+          status: 200 as const,
+          body: registry.render(),
+          headers: {
+            "content-type": PROMETHEUS_CONTENT_TYPE,
+            "cache-control": "no-store",
+          },
+        };
+      },
+      responses: {
+        200: { description: "Prometheus metrics exposition." },
+        429: { description: "Too many scrape requests." },
+      },
     });
     return this;
   }

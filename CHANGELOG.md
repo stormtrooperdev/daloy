@@ -16,6 +16,25 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Metrics &amp; the `/metrics` endpoint.** New dependency-free
+  `@daloyjs/core/metrics` module and `app.metrics()` route method add the third
+  observability pillar alongside the structured logger and the OpenTelemetry
+  tracer. `MetricsRegistry` holds memoized counters, gauges, and histograms and
+  renders them to the Prometheus text exposition format; metric and label names
+  are validated against the Prometheus grammar at definition time and label
+  values are escaped, an exposition-injection defense, while a per-metric
+  cardinality cap (`maxSeries`) drops overflowing label combinations and counts
+  them in `daloy_metrics_series_dropped_total` to bound memory. `httpMetrics()`
+  is a `Hooks` bundle that records RED metrics (`http_requests_total`,
+  `http_request_duration_seconds`, `http_requests_in_flight`) with a
+  cardinality-capped `route` label, plus scrape-time process gauges on
+  Node-like runtimes. `app.metrics()` installs that instrumentation as a group
+  hook and registers an opt-in `/metrics` scrape route that inherits the same
+  hardened posture as `app.healthcheck()`: an optional bearer token compared
+  with `timingSafeEqual` (`401` missing / `403` wrong), a per-IP fixed-window
+  rate limit (`429` on overflow), and a refuse-to-boot guard that blocks an
+  unauthenticated scrape endpoint in production unless a token is set or
+  `acknowledgeUnauthenticated: true` is passed.
 - **Pagination &amp; cursor helpers.** New dependency-free
   `@daloyjs/core/pagination` module for cursor-paginated list endpoints.
   `encodeCursor()` / `decodeCursor()` turn an arbitrary JSON-serializable sort

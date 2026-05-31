@@ -9,6 +9,7 @@ export type {
   DocsRouteOptions,
   HealthRouteOptions,
   CspReportRouteOptions,
+  MetricsRouteOptions,
   IntrospectedRoute,
   PluginInstalledEvent,
   PluginExtension,
@@ -352,6 +353,21 @@ export type {
   PaginationParams,
   PaginationQuerySchema,
 } from "./pagination.js";
+
+export {
+  MetricsRegistry,
+  Counter,
+  Gauge,
+  Histogram,
+  httpMetrics,
+  DEFAULT_DURATION_BUCKETS,
+  PROMETHEUS_CONTENT_TYPE,
+} from "./metrics.js";
+export type {
+  MetricLabels,
+  MetricsRegistryOptions,
+  HttpMetricsOptions,
+} from "./metrics.js";
 
 
 export {

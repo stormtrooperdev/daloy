@@ -189,6 +189,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/typed-client", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/streaming", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/tracing", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/docs/metrics", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/websocket", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/asyncapi", changeFrequency: "monthly", priority: 0.8 },
   {

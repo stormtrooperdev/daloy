@@ -141,6 +141,10 @@
       "types": "./dist/pagination.d.ts",
       "import": "./dist/pagination.js"
     },
+    "./metrics": {
+      "types": "./dist/metrics.d.ts",
+      "import": "./dist/metrics.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"

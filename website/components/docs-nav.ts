@@ -41,6 +41,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "WebSocket primitives", href: "/docs/websocket" },
       { title: "AsyncAPI for WebSockets", href: "/docs/asyncapi" },
       { title: "Tracing (OpenTelemetry)", href: "/docs/tracing" },
+      { title: "Metrics (Prometheus)", href: "/docs/metrics" },
       { title: "Testing & contract tests", href: "/docs/testing" },
     ],
   },

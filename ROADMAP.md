@@ -133,7 +133,7 @@ Capabilities a contract-first, production-grade API framework is expected to shi
 
 ### Observability & resilience
 
-- [ ] **Metrics / `/metrics` endpoint** — the third observability pillar. Logging (`logger.ts`) and tracing (`tracing.ts`) exist; add Prometheus/OpenMetrics exposition with RED/USE counters and an opt-in, auth-guarded `/metrics` route (same posture as `app.healthcheck()`).
+- [x] **Metrics / `/metrics` endpoint** — the third observability pillar. Logging (`logger.ts`) and tracing (`tracing.ts`) exist; add Prometheus/OpenMetrics exposition with RED/USE counters and an opt-in, auth-guarded `/metrics` route (same posture as `app.healthcheck()`). _(Shipped in 0.37.0: the dependency-free `@daloyjs/core/metrics` module — `MetricsRegistry` with memoized counters / gauges / histograms, exposition-injection-safe metric/label-name validation and value escaping, and a per-metric cardinality cap that counts overflow in `metrics_series_dropped_total`; `httpMetrics()` RED instrumentation (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight`) plus scrape-time process gauges; and `app.metrics()`, which installs the instrumentation as a group hook and registers a guarded `/metrics` route — bearer token + `timingSafeEqual`, per-IP rate limit, and refuse-to-boot unauthenticated in production unless acknowledged.)_
 - [ ] **Outbound resilience for `fetch`** — circuit breaker, retry-with-backoff, and per-call timeout layered on top of `fetchGuard()` (which only covers SSRF on egress). Rounds out the "mature Node ops" (Fastify-parity) positioning.
 
 ### Integrations the framework should own
