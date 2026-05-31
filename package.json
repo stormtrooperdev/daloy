@@ -149,6 +149,10 @@
       "types": "./dist/fetch-resilience.d.ts",
       "import": "./dist/fetch-resilience.js"
     },
+    "./webhook-delivery": {
+      "types": "./dist/webhook-delivery.d.ts",
+      "import": "./dist/webhook-delivery.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"

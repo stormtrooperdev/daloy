@@ -205,6 +205,18 @@ export type {
   CircuitState,
   RetryContext,
 } from "./fetch-resilience.js";
+export {
+  createWebhookSender,
+  MemoryWebhookDeadLetterSink,
+} from "./webhook-delivery.js";
+export type {
+  WebhookEvent,
+  WebhookSenderOptions,
+  WebhookDeliveryResult,
+  WebhookDeadLetter,
+  WebhookDeadLetterSink,
+  WebhookAttempt,
+} from "./webhook-delivery.js";
 export { safeRedirect, OpenRedirectBlockedError } from "./safe-redirect.js";
 export type {
   SafeRedirectOptions,

@@ -16,6 +16,23 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **Outbound webhook delivery.** New dependency-free
+  `@daloyjs/core/webhook-delivery` module adds `createWebhookSender()` — the
+  outbound counterpart to the inbound `verifyWebhookSignature()` /
+  `signWebhookPayload()` helpers. Each delivery is a `POST` carrying a stable
+  `webhook-id`, a `webhook-timestamp`, and a `webhook-signature`
+  (`sha256=…`) computed over `"<timestamp>.<body>"` and reused across retries so
+  receivers can dedupe safely. Failed deliveries are retried with bounded
+  exponential backoff + jitter, scoped to transient statuses
+  (`408`/`429`/`5xx`) and network/timeout errors, honouring a `Retry-After`
+  header; each attempt has its own `AbortController` timeout. Events that
+  exhaust their attempts — or fail permanently — are handed to a
+  `WebhookDeadLetterSink` (with a bounded `MemoryWebhookDeadLetterSink` built
+  in). The transport defaults to `fetchGuard()`, so a subscriber URL resolving
+  to cloud metadata or a private range is refused with a terminal
+  `SsrfBlockedError` that is never retried and is dead-lettered once. Caller
+  headers can never clobber the signature headers.
+
 - **Outbound resilience for `fetch`.** New dependency-free
   `@daloyjs/core/fetch-resilience` module adds `resilientFetch()` — a circuit
   breaker, retry-with-backoff, and per-call timeout designed to layer **on top
