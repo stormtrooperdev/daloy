@@ -16,6 +16,29 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **mTLS / client-certificate auth.** New dependency-free `@daloyjs/core/mtls`
+  module adds `clientCertAuth()`, a middleware that authenticates a request by
+  its TLS client certificate for zero-trust / service-to-service deployments.
+  The certificate is resolved from one of two sources: **native TLS** — the Node
+  adapter lazily reads the peer certificate off the socket and normalizes it
+  (subject, issuer, fingerprint, SANs, validity window, verified flag), behind a
+  thunk so plain-HTTP requests pay nothing — or a **TLS-terminating proxy**, by
+  parsing the verified identity forwarded in request headers (Envoy
+  `X-Forwarded-Client-Cert`, or operator-named nginx/HAProxy/Traefik structured
+  headers). Enforcement is opt-in per check: `requireVerified` (default `true`)
+  refuses any chain the TLS terminator did not verify; `allowSubjectCNs` /
+  `allowIssuerCNs` do exact CN matching; `allowFingerprints` matches the SHA-256
+  fingerprint in **constant time** (separators/case ignored); `allowSANs`
+  requires at least one Subject Alternative Name (SPIFFE/DNS/URI/IP, as
+  `TYPE:value` or bare); `checkValidity` (default `true`) rejects certificates
+  outside their `[notBefore, notAfter]` window; and a custom async
+  `verify(cert, ctx)` hook runs last. A missing certificate yields `401`
+  `application/problem+json` with `Cache-Control: no-store`; any failed check
+  yields `403` without echoing certificate details. The accepted
+  `ClientCertificate` is stamped on `ctx.state` (configurable `stateKey`). The
+  building blocks `parseForwardedClientCert()`, `normalizePeerCertificate()`,
+  and `setClientCertificate()` / `getClientCertificate()` are exported
+  standalone for custom adapters. Zero runtime dependencies. _(`@since 0.37.0`)_
 - **In-process scheduled tasks (cron).** New dependency-free
   `@daloyjs/core/scheduler` module adds a queue-agnostic schedule primitive for
   periodic housekeeping (cache sweeps, token refresh, reconciliation). Register

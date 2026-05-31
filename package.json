@@ -157,6 +157,10 @@
       "types": "./dist/scheduler.d.ts",
       "import": "./dist/scheduler.js"
     },
+    "./mtls": {
+      "types": "./dist/mtls.d.ts",
+      "import": "./dist/mtls.js"
+    },
     "./banner": {
       "types": "./dist/banner.d.ts",
       "import": "./dist/banner.js"

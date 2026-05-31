@@ -234,6 +234,20 @@ export type {
   TaskState,
   CronFields,
 } from "./scheduler.js";
+export {
+  clientCertAuth,
+  setClientCertificate,
+  getClientCertificate,
+  normalizePeerCertificate,
+  parseForwardedClientCert,
+} from "./mtls.js";
+export type {
+  ClientCertificate,
+  ClientCertificateSource,
+  ClientCertAuthOptions,
+  ClientCertHeaderConfig,
+  PeerCertificateLike,
+} from "./mtls.js";
 export { safeRedirect, OpenRedirectBlockedError } from "./safe-redirect.js";
 export type {
   SafeRedirectOptions,

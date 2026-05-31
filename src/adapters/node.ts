@@ -14,6 +14,11 @@ import type { Duplex } from "node:stream";
 import type { App } from "../app.js";
 import { DALOY_RAW_BODY, DALOY_RAW_STREAM, DALOY_REQUEST_RAW_BODY } from "../app.js";
 import {
+  setClientCertificate,
+  normalizePeerCertificate,
+  type PeerCertificateLike,
+} from "../mtls.js";
+import {
   FrameSink,
   encodeFrame,
   encodeClosePayload,
@@ -177,6 +182,7 @@ function dispatchToApp(
     writeAdapterError(res, e);
     return;
   }
+  attachClientCertificate(req, request);
   const responseOrPromise = app.fetch(request);
   if (responseOrPromise instanceof Promise) {
     responseOrPromise.then(
@@ -256,6 +262,33 @@ function bufferRequestBody(req: IncomingMessage, expected: number): Promise<Uint
     req.on("end", onEnd);
     req.on("error", onErr);
     req.on("aborted", onErr as any);
+  });
+}
+
+/**
+ * Minimal structural view of the `tls.TLSSocket` members the adapter touches,
+ * so the mTLS plumbing stays free of a hard `node:tls` import on the hot path.
+ */
+interface TlsSocketLike {
+  encrypted?: boolean;
+  authorized?: boolean;
+  getPeerCertificate?: (detailed?: boolean) => PeerCertificateLike;
+}
+
+/**
+ * Attach the TLS client certificate (if any) to the web `Request` so
+ * `clientCertAuth()` can enforce a mutual-TLS identity. The read is deferred
+ * behind a lazy thunk and only happens when a guarded route actually inspects
+ * the certificate, so plain-HTTP and ordinary TLS requests pay nothing beyond a
+ * single `encrypted` boolean check. Only runs when the peer socket is a
+ * `TLSSocket` exposing `getPeerCertificate`.
+ */
+function attachClientCertificate(req: IncomingMessage, request: Request): void {
+  const sock = req.socket as unknown as TlsSocketLike;
+  if (!sock.encrypted || typeof sock.getPeerCertificate !== "function") return;
+  setClientCertificate(request, () => {
+    const raw = sock.getPeerCertificate!(true);
+    return normalizePeerCertificate(raw, sock.authorized === true);
   });
 }
 
