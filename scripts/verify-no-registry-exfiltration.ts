@@ -444,6 +444,47 @@ const FORBIDDEN_PATTERNS: readonly ForbiddenPattern[] = [
       "writes a fabricated RubyGems token to",
     keepStrings: true,
   },
+  // ---- AI-coding-agent credential / token-file theft
+  //      (`codexui-android`, Aikido 2026-05 supply-chain write-up) ----
+  //
+  // A new high-value target class: published npm packages that, on
+  // import, read the developer's *AI coding agent* credential files and
+  // exfiltrate the long-lived OAuth / refresh tokens inside them. The
+  // `codexui-android` package (~27k weekly downloads, a real GitHub
+  // repo under active development) shipped a payload that existed ONLY
+  // in the published npm tarball — never committed to the public source
+  // tree, the same npm-vs-git divergence the xrpl.js compromise above
+  // used — which read OpenAI Codex's `~/.codex/auth.json` (holding a
+  // non-expiring refresh token) and POSTed it out disguised as Sentry
+  // telemetry. These agent home directories are the obvious next-target
+  // siblings: `~/.codex/` (OpenAI Codex), `~/.claude/` (Anthropic Claude
+  // Code). Daloy core never reads an AI coding agent's credential dir,
+  // so any reference in `src/**` is a hard IOC.
+  {
+    // Boundary-anchored (mirrors the `.node_modules` IOC) so it catches
+    // both the slash-delimited string form (`"/.codex/auth.json"`,
+    // `"\\.codex\\auth.json"`) AND the `path.join(home, ".codex", ...)`
+    // segment form the real payload uses — while a member access like
+    // `obj.codex` (no boundary char before the dot) stays allow-listed.
+    re: /(?:^|["'`/\\\s(=,])\.codex\b/,
+    reason:
+      "library code must not reference `~/.codex/` — Daloy never reads an AI coding agent's " +
+      "credential directory, and `~/.codex/auth.json` is the exact OpenAI Codex OAuth / refresh-token " +
+      "file the `codexui-android` npm campaign reads and exfiltrates disguised as Sentry telemetry",
+    keepStrings: true,
+  },
+  {
+    // Boundary-anchored sibling of the `.codex` matcher above; catches
+    // `"/.claude/..."`, `"\\.claude\\..."`, and `path.join(home, ".claude")`
+    // while leaving member access (`obj.claude`) and substrings
+    // (`claudette`) allow-listed.
+    re: /(?:^|["'`/\\\s(=,])\.claude\b/,
+    reason:
+      "library code must not reference `~/.claude/` — Daloy never reads an AI coding agent's " +
+      "credential directory; the Anthropic Claude Code home dir holds session / OAuth tokens in the " +
+      "same AI-agent-credential target class the `codexui-android` Codex-token theft campaign pioneered",
+    keepStrings: true,
+  },
   // ---- Lazarus / Jade Sleet npm campaign (Socket 2023-07-25, GitHub
   //      security alert) — paired-package token handoff via
   //      `~/.vscode/jsontoken` and a typosquat C2 host. See

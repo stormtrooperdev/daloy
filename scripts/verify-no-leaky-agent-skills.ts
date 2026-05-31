@@ -50,11 +50,23 @@ const REPO_ROOT = process.cwd();
 /**
  * Filename patterns that are treated as agent-instruction surfaces.
  * Matched case-insensitively against the file's basename.
+ *
+ * `.cursorrules` (Cursor) and `CLAUDE.md` (Claude Code) are included
+ * because the **TrapDoor** crypto-stealer campaign (Socket,
+ * 2026-05-24, <https://socket.dev/blog/trapdoor-crypto-stealer>)
+ * weaponized exactly these two filenames: the operator (`ddjidd564`)
+ * shipped `.cursorrules` / `CLAUDE.md` instruction files carrying
+ * zero-width-Unicode-hidden prompt injection that coaxes an AI
+ * assistant into running a fake "security scan" which exfiltrates SSH
+ * keys, wallet data, and cloud credentials. They are now first-class
+ * agent-instruction surfaces alongside `copilot-instructions.md`.
  */
 const SKILL_FILENAME_PATTERNS: readonly RegExp[] = [
   /^SKILL\.md$/i,
   /^AGENTS\.md$/i,
   /^copilot-instructions\.md$/i,
+  /^\.cursorrules$/i,
+  /^CLAUDE\.md$/i,
   /\.instructions\.md$/i,
   /\.prompt\.md$/i,
 ];
@@ -158,7 +170,16 @@ export interface LeakyFinding {
   readonly why: string;
 }
 
-function isSkillFilename(basename: string): boolean {
+/**
+ * True when `basename` names an agent-instruction surface the gate must
+ * scan (`SKILL.md`, `AGENTS.md`, `copilot-instructions.md`,
+ * `.cursorrules`, `CLAUDE.md`, `*.instructions.md`, `*.prompt.md`).
+ * Exposed for tests.
+ *
+ * @param basename - The file's basename (no directory component).
+ * @returns `true` if the file is an agent-instruction surface.
+ */
+export function isSkillFilename(basename: string): boolean {
   return SKILL_FILENAME_PATTERNS.some((re) => re.test(basename));
 }
 

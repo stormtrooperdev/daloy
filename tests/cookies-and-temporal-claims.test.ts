@@ -784,6 +784,59 @@ test("verify-no-registry-exfiltration flags the xrpl.js / Ripple SDK exfiltratio
   assert.ok(findings.every((f) => /xrpl/i.test(f.reason)));
 });
 
+test("verify-no-registry-exfiltration flags AI-coding-agent credential-file reads", async () => {
+  // `codexui-android` AI-token theft (Aikido 2026-05 supply-chain
+  // write-up): a published-tarball-only payload read OpenAI Codex's
+  // `~/.codex/auth.json` (a non-expiring OAuth refresh token) and
+  // exfiltrated it disguised as Sentry telemetry. `~/.claude/` is the
+  // obvious sibling target (Anthropic Claude Code session/OAuth tokens).
+  // Daloy core never reads an AI coding agent's credential directory.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// unsafe: OpenAI Codex auth-token file (the codexui-android target)",
+    'const codex = path.join(home, ".codex", "auth.json");',
+    "",
+    "// unsafe: Codex dir via POSIX string literal",
+    'const codexDir = home + "/.codex/auth.json";',
+    "",
+    "// unsafe: Codex dir via Windows path literal",
+    'const codexWin = home + "\\\\.codex\\\\auth.json";',
+    "",
+    "// unsafe: Anthropic Claude Code credential dir",
+    'const claude = path.join(home, ".claude", "credentials.json");',
+    "",
+    "// unsafe: Claude dir via POSIX string literal",
+    'const claudeDir = home + "/.claude/.credentials.json";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  // Three `.codex/` references + two `.claude/` references = 5 findings.
+  assert.equal(findings.length, 5, JSON.stringify(findings, null, 2));
+  assert.equal(findings.filter((f) => /\.codex/.test(f.reason)).length, 3);
+  assert.equal(findings.filter((f) => /\.claude/.test(f.reason)).length, 2);
+  assert.ok(findings.every((f) => /AI coding agent/.test(f.reason)));
+});
+
+test("verify-no-registry-exfiltration allowlists normal codec / cloud paths near AI-agent IOCs", async () => {
+  // The `.codex` / `.claude` matchers are directory-scoped (`/.codex/`,
+  // `/.claude/`) so substrings like `codex`, `claudeify`, or a `codecs`
+  // path must NOT trip the gate.
+  const { findForbiddenRegistryExfilCalls } = await import(
+    "../scripts/verify-no-registry-exfiltration.js"
+  );
+  const sample = [
+    "// safe: a variable merely named codex (no dotted dir)",
+    "const codexParser = makeParser();",
+    "// safe: a normal codecs path",
+    'const c = path.join(root, "codecs", "h264.bin");',
+    "// safe: a word containing claude as a substring",
+    'const note = "claudette wrote the docs";',
+  ].join("\n");
+  const findings = findForbiddenRegistryExfilCalls("sample.ts", sample);
+  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+});
+
 test("verify-no-registry-exfiltration flags Telegram-bot SSH-backdoor IOCs", async () => {
   // Socket 2025-04-18 typosquat campaign documented at
   // https://socket.dev/blog/npm-malware-targets-telegram-bot-developers —

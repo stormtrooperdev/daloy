@@ -111,3 +111,22 @@ test("live repo has zero ToxicSkills anti-patterns in any shipped SKILL.md / AGE
     "live repo regression: " + JSON.stringify(findings, null, 2),
   );
 });
+
+test("scanner covers the `.cursorrules` / `CLAUDE.md` agent-instruction surfaces TrapDoor weaponized", async () => {
+  const { isSkillFilename } = await import(
+    "../scripts/verify-no-toxic-agent-skills.js"
+  );
+
+  // TrapDoor (Socket 2026-05-24) shipped malicious instructions in
+  // `.cursorrules` (Cursor) and `CLAUDE.md` (Claude Code); the gate must
+  // treat both as agent-instruction surfaces.
+  assert.ok(isSkillFilename(".cursorrules"), ".cursorrules must be scanned");
+  assert.ok(isSkillFilename("CLAUDE.md"), "CLAUDE.md must be scanned");
+  assert.ok(isSkillFilename("claude.md"), "case-insensitive CLAUDE.md");
+
+  // Benign lookalikes must not be pulled into the scan set.
+  assert.ok(!isSkillFilename("cursorrules"), "missing dot is not the file");
+  assert.ok(!isSkillFilename(".cursorrules.bak"), "backup suffix is not the file");
+  assert.ok(!isSkillFilename("MYCLAUDE.md"), "prefixed name is not CLAUDE.md");
+  assert.ok(!isSkillFilename("claude.txt"), "wrong extension is not CLAUDE.md");
+});
