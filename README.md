@@ -17,6 +17,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub last commit](https://img.shields.io/github/last-commit/daloyjs/daloy)](https://github.com/daloyjs/daloy/commits/main)
 [![JSR](https://jsr.io/badges/@daloyjs/daloy)](https://jsr.io/@daloyjs/daloy)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13058/badge)](https://www.bestpractices.dev/projects/13058)
 
 > A **runtime-portable TypeScript web framework** with built-in **contract-first routing**, **validation**, **OpenAPI (Hey API)**, **typed client generation**, **large-scale maintainability**, and **security-focused runtime plus supply-chain posture**.
 
