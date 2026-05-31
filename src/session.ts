@@ -142,7 +142,11 @@ export type SessionContext = {
   destroy(): void;
   /** Issue a new session id (defense against fixation). Carries `data` over by default; pass `{ keepData: false }` to start fresh. */
   regenerate(opts?: { keepData?: boolean }): Promise<string>;
-}; const STATE_KEY = "session"; const STATE_INTERNAL = "__sessionInternal";
+};
+
+const STATE_KEY = "session";
+const STATE_INTERNAL = "__sessionInternal";
+
 // ---------- Implementation ----------
 
 interface SessionInternal {
@@ -455,10 +459,11 @@ export function session(opts: SessionOptions): Hooks {
       internal.activeId = id;
 
       const regenerate = async (keepData: boolean): Promise<string> => {
+        // Only destroy a persisted session id. An id created earlier this
+        // request (or a prior mid-request rotation) was never written to the
+        // store, so there is nothing to destroy — we just discard it.
         if (internal.activeId && internal.originalId === internal.activeId) {
           await store.destroy(internal.activeId);
-        } else if (internal.activeId && internal.activeId !== internal.originalId) {
-          // We rotated mid-request previously; throw away the unsaved id.
         }
         const next = generator();
         if (!next) throw new Error("session(): generator returned an empty id.");
