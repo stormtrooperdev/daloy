@@ -302,6 +302,15 @@ export type {
   IpReputationController,
   UrlFeedOptions,
 } from "./ip-reputation.js";
+export { geoBlock } from "./geo-block.js";
+export type {
+  GeoBlockOptions,
+  GeoBlockDecision,
+  GeoBlockReason,
+  GeoState,
+  CountryFromIp,
+  CountryFromContext,
+} from "./geo-block.js";
 export { concurrencyLimit } from "./concurrency-limit.js";
 export type {
   ConcurrencyLimitOptions,

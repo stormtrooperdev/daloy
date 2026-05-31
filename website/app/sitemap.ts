@@ -212,6 +212,7 @@ const STATIC_PATHS: Array<{
   { path: "/docs/auto-ban", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/bot-guard", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/ip-reputation", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/docs/geo-block", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/concurrency-limit", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/request-decompression", changeFrequency: "monthly", priority: 0.8 },
   { path: "/docs/waf", changeFrequency: "monthly", priority: 0.8 },

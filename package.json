@@ -177,6 +177,10 @@
       "types": "./dist/ip-reputation.d.ts",
       "import": "./dist/ip-reputation.js"
     },
+    "./geo-block": {
+      "types": "./dist/geo-block.d.ts",
+      "import": "./dist/geo-block.js"
+    },
     "./concurrency-limit": {
       "types": "./dist/concurrency-limit.d.ts",
       "import": "./dist/concurrency-limit.js"

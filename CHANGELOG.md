@@ -16,6 +16,24 @@ For the forward-looking plan and the full thematic release log, see
 
 ### Added
 
+- **GeoIP / geo-blocking middleware at `@daloyjs/core/geo-block`.** New
+  dependency-free `geoBlock()` enforces ISO 3166-1 alpha-2 country allow/deny
+  lists without bundling any GeoIP database. Pick exactly one resolution
+  strategy: `lookupCountry(ip)` (you bring a MaxMind / `ip2location` reader or
+  your own table — Daloy resolves the client IP first, reusing the trusted-proxy
+  `X-Forwarded-For` / `X-Real-IP` handling) or `resolveCountry(ctx)` (read an
+  edge-injected header such as Cloudflare `CF-IPCountry`, AWS CloudFront
+  `CloudFront-Viewer-Country`, or Vercel `x-vercel-ip-country`). `deny` wins
+  over `allow` (least privilege); allow-lists **fail closed** on an unknown
+  country while deny-only configurations **fail open** (overridable via
+  `allowUnknownCountry`). Country codes are validated at construction so typos
+  throw instead of silently never matching. Adds a `mode: "log"` monitor mode
+  with an `onBlock` decision hook (`denied_country` / `not_in_allowlist` /
+  `unknown_country`), stamps the resolved country on `ctx.state.geo` for allowed
+  requests, and rejects blocked traffic with a `403`
+  `application/problem+json` (`Cache-Control: no-store`) that never echoes the
+  country or IP. New docs page: **GeoIP / geo-blocking**.
+
 - **HTTP Message Signatures (RFC 9421) at `@daloyjs/core/http-signatures`.**
   First-party, dependency-free sign/verify for server-to-server request
   authentication via the standard `Signature` / `Signature-Input` headers.

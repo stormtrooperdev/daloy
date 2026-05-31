@@ -146,6 +146,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Adaptive auto-ban", href: "/docs/auto-ban" as Route },
       { title: "Bot / User-Agent management", href: "/docs/bot-guard" as Route },
       { title: "IP reputation / denylist feed", href: "/docs/ip-reputation" as Route },
+      { title: "GeoIP / geo-blocking", href: "/docs/geo-block" as Route },
       { title: "Concurrency limits + queueing", href: "/docs/concurrency-limit" as Route },
       { title: "Request decompression guard", href: "/docs/request-decompression" as Route },
       { title: "WAF-lite inspection", href: "/docs/waf" as Route },
