@@ -376,6 +376,7 @@ export type {
   WebSocketConnection,
   WebSocketContext,
   WebSocketHandler,
+  WebSocketMeta,
   WebSocketRouteEntry,
   NormalizedWebSocketOptions,
   WebSocketBeforeUpgrade,

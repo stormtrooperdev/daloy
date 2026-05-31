@@ -31,6 +31,18 @@ For the forward-looking plan and the full thematic release log, see
   last published one and exits non-zero on a breaking change, so CI can gate
   "did this PR break my published API?".
 
+- **AsyncAPI 3.0 generation for WebSockets.** New pure, dependency-free
+  `@daloyjs/core/asyncapi` module exporting `generateAsyncAPI(app, options)` and
+  `asyncapiToYAML(doc)`. Every `app.ws()` route becomes an AsyncAPI channel
+  (address + path parameters) with a `receive` operation for inbound client
+  messages and an optional `send` operation for outbound messages. Payloads are
+  taken from a new optional `meta` block on the WebSocket handler
+  (`summary`, `description`, `tags`, `send`, `receive`, `operationId`), falling
+  back to the handler's `request.body` schema for the inbound payload. A new
+  `daloy inspect --asyncapi` flag (with `--format yaml`) prints the document.
+  This extends the contract-first story past HTTP, mirroring the built-in
+  OpenAPI generator.
+
 ## [0.36.0] — 2026-05-28 to 2026-05-30
 
 ### Added

@@ -89,6 +89,10 @@
       "types": "./dist/openapi-diff.d.ts",
       "import": "./dist/openapi-diff.js"
     },
+    "./asyncapi": {
+      "types": "./dist/asyncapi.d.ts",
+      "import": "./dist/asyncapi.js"
+    },
     "./docs": {
       "types": "./dist/docs.d.ts",
       "import": "./dist/docs.js"

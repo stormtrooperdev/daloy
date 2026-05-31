@@ -36,6 +36,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Typed clients (Hey API)", href: "/docs/typed-client" },
       { title: "Streaming (SSE & NDJSON)", href: "/docs/streaming" },
       { title: "WebSocket primitives", href: "/docs/websocket" },
+      { title: "AsyncAPI for WebSockets", href: "/docs/asyncapi" },
       { title: "Tracing (OpenTelemetry)", href: "/docs/tracing" },
       { title: "Testing & contract tests", href: "/docs/testing" },
     ],

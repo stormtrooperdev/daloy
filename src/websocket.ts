@@ -129,6 +129,41 @@ export interface WebSocketContext<P extends string = string, S = AppState> {
 }
 
 /**
+ * Optional contract/documentation metadata for a WebSocket route, mirroring
+ * the HTTP route `meta` block. Consumed by the built-in AsyncAPI generator
+ * ({@link generateAsyncAPI}) to describe the channel, its operations, and the
+ * payloads exchanged over the socket. Purely descriptive — it never changes
+ * runtime behavior or the RFC 6455 handshake.
+ *
+ * @since 0.37.0
+ */
+export interface WebSocketMeta {
+  /** Short channel summary surfaced as the AsyncAPI channel/operation summary. */
+  summary?: string;
+  /** Longer CommonMark description for the channel. */
+  description?: string;
+  /** Tags applied to the generated AsyncAPI operations. */
+  tags?: string[];
+  /**
+   * Schema describing messages the **server sends to clients** (outbound).
+   * Surfaced as the payload of the AsyncAPI `send` operation. Falls back to no
+   * outbound message when omitted.
+   */
+  send?: StandardSchemaV1;
+  /**
+   * Schema describing messages the **server receives from clients** (inbound).
+   * Surfaced as the payload of the AsyncAPI `receive` operation. Defaults to
+   * {@link WebSocketHandler.request}'s `body` schema when omitted.
+   */
+  receive?: StandardSchemaV1;
+  /**
+   * Stable identifier base used to derive the AsyncAPI `operationId`s and
+   * channel name for this route. Defaults to a slug derived from the path.
+   */
+  operationId?: string;
+}
+
+/**
  * User-supplied WebSocket lifecycle callbacks.
  *
  * - `beforeUpgrade` may reject the upgrade by returning a `Response`. Returning
@@ -144,6 +179,13 @@ export interface WebSocketHandler<
 > {
   /** Optional schema used for payload-size consistency checks. */
   request?: { body?: StandardSchemaV1 };
+  /**
+   * Optional contract/documentation metadata consumed by the built-in
+   * AsyncAPI generator ({@link generateAsyncAPI}). Purely descriptive.
+   *
+   * @since 0.37.0
+   */
+  meta?: WebSocketMeta;
   /** Close the connection when queued outbound bytes exceed backpressureLimit. Default: true. */
   closeOnBackpressureLimit?: boolean;
   /** Maximum queued outbound bytes before backpressure handling triggers. Default: 1 MiB. */
@@ -440,6 +482,20 @@ export class WebSocketRegistry {
 
   find(pathname: string): RouteMatch<WebSocketRouteEntry> | undefined {
     return this.router.find("GET", pathname);
+  }
+
+  /**
+   * List every registered WebSocket route entry in registration order.
+   *
+   * Returns a shallow copy so callers (the AsyncAPI generator, introspection
+   * tooling) cannot mutate the registry's internal array. The entry objects
+   * themselves are shared by reference and must be treated as read-only.
+   *
+   * @returns A new array of the registered {@link WebSocketRouteEntry} values.
+   * @since 0.37.0
+   */
+  list(): WebSocketRouteEntry[] {
+    return [...this.entries];
   }
 
   get size(): number {

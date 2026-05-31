@@ -14,6 +14,7 @@ import type { App, IntrospectedRoute } from "./app.js";
 import { runContractTests } from "./contract.js";
 import { diffOpenAPI, type OpenAPIChange } from "./openapi-diff.js";
 import { generateOpenAPI, openapiToYAML } from "./openapi.js";
+import { generateAsyncAPI, asyncapiToYAML } from "./asyncapi.js";
 import type { RouteDefinition, RouteMeta } from "./types.js";
 
 /** I/O hooks used by {@link runCli} to read modules, write output, and spawn child processes. */
@@ -53,6 +54,7 @@ export interface CliOptions {
   check: boolean;
   schemas: boolean;
   openapi: boolean;
+  asyncapi: boolean;
   ai: boolean;
   /**
    * Output format for `--ai` and `--openapi`. Defaults to `"json"`.
@@ -103,13 +105,15 @@ Options:
   --check                Run the contract test suite; exit 1 on errors.
   --schemas              Include per-route schema presence (body/query/...).
   --openapi              Print the OpenAPI 3.1 document for the App.
+  --asyncapi             Print the AsyncAPI 3.0 document for the App's
+                         WebSocket (app.ws()) surfaces.
   --ai                   Print an AI/codegen-friendly dump of the
                          route catalog with schemas and meta examples
                          (suitable for feeding to an LLM or for writing
                          to a sibling routes.json / routes.yaml).
-  --format <fmt>         Output format for --ai and --openapi: json | yaml
-                         (default: json). YAML saves ~20–40%% of LLM
-                         tokens versus JSON for the same payload.
+  --format <fmt>         Output format for --ai, --openapi and --asyncapi:
+                         json | yaml (default: json). YAML saves ~20–40%% of
+                         LLM tokens versus JSON for the same payload.
   --yaml                 Shorthand for --format yaml.
   --tag <tag>            Only show routes that declare this tag.
   --method <method>      Only show routes for this HTTP method.
@@ -141,6 +145,8 @@ Examples:
   daloy inspect --openapi > openapi.json
   daloy inspect --ai --yaml > routes.yaml
   daloy inspect --openapi --format yaml > openapi.yaml
+  daloy inspect --asyncapi > asyncapi.json
+  daloy inspect --asyncapi --format yaml > asyncapi.yaml
   daloy dev
   daloy dev src/server.ts
   daloy diff openapi.published.json openapi.json
@@ -319,6 +325,7 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
     check: false,
     schemas: false,
     openapi: false,
+    asyncapi: false,
     ai: false,
     help: false,
     version: false,
@@ -344,6 +351,9 @@ export function parseArgs(argv: readonly string[]): { command: string; opts: Cli
         break;
       case "--openapi":
         opts.openapi = true;
+        break;
+      case "--asyncapi":
+        opts.asyncapi = true;
         break;
       case "--ai":
         opts.ai = true;
@@ -456,6 +466,18 @@ export async function runCli(argv: readonly string[], io: CliIO): Promise<CliRes
     });
     if (opts.format === "yaml") {
       io.stdout(openapiToYAML(doc as unknown as Record<string, unknown>));
+      return { exitCode: 0 };
+    }
+    io.stdout(`${JSON.stringify(doc, null, opts.json ? 0 : 2)}\n`);
+    return { exitCode: 0 };
+  }
+
+  if (opts.asyncapi) {
+    const doc = generateAsyncAPI(app, {
+      info: { title: "App", version: "0.0.0" },
+    });
+    if (opts.format === "yaml") {
+      io.stdout(asyncapiToYAML(doc));
       return { exitCode: 0 };
     }
     io.stdout(`${JSON.stringify(doc, null, opts.json ? 0 : 2)}\n`);
