@@ -33,6 +33,11 @@ const SCRYPT_KEYLEN = 32;
 const SCRYPT_SALTLEN = 16;
 // Generous max — covers OWASP's recommended `N = 2^17` at `r = 8`, `p = 1`.
 const SCRYPT_MAXMEM = 192 * 1024 * 1024;
+// Upper bound on password size (UTF-8 bytes). scrypt runs PBKDF2-HMAC-SHA256
+// over the full password, so an unbounded input lets an attacker amplify CPU
+// per call. OWASP's Password Storage Cheat Sheet recommends capping length;
+// 4096 bytes is well above any legitimate passphrase while blocking abuse.
+const MAX_PASSWORD_BYTES = 4096;
 
 function scryptAsync(password: Buffer, salt: Buffer, keylen: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -82,12 +87,16 @@ function fromBase64(s: string): Buffer | null {
  *
  * @param password - The plaintext password. UTF-8 encoded internally.
  * @returns A PHC-style hash string safe to store in a database column.
- * @throws {TypeError} When `password` is empty.
+ * @throws {TypeError} When `password` is empty or exceeds
+ * {@link MAX_PASSWORD_BYTES} UTF-8 bytes.
  * @since 0.15.0
  */
 export async function passwordHash(password: string): Promise<string> {
   if (typeof password !== "string" || password.length === 0) {
     throw new TypeError("password must be a non-empty string");
+  }
+  if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
+    throw new TypeError(`password must not exceed ${MAX_PASSWORD_BYTES} bytes`);
   }
   const salt = randomBytes(SCRYPT_SALTLEN);
   const key = await scryptAsync(Buffer.from(password, "utf8"), salt, SCRYPT_KEYLEN);
@@ -140,6 +149,7 @@ export async function passwordVerify(
   storedHash: string,
 ): Promise<boolean> {
   if (typeof password !== "string" || password.length === 0) return false;
+  if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) return false;
   const parsed = parsePhc(storedHash);
   if (!parsed) return false;
   let derived: Buffer;

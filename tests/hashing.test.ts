@@ -30,6 +30,23 @@ test("passwordHash rejects empty input", async () => {
   await assert.rejects(() => passwordHash(undefined as any), TypeError);
 });
 
+test("passwordHash rejects passwords over the byte cap", async () => {
+  await assert.rejects(() => passwordHash("a".repeat(4097)), TypeError);
+  // Multi-byte chars are measured in UTF-8 bytes, not code units.
+  await assert.rejects(() => passwordHash("\u00e9".repeat(2049)), TypeError);
+});
+
+test("passwordHash accepts a password exactly at the byte cap", async () => {
+  const atCap = "a".repeat(4096);
+  const hash = await passwordHash(atCap);
+  assert.equal(await passwordVerify(atCap, hash), true);
+});
+
+test("passwordVerify returns false for passwords over the byte cap", async () => {
+  const hash = await passwordHash("short");
+  assert.equal(await passwordVerify("a".repeat(4097), hash), false);
+});
+
 test("passwordVerify returns false for empty password", async () => {
   const hash = await passwordHash("x");
   assert.equal(await passwordVerify("", hash), false);
