@@ -6,9 +6,6 @@
 @custom-variant dim (&:is(.dim *));
 
 :root {
-  --duration-exit: 150ms;
-  --duration-enter: 210ms;
-  --duration-move: 400ms;
     --background: oklch(1 0 0);
     --foreground: oklch(0.147 0.004 49.3);
     --card: oklch(1 0 0);
@@ -114,6 +111,7 @@
 @theme inline {
     --font-sans: var(--font-sans);
     --font-heading: var(--font-heading);
+    --font-mono: Consolas, "Cascadia Mono", "Segoe UI Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -250,6 +248,7 @@
     border-color: #d0d7de;
     background: #f6f8fa;
     color: #57606a;
+    font-family: var(--font-mono);
   }
 
   .code-editor__content .shiki {
@@ -258,6 +257,7 @@
     padding: 0.75rem;
     background-color: var(--shiki-light-bg) !important;
     color: var(--shiki-light) !important;
+    font-family: var(--font-mono);
     font-size: 0.875rem;
     line-height: 1.7;
   }
@@ -389,6 +389,7 @@
 
   .docs-prose code {
     @apply rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.95em] text-foreground;
+    font-family: var(--font-mono);
   }
 
   .docs-prose pre {
@@ -605,57 +606,6 @@
 
 .float-up {
   animation: float-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-::view-transition-old(.nav-forward) {
-  --slide-offset: -60px;
-  animation:
-    var(--duration-exit) ease-in both fade reverse,
-    var(--duration-move) ease-in-out both slide reverse;
-}
-
-::view-transition-new(.nav-forward) {
-  --slide-offset: 60px;
-  animation:
-    var(--duration-enter) ease-out var(--duration-exit) both fade,
-    var(--duration-move) ease-in-out both slide;
-}
-
-::view-transition-old(.nav-back) {
-  --slide-offset: 60px;
-  animation:
-    var(--duration-exit) ease-in both fade reverse,
-    var(--duration-move) ease-in-out both slide reverse;
-}
-
-::view-transition-new(.nav-back) {
-  --slide-offset: -60px;
-  animation:
-    var(--duration-enter) ease-out var(--duration-exit) both fade,
-    var(--duration-move) ease-in-out both slide;
-}
-
-::view-transition-group(site-header),
-::view-transition-group(site-footer) {
-  animation: none;
-}
-
-::view-transition-old(site-header) {
-  display: none;
-}
-
-::view-transition-new(site-header),
-::view-transition-new(site-footer) {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(*),
-  ::view-transition-new(*),
-  ::view-transition-group(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
-  }
 }
 
 .interactive-flow {

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import type { Route } from "next";
-import { addTransitionType, startTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button";
@@ -55,7 +54,9 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, index)}
-      <span className="font-bold text-foreground">{text.slice(index, index + needle.length)}</span>
+      <span className="font-bold text-foreground">
+        {text.slice(index, index + needle.length)}
+      </span>
       {text.slice(index + needle.length)}
     </>
   );
@@ -66,7 +67,9 @@ function HighlightText({ text, query }: { text: string; query: string }) {
  * (high weight) and the keywords/body blob (lower weight) separately,
  * so exact title matches always surface before keyword-only matches.
  */
-function buildDocsFilter(itemMap: Map<string, { title: string; keywords: string }>) {
+function buildDocsFilter(
+  itemMap: Map<string, { title: string; keywords: string }>
+) {
   return function filterDocsItem(value: string, search: string): number {
     const item = itemMap.get(value);
 
@@ -88,11 +91,13 @@ function buildDocsFilter(itemMap: Map<string, { title: string; keywords: string 
     if (titleLower === needle) return 1.0;
     if (titleLower.startsWith(needle)) return 0.95;
     if (titleLower.includes(needle)) return 0.85;
-    if (tokens.length > 1 && tokens.every((t) => titleLower.includes(t))) return 0.75;
+    if (tokens.length > 1 && tokens.every((t) => titleLower.includes(t)))
+      return 0.75;
 
     // Keywords / body match — lower weight
     if (keywordsLower.includes(needle)) return 0.5;
-    if (tokens.length > 1 && tokens.every((t) => keywordsLower.includes(t))) return 0.35;
+    if (tokens.length > 1 && tokens.every((t) => keywordsLower.includes(t)))
+      return 0.35;
 
     return 0;
   };
@@ -116,7 +121,10 @@ export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
     return map;
   }, [sections]);
 
-  const filterDocsItem = React.useMemo(() => buildDocsFilter(itemMap), [itemMap]);
+  const filterDocsItem = React.useMemo(
+    () => buildDocsFilter(itemMap),
+    [itemMap]
+  );
 
   const handleKeyDown = React.useEffectEvent((event: KeyboardEvent) => {
     if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") {
@@ -142,10 +150,7 @@ export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
   function handleSelect(href: Route) {
     setOpen(false);
     setSearch("");
-    startTransition(() => {
-      addTransitionType("nav-forward");
-      router.push(href);
-    });
+    router.push(href);
   }
 
   return (
@@ -154,14 +159,14 @@ export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-11 w-full justify-between rounded-xl border border-mist-200/80 bg-mist-50/75 px-4 text-[11px] tracking-[0.22em] text-mist-950 shadow-sm hover:bg-mist-100/70 dark:border-mist-900/70 dark:bg-mist-950/20 dark:text-mist-100 dark:hover:bg-mist-950/35 dim:border-mist-900/60 dim:bg-mist-950/18 dim:text-mist-100 sm:text-xs"
+        className="h-11 w-full justify-between rounded-xl border border-mist-200/80 bg-mist-50/75 px-4 text-[11px] tracking-[0.22em] text-mist-950 shadow-sm hover:bg-mist-100/70 sm:text-xs dark:border-mist-900/70 dark:bg-mist-950/20 dark:text-mist-100 dark:hover:bg-mist-950/35 dim:border-mist-900/60 dim:bg-mist-950/18 dim:text-mist-100"
         onClick={() => setOpen(true)}
       >
         <span className="flex min-w-0 items-center gap-2">
           <MagnifyingGlassIcon className="size-4" />
           <span className="truncate">Search documentation</span>
         </span>
-        <span className="hidden items-center gap-1 text-[10px] text-mist-900/80 dark:text-mist-100/80 sm:inline-flex">
+        <span className="hidden items-center gap-1 text-[10px] text-mist-900/80 sm:inline-flex dark:text-mist-100/80">
           <span className="rounded-md border border-mist-300/80 bg-white/75 px-1.5 py-0.5 font-mono tracking-normal text-mist-950 uppercase dark:border-mist-800/80 dark:bg-mist-950/40 dark:text-mist-100">
             Cmd
           </span>
@@ -208,7 +213,10 @@ export function DocsSearch({ sections }: { sections: DocsSearchSection[] }) {
                           <HighlightText text={item.title} query={search} />
                         </div>
                         <div className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                          <HighlightText text={item.description} query={search} />
+                          <HighlightText
+                            text={item.description}
+                            query={search}
+                          />
                         </div>
                       </div>
                       <CommandShortcut>

@@ -94,10 +94,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header
-      className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60"
-      style={{ viewTransitionName: "site-header" }}
-    >
+    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 items-center gap-3">
           <Link
@@ -121,7 +118,6 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 exact
-                transitionTypes={["nav-forward"]}
                 className={({ isActive }) =>
                   isActive
                     ? "font-medium text-foreground transition-colors"
@@ -136,7 +132,6 @@ export function SiteHeader() {
           <div className="ml-auto flex items-center gap-2">
             <NavLink
               href="/docs/installation"
-              transitionTypes={["nav-forward"]}
               aria-label="Installation"
               onClick={closeMobileNav}
               className={({ isActive }) =>
@@ -174,7 +169,6 @@ export function SiteHeader() {
 
               <NavLink
                 href="/docs/installation"
-                transitionTypes={["nav-forward"]}
                 aria-label="Installation"
                 className={({ isActive }) =>
                   buttonVariants({
@@ -232,7 +226,6 @@ export function SiteHeader() {
                       key={item.href}
                       href={item.href}
                       exact
-                      transitionTypes={["nav-forward"]}
                       onClick={closeMobileNav}
                       className={({ isActive }) =>
                         isActive
@@ -246,7 +239,6 @@ export function SiteHeader() {
 
                   <NavLink
                     href="/docs/installation"
-                    transitionTypes={["nav-forward"]}
                     onClick={closeMobileNav}
                     className={({ isActive }) =>
                       isActive

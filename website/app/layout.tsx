@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Noto_Sans, Playfair_Display } from "next/font/google";
+import { Noto_Sans, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
-import { RouteTransition } from "@/components/route-transition";
 import { SiteHeader } from "@/components/site-header";
 import { LogoLockup } from "@/components/daloyjs-logo";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -24,8 +23,6 @@ import { Analytics } from "@vercel/analytics/next";
 const DEFAULT_TITLE = `${SITE_NAME} - ${HOME_TITLE}`;
 const DEFAULT_DESCRIPTION = HOME_DESCRIPTION;
 const COPYRIGHT_YEAR = 2026;
-
-export const unstable_instant = { prefetch: "static" };
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -121,11 +118,6 @@ const playfairDisplayHeading = Playfair_Display({
 
 const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -135,7 +127,6 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(
         "antialiased",
-        fontMono.variable,
         "font-sans",
         notoSans.variable,
         playfairDisplayHeading.variable
@@ -145,11 +136,8 @@ export default function RootLayout({
         <ThemeProvider>
           <ReadingProgress />
           <SiteHeader />
-          <RouteTransition>{children}</RouteTransition>
-          <footer
-            className="border-t px-6 py-6 text-sm text-muted-foreground"
-            style={{ viewTransitionName: "site-footer" }}
-          >
+          <div className="flex flex-1 flex-col">{children}</div>
+          <footer className="border-t px-6 py-6 text-sm text-muted-foreground">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
                 <Link href="/" aria-label="DaloyJS Home">

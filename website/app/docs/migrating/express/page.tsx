@@ -899,7 +899,8 @@ app.route({
       <h2>Step 5: Routers become groups (and plugins)</h2>
       <p>
         Express <code>express.Router()</code> &quot;mini-apps&quot; mounted with{" "}
-        <code>app.use("/prefix", router)</code> map to two DaloyJS tools:
+        <code>app.use(&quot;/prefix&quot;, router)</code> map to two DaloyJS
+        tools:
       </p>
       <ul>
         <li>
@@ -974,12 +975,12 @@ app.register(birdsPlugin, { prefix: "/birds", tags: ["Birds"] });
 await app.ready();`}
       />
       <p>
-        Plugins also support <code>app.decorate("db", ...)</code> to inject
-        shared resources (a database client, a logger) into every handler&apos;s{" "}
-        <code>ctx.state</code>, the clean replacement for Express&apos;s habit
-        of hanging things off <code>app.locals</code> or <code>req</code>.
-        Augment the <code>AppState</code> interface and those decorations are
-        fully typed in every handler.
+        Plugins also support <code>app.decorate(&quot;db&quot;, ...)</code> to
+        inject shared resources (a database client, a logger) into every
+        handler&apos;s <code>ctx.state</code>, the clean replacement for
+        Express&apos;s habit of hanging things off <code>app.locals</code> or{" "}
+        <code>req</code>. Augment the <code>AppState</code> interface and those
+        decorations are fully typed in every handler.
       </p>
 
       <h2>Step 6: Request and response object cheat-sheet</h2>
@@ -1026,10 +1027,11 @@ await app.ready();`}
           </tr>
           <tr>
             <td>
-              <code>req.get("x-foo")</code> / <code>req.headers["x-foo"]</code>
+              <code>req.get(&quot;x-foo&quot;)</code> /{" "}
+              <code>req.headers[&quot;x-foo&quot;]</code>
             </td>
             <td>
-              <code>ctx.request.headers.get("x-foo")</code> or a{" "}
+              <code>ctx.request.headers.get(&quot;x-foo&quot;)</code> or a{" "}
               <code>headers</code> schema -&gt; <code>ctx.headers</code>
             </td>
           </tr>
@@ -1048,7 +1050,8 @@ await app.ready();`}
             </td>
             <td>
               <code>
-                readRequestCookie(ctx.request.headers.get("cookie"), "sid")
+                readRequestCookie(ctx.request.headers.get(&quot;cookie&quot;),
+                &quot;sid&quot;)
               </code>
             </td>
           </tr>
@@ -1092,10 +1095,10 @@ await app.ready();`}
           </tr>
           <tr>
             <td>
-              <code>res.send("text")</code>
+              <code>res.send(&quot;text&quot;)</code>
             </td>
             <td>
-              <code>return {'{ status: 200, body: "text" }'}</code>
+              <code>return {"{ status: 200, body: &quot;text&quot; }"}</code>
             </td>
           </tr>
           <tr>
@@ -1108,52 +1111,56 @@ await app.ready();`}
           </tr>
           <tr>
             <td>
-              <code>res.set("x-foo", "bar")</code>
+              <code>res.set(&quot;x-foo&quot;, &quot;bar&quot;)</code>
             </td>
             <td>
               <code>
-                return {'{ status: 200, headers: { "x-foo": "bar" }, body }'}
+                return{" "}
+                {
+                  "{ status: 200, headers: { &quot;x-foo&quot;: &quot;bar&quot; }, body }"
+                }
               </code>{" "}
               or <code>ctx.set.headers.set(...)</code>
             </td>
           </tr>
           <tr>
             <td>
-              <code>res.redirect("/login")</code>
+              <code>res.redirect(&quot;/login&quot;)</code>
             </td>
             <td>
               <code>
                 return{" "}
                 {
-                  '{ status: 302, headers: { location: "/login" }, body: undefined }'
+                  "{ status: 302, headers: { location: &quot;/login&quot; }, body: undefined }"
                 }
               </code>
             </td>
           </tr>
           <tr>
             <td>
-              <code>res.cookie("sid", v)</code>
+              <code>res.cookie(&quot;sid&quot;, v)</code>
             </td>
             <td>
               <code>
-                ctx.set.headers.set("set-cookie", serializeCookie("sid", v,{" "}
-                {"{...}"}))
+                ctx.set.headers.set(&quot;set-cookie&quot;,
+                serializeCookie(&quot;sid&quot;, v, {"{...}"}))
               </code>
             </td>
           </tr>
           <tr>
             <td>
-              <code>res.clearCookie("sid")</code>
+              <code>res.clearCookie(&quot;sid&quot;)</code>
             </td>
             <td>
               <code>
-                ctx.set.headers.set("set-cookie", serializeClearCookie("sid"))
+                ctx.set.headers.set(&quot;set-cookie&quot;,
+                serializeClearCookie(&quot;sid&quot;))
               </code>
             </td>
           </tr>
           <tr>
             <td>
-              <code>res.render("view", data)</code>
+              <code>res.render(&quot;view&quot;, data)</code>
             </td>
             <td>
               Return HTML you built yourself (DaloyJS is API-first), see{" "}
@@ -1249,8 +1256,8 @@ app.route({
           <strong>Stream a specific file from a handler</strong> when you need
           app logic (auth-gated downloads, generated files). Read the file and
           return it as the body with the right headers, set{" "}
-          <code>content-disposition: attachment; filename="..."</code> to
-          reproduce <code>res.download()</code>. Always sanitize untrusted
+          <code>content-disposition: attachment; filename=&quot;...&quot;</code>{" "}
+          to reproduce <code>res.download()</code>. Always sanitize untrusted
           filenames with <code>sanitizeFilename()</code> /{" "}
           <code>assertSafeRelativePath()</code> from <code>@daloyjs/core</code>{" "}
           to avoid path traversal.
@@ -1285,7 +1292,8 @@ app.route({
 
       <h2 id="views">Views and template engines</h2>
       <p>
-        If your Express app calls <code>app.set("view engine", "ejs")</code> and{" "}
+        If your Express app calls{" "}
+        <code>app.set(&quot;view engine&quot;, &quot;ejs&quot;)</code> and{" "}
         <code>res.render(...)</code> a lot, be honest with yourself: DaloyJS is
         not a templating framework, and forcing server-rendered HTML through it
         fights the grain. Two sane paths:

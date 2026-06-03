@@ -18,7 +18,6 @@ export function DocsSidebar() {
                 <NavLink
                   href={item.href}
                   exact
-                  transitionTypes={["nav-forward"]}
                   className={({ isActive }) =>
                     cn(
                       "relative block rounded-e-lg border-s-2 px-3 py-2 leading-6 transition-[color,background-color,border-color] duration-200",

@@ -14,7 +14,7 @@ type FlowVisualStyle = CSSProperties & {
 export function ContractFlowVisual() {
   return (
     <div
-      className="contract-flow-visual float-up @container-size/flow w-full max-w-5xl min-h-[20rem] zoom-[0.94] sm:min-h-[22rem] sm:zoom-100 lg:min-h-[24rem]"
+      className="contract-flow-visual float-up @container-size/flow mx-auto min-h-80 w-full max-w-5xl sm:min-h-88 lg:min-h-88"
       style={
         {
           "--visual-tilt-x": "0deg",
@@ -33,12 +33,27 @@ export function ContractFlowVisual() {
         </div>
 
         <div className="contract-flow-visual__stage min-h-[68cqb]">
-          <svg className="contract-flow-visual__paths" viewBox="0 0 900 220" preserveAspectRatio="none" fill="none">
+          <svg
+            className="contract-flow-visual__paths"
+            viewBox="0 0 900 220"
+            preserveAspectRatio="none"
+            fill="none"
+          >
             <defs>
-              <linearGradient id="contract-flow-main" x1="0" x2="1" y1="0" y2="0">
+              <linearGradient
+                id="contract-flow-main"
+                x1="0"
+                x2="1"
+                y1="0"
+                y2="0"
+              >
                 <stop offset="0%" stopColor="currentColor" stopOpacity="0.12" />
                 <stop offset="45%" stopColor="currentColor" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0.12" />
+                <stop
+                  offset="100%"
+                  stopColor="currentColor"
+                  stopOpacity="0.12"
+                />
               </linearGradient>
             </defs>
             <path
@@ -59,8 +74,14 @@ export function ContractFlowVisual() {
 
           <div className="contract-flow-visual__nodes">
             {FLOW_STEPS.map((step, index) => (
-              <div className="contract-flow-visual__node" key={step.label} style={{ animationDelay: `${index * 180}ms` }}>
-                <span className="contract-flow-visual__node-index">0{index + 1}</span>
+              <div
+                className="contract-flow-visual__node"
+                key={step.label}
+                style={{ animationDelay: `${index * 180}ms` }}
+              >
+                <span className="contract-flow-visual__node-index">
+                  0{index + 1}
+                </span>
                 <strong>{step.label}</strong>
                 <span>{step.detail}</span>
               </div>

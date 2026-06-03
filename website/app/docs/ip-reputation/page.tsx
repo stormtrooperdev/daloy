@@ -96,7 +96,7 @@ process.on("SIGTERM", () => reputation.stop());`}
         <code>urlFeed()</code> covers the common case. It fetches the URL,
         understands the Spamhaus-DROP-style{" "}
         <code>{"<cidr> ; <annotation>"}</code> format, and skips <code>#</code>,{" "}
-        <code>;</code>, and <code>//</code> comment lines. Lines that
+        <code>;</code>, and <code>{"//"}</code> comment lines. Lines that
         aren&apos;t valid IPs/CIDRs are skipped, so a partially-malformed feed
         still loads its good rows.
       </p>

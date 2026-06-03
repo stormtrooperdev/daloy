@@ -245,7 +245,7 @@ export default function HomePage() {
             </p>
             <ContractFlowVisual />
             <p
-              className="float-up max-w-2xl text-lg leading-8 text-muted-foreground"
+              className="float-up max-w-2xl text-lg leading-8 text-muted-foreground max-sm:mt-12"
               style={{ animationDelay: "180ms" }}
             >
               Contract-first routing, Standard Schema validation, OpenAPI 3.1
@@ -275,7 +275,6 @@ export default function HomePage() {
             >
               <Link
                 href="/docs/getting-started"
-                transitionTypes={["nav-forward"]}
                 className={buttonVariants({ size: "lg" }) + " group"}
               >
                 Get started
@@ -283,7 +282,6 @@ export default function HomePage() {
               </Link>
               <Link
                 href="/docs"
-                transitionTypes={["nav-forward"]}
                 className={buttonVariants({ size: "lg", variant: "outline" })}
               >
                 Read the docs
@@ -501,14 +499,12 @@ export default function HomePage() {
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/docs/installation"
-              transitionTypes={["nav-forward"]}
               className={buttonVariants({ size: "lg" })}
             >
               Install DaloyJS
             </Link>
             <Link
               href="/docs/tutorials/bookstore"
-              transitionTypes={["nav-forward"]}
               className={buttonVariants({ size: "lg", variant: "outline" })}
             >
               Build a bookstore API

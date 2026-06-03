@@ -72,8 +72,8 @@ app.route({
       <ul>
         <li>
           Same-origin paths must start with <code>/</code> and must not start
-          with <code>//</code> or <code>/\</code> (browsers treat those as
-          protocol-relative URLs that escape your origin).
+          with <code>{"//"}</code> or <code>{"/\\"}</code> (browsers treat those
+          as protocol-relative URLs that escape your origin).
         </li>
         <li>
           Backslashes, control characters, and CR/LF are rejected to stop
