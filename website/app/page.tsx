@@ -17,13 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import { CodeBlock } from "../components/code-block";
 import { ContractFlowVisual } from "../components/contract-flow-visual";
 import { FlowHeroScene } from "../components/flow-hero-scene";
 import {
   buildMetadata,
-  CORE_PACKAGE_VERSION,
   HOME_DESCRIPTION,
   HOME_TITLE,
   serializeJsonLd,
@@ -215,19 +213,6 @@ export default function HomePage() {
         <FlowHeroScene />
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-12 lg:py-16">
           <div className="flex flex-col items-center gap-5 text-center">
-            <Badge
-              variant="outline"
-              className="float-up gap-2 border border-mauve-200/80 bg-mauve-50/85 px-3 py-1 text-mauve-950 shadow-sm dark:border-mauve-800/70 dark:bg-mauve-950/25 dark:text-mauve-100 dim:border-mauve-900/60 dim:bg-mauve-950/20 dim:text-mauve-100"
-              style={{ animationDelay: "0ms" }}
-            >
-              <span className="relative inline-flex size-1.5 items-center justify-center">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-              </span>
-              <span className='font-features-["tnum"]'>
-                {`@daloyjs/core ${CORE_PACKAGE_VERSION}`}
-              </span>
-            </Badge>
             <h1
               className="float-up max-w-4xl text-4xl leading-tight font-bold tracking-tight sm:text-5xl lg:text-6xl"
               style={{ animationDelay: "80ms" }}
