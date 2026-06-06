@@ -4,6 +4,7 @@ import * as React from "react";
 import type { Route } from "next";
 import Link from "next/link";
 import {
+  BookmarkIcon,
   ButterflyIcon,
   GithubLogoIcon,
   ListIcon,
@@ -30,6 +31,11 @@ const socialLinks = [
     href: "https://x.com/daloyjs",
     label: "X",
     icon: XIcon,
+  },
+  {
+    href: "https://substack.com/@daloyjs",
+    label: "Substack",
+    icon: BookmarkIcon,
   },
   {
     href: "https://bsky.app/profile/daloyjs.dev",
