@@ -11,7 +11,7 @@ const POST = {
   title: "CSP Nonces and Trusted Types Without Tears",
   description:
     "A practical tour of secureHeaders({ contentSecurityPolicy: { nonce: true, trustedTypes: { policies: [...] } } }), how ctx.state.cspNonce flows into a server-rendered template, why the nonce now lands on all four script/style directives, and how to roll out Trusted Types in report-only mode first without setting your weekend on fire.",
-  date: "2026-05-19",
+  date: "2026-05-24",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -482,10 +482,10 @@ export default function BlogPostPage() {
             carry a per-response random token that an XSS payload cannot guess.
             Trusted Types upgrades the browser&apos;s sink APIs (
             <code>innerHTML</code>, <code>setTimeout</code> with strings,
-            <code> document.write</code>) so they refuse plain strings, 
-            anything dangerous has to come from a named, registered policy.
-            Together they shrink the XSS attack surface from &quot;anywhere in
-            your bundle&quot; to &quot;the three lines in{" "}
+            <code> document.write</code>) so they refuse plain strings, anything
+            dangerous has to come from a named, registered policy. Together they
+            shrink the XSS attack surface from &quot;anywhere in your
+            bundle&quot; to &quot;the three lines in{" "}
             <code>trusted-types.ts</code> where you call
             <code> createPolicy</code>&quot;.
           </p>
@@ -528,11 +528,11 @@ export default function BlogPostPage() {
             <code>script-src</code> and <code>style-src</code>&quot;. That was
             true in CSP 2. In CSP 3, the browser also consults
             <code> script-src-elem</code> and <code>style-src-elem</code>{" "}
-            specifically for <em>element-based</em> loads, {" "}
+            specifically for <em>element-based</em> loads,{" "}
             <code>&lt;script src=...&gt;</code> and{" "}
-            <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code>: and falls
-            back to the older directives if they aren&apos;t present. The
-            wrinkle is that if you declare both pairs and only nonce the non-
+            <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code>: and falls back
+            to the older directives if they aren&apos;t present. The wrinkle is
+            that if you declare both pairs and only nonce the non-
             <code>-elem</code> ones, the browser uses the more specific
             directive and ignores the nonce.
           </p>
@@ -577,7 +577,7 @@ export default function BlogPostPage() {
 
           <p>
             If you forget the nonce on a tag, that tag silently does not execute
-, which is exactly what you want, but is also why you&apos;ll
+            , which is exactly what you want, but is also why you&apos;ll
             briefly hate yourself the first time a footer analytics snippet
             stops working. Open the console, you&apos;ll see a clean CSP
             violation message naming the directive. Add the nonce, refresh,

@@ -11,7 +11,7 @@ const POST = {
     "Why DaloyJS Feels Like the Backend Default We Should Have Had Already",
   description:
     "DaloyJS feels underrated because it starts with the unglamorous parts that modern backend teams actually need: install-time safety, runtime guardrails, and one route definition that keeps types, docs, and clients aligned.",
-  date: "2026-06-06",
+  date: "2026-06-19",
   readingTime: "6 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

@@ -11,7 +11,7 @@ const POST = {
     "Vibe Coding Security: What DaloyJS Already Blocks Before Your AI Even Ships",
   description:
     "Aikido's 'WTF is Vibe Coding Security' post lists the usual suspects: SQL injection, path traversal, hardcoded secrets, unlocked admin routes, missing input sanitization, dependency rot. Here's the honest mapping of which of those a DaloyJS app already blocks by default, even when the code is written by a sales rep at 1am with Claude, and the small list of things you still have to opt into.",
-  date: "2026-05-23",
+  date: "2026-06-10",
   readingTime: "10 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -314,7 +314,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            For the unfamiliar: <strong>vibe coding</strong> is when someone, 
+            For the unfamiliar: <strong>vibe coding</strong> is when someone,
             often someone who is not a developer, describes what they want in
             English and ships whatever the model writes.{" "}
             <strong>Agentic coding</strong> is the same thing with the model
@@ -330,8 +330,8 @@ export default function BlogPostPage() {
             I read it, opened DaloyJS, and went through each risk to see what we
             already block, what needs one opt-in line, and where we honestly
             can&apos;t help. Below is that mapping. The TL;DR: if a sales rep
-            uses Claude to scaffold a DaloyJS app at 1am, the boring stuff, 
-            body limits, prototype pollution, header splitting, path traversal,
+            uses Claude to scaffold a DaloyJS app at 1am, the boring stuff, body
+            limits, prototype pollution, header splitting, path traversal,
             secret-shaped logs, is on before they type their first prompt. What
             they still have to <em>choose</em> is which routes need auth and
             where the admin surface lives. Those are policy, not defaults.
@@ -408,9 +408,7 @@ export default function BlogPostPage() {
             project.
           </p>
 
-          <h2>
-            Risk 4, Unlocked admin routes (the &quot;Tea app&quot; story)
-          </h2>
+          <h2>Risk 4, Unlocked admin routes (the &quot;Tea app&quot; story)</h2>
 
           <RiskCard
             risk="Aikido: 'admin routes left unlocked, exposing user data to anyone who stumbled across the endpoint.'"
@@ -502,7 +500,7 @@ export default function BlogPostPage() {
               bite into.
             </li>
             <li>
-              We do not enforce authentication on every route. We can&apos;t, 
+              We do not enforce authentication on every route. We can&apos;t,
               some routes are deliberately public. What we give you is{" "}
               <code>jwt()</code>, <code>basicAuth()</code>,{" "}
               <code>bearerAuth()</code>, <code>session()</code>, and an{" "}

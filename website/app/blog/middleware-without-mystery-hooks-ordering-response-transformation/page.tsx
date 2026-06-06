@@ -12,7 +12,7 @@ const POST = {
     "Middleware Without Mystery: Hooks, Ordering, and Response Transformation",
   description:
     "The DaloyJS request lifecycle, end to end: onRequest → beforeHandle → handler → afterHandle → onSend → onResponse, plus onError on the error path. Where each hook fires, what it can change, how scopes compose (global → group → route), and what to put in which slot - with real short-circuit, header-stamping, and logging recipes.",
-  date: "2026-05-31",
+  date: "2026-05-30",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

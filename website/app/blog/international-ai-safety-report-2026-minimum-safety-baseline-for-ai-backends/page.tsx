@@ -11,7 +11,7 @@ const POST = {
     "The International AI Safety Report 2026, Translated Into a Minimum Safety Baseline for AI Backends",
   description:
     "Aikido's read of the International AI Safety Report 2026 lands on a short list of deployment-time requirements for any backend an autonomous AI system can call, layered defense, independent verification, prompt-injection-resistant guardrails, network scope control, inference/execution separation, full observability and emergency controls. Here's the honest per-requirement mapping to what a DaloyJS app already enforces by default, what one opt-in line adds, and what still lives above the HTTP layer.",
-  date: "2026-05-24",
+  date: "2026-06-13",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -427,7 +427,7 @@ export default function BlogPostPage() {
             >
               International AI Safety Report 2026
             </a>{" "}
-, 100+ experts, 30+ countries, Yoshua Bengio chairing, through an
+            , 100+ experts, 30+ countries, Yoshua Bengio chairing, through an
             operator&apos;s lens and lands on a short, useful conclusion: the
             interesting safety work for the rest of us is at{" "}
             <strong>deployment time and runtime</strong>, not at training time.
@@ -497,8 +497,8 @@ export default function BlogPostPage() {
             easiest one to get wrong. The temptation when a model is doing
             something clever is to widen the schema so the clever thing fits.
             Don&apos;t. Widen the schema only when you&apos;ve thought through
-            what the wider input means in production, and write the
-            unhappy-path test before you ship it.
+            what the wider input means in production, and write the unhappy-path
+            test before you ship it.
           </p>
 
           <h2>Network-level scope control: fetchGuard is one line</h2>
@@ -583,9 +583,9 @@ export default function BlogPostPage() {
             <li>
               <strong>Training-time safety.</strong> That&apos;s the model
               provider&apos;s layer. The report is correct that you cannot rely
-              on it alone, but we can&apos;t supply it either. What we can do
-              is make the deployment layer strong enough that a jailbroken model
-              is still bounded by the schema.
+              on it alone, but we can&apos;t supply it either. What we can do is
+              make the deployment layer strong enough that a jailbroken model is
+              still bounded by the schema.
             </li>
             <li>
               <strong>Detecting that a model is sandbagging.</strong> A model

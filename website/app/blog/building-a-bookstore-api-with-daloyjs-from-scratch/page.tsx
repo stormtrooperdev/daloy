@@ -11,7 +11,7 @@ const POST = {
   title: "Building a Bookstore API with DaloyJS From Scratch",
   description:
     "A route-by-route walkthrough: create the project with create-daloy, model a Book with Zod, add list / create / fetch-by-id endpoints, watch validation errors arrive as RFC 9457 problem+json automatically, emit OpenAPI, generate a typed client, and write the whole test suite with app.request(), no HTTP server required.",
-  date: "2026-05-20",
+  date: "2026-05-29",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -577,10 +577,10 @@ export default function BlogPostPage() {
             Hi, Devlin again. Ten years of fullstack, currently in Norway, and
             the post I get asked for most often is some version of{" "}
             <em>just show me what a real route looks like, end to end.</em> So
-            this is that post. We build the canonical Bookstore API, list
-            books, fetch one by id, create one, validate the input, ship the
-            docs, generate a typed client, and write tests that run faster than
-            your dev server boots. By the end of this you could plausibly hand
+            this is that post. We build the canonical Bookstore API, list books,
+            fetch one by id, create one, validate the input, ship the docs,
+            generate a typed client, and write tests that run faster than your
+            dev server boots. By the end of this you could plausibly hand
             someone a Slack link and say <em>read this first</em>.
           </p>
 
@@ -658,7 +658,7 @@ export default function BlogPostPage() {
             <strong>
               the Zod schema is the source of truth for everything
             </strong>{" "}
-, validation, response shape, OpenAPI, and the generated TypeScript
+            , validation, response shape, OpenAPI, and the generated TypeScript
             types. Write it once.
           </p>
 
@@ -800,9 +800,9 @@ export default function BlogPostPage() {
           <p>
             Now switch hats and pretend you&apos;re the frontend team. The
             generated SDK gives you typed function calls for every route, typed
-            bodies, typed responses, and, crucially, a typed{" "}
-            <code>error</code> field shaped like <code>ProblemDetails</code>.
-            Autocomplete owns the rest.
+            bodies, typed responses, and, crucially, a typed <code>error</code>{" "}
+            field shaped like <code>ProblemDetails</code>. Autocomplete owns the
+            rest.
           </p>
 
           <EditorFrame
@@ -858,10 +858,10 @@ export default function BlogPostPage() {
           <p>
             We modeled a domain in Zod. We declared three routes. We got
             validation, 404 handling, RFC 9457 problem+json, an OpenAPI
-            document, a Scalar UI, and a fully typed fetch SDK, and we never
-            had to write the &quot;glue&quot; that usually fills the first
-            thousand lines of a Node project. The tests run without a port. The
-            frontend client is generated from the same schema the server uses to
+            document, a Scalar UI, and a fully typed fetch SDK, and we never had
+            to write the &quot;glue&quot; that usually fills the first thousand
+            lines of a Node project. The tests run without a port. The frontend
+            client is generated from the same schema the server uses to
             validate. The error shape is standardized, so the helper that
             consumes it is <em>one</em> function.
           </p>
@@ -887,8 +887,8 @@ export default function BlogPostPage() {
               post shows the proof.
             </li>
             <li>
-              Sessions and CSRF for the cookie-based parts of your frontend, 
-              the <Link href="/blog/sessions-on-the-edge">sessions</Link> and{" "}
+              Sessions and CSRF for the cookie-based parts of your frontend, the{" "}
+              <Link href="/blog/sessions-on-the-edge">sessions</Link> and{" "}
               <Link href="/blog/csrf-in-2026-double-submit-and-fetch-metadata">
                 CSRF
               </Link>{" "}
@@ -898,8 +898,8 @@ export default function BlogPostPage() {
 
           <p>
             That&apos;s the tour. If you send this to a new hire and they get
-            stuck on step <em>n</em>, file an issue, I&apos;ll fix the post,
-            not the framework.
+            stuck on step <em>n</em>, file an issue, I&apos;ll fix the post, not
+            the framework.
           </p>
 
           <p>Devlin</p>

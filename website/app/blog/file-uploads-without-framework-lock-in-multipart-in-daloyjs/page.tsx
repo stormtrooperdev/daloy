@@ -11,7 +11,7 @@ const POST = {
   title: "File Uploads Without Framework Lock-In: Multipart in DaloyJS",
   description:
     "The fileField() and multipartObject() helpers: per-file size caps, MIME allowlists with wildcards, filename predicates, strict field validation, and OpenAPI binary schema emission, all while keeping the file as a Web standard File/Blob you can stream straight to S3, R2, or disk on any runtime.",
-  date: "2026-06-02",
+  date: "2026-06-01",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -461,8 +461,8 @@ export default function BlogPostPage() {
             Hi, Devlin. Ten years of fullstack, currently in Norway, currently
             nursing a strong opinion that file uploads should not be the part of
             your codebase that decides which runtime you can deploy to. And yet
-, for most of my career, it has been. A multer-shaped object here,
-            a busboy stream there, a<code> /tmp/uploads</code> directory
+            , for most of my career, it has been. A multer-shaped object here, a
+            busboy stream there, a<code> /tmp/uploads</code> directory
             we&apos;re not allowed to talk about in serverless. You know the
             script.
           </p>
@@ -471,7 +471,7 @@ export default function BlogPostPage() {
             DaloyJS treats uploads the way the modern web platform does: you get
             back a <code>File</code> (which is a <code>Blob</code> with a{" "}
             <code>name</code>), which is the same shape on Node, Bun, Deno,
-            Cloudflare Workers, and Vercel Edge. Two helpers, {" "}
+            Cloudflare Workers, and Vercel Edge. Two helpers,{" "}
             <code>fileField()</code> and <code>multipartObject()</code>: give
             you per-file size caps, MIME allowlists, filename predicates, strict
             field validation, and OpenAPI binary schemas, without ever stepping
@@ -607,7 +607,7 @@ export default function BlogPostPage() {
             <Link href="/blog/same-app-five-runtimes-verified">
               five-runtimes verification post
             </Link>{" "}
-, but it&apos;s especially noticeable here because uploads are the
+            , but it&apos;s especially noticeable here because uploads are the
             one feature most Node frameworks accidentally pin you to Node for.
           </p>
 

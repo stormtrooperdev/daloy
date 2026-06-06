@@ -11,7 +11,7 @@ const POST = {
   title: "Rate Limiting That Survives Multiple Instances",
   description:
     "Why the default in-memory rateLimit() is a one-instance lie behind a load balancer, how @daloyjs/core/rate-limit-redis fixes it with an atomic Lua INCR+PEXPIRE script, and the three operational levers that matter in production: fail-open vs fail-closed, Retry-After accuracy, and where to host the counter on serverless, edge, and traditional Node deploys.",
-  date: "2026-05-20",
+  date: "2026-06-02",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -658,9 +658,9 @@ export default function BlogPostPage() {
             The transport is decoupled on purpose. The whole{" "}
             <code>RedisCommands</code> contract is a single{" "}
             <code>eval(script, keys, args)</code> method. ioredis, node-redis,
-            Upstash&apos;s REST client, Deno&apos;s redis, valkey-glide, all
-            map onto it in a handful of lines. The interesting work lives in the
-            Lua script, not the wire.
+            Upstash&apos;s REST client, Deno&apos;s redis, valkey-glide, all map
+            onto it in a handful of lines. The interesting work lives in the Lua
+            script, not the wire.
           </p>
 
           <h2>Per-runtime hosting guidance</h2>
@@ -711,7 +711,7 @@ export default function BlogPostPage() {
             happens when the counter is unreachable. DaloyJS ships the first as
             a 15-line Lua script in <code>@daloyjs/core/rate-limit-redis</code>,
             and exposes the second as a single <code>onError</code> callback.
-            That&apos;s the whole API. The rest is operational discipline, 
+            That&apos;s the whole API. The rest is operational discipline,
             multiple keys, namespaced prefixes, aggressive timeouts, and the
             checklist above is the version of that discipline I trust myself to
             follow at 2 a.m. on a Tuesday.

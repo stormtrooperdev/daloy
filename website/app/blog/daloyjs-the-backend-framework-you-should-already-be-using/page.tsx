@@ -10,7 +10,7 @@ const POST = {
   title: "DaloyJS: The Backend Framework You Should Already Be Using",
   description:
     "A contract-first TypeScript backend framework with security guardrails, typed clients, live OpenAPI, and a supply-chain posture that feels designed for 2026 instead of remembered from 2019.",
-  date: "2026-06-06",
+  date: "2026-06-20",
   readingTime: "10 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

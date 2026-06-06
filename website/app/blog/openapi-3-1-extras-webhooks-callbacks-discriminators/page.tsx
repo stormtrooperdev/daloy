@@ -11,7 +11,7 @@ const POST = {
   title: "OpenAPI 3.1 Extras: Webhooks, Callbacks, and Discriminators",
   description:
     "A practical tour of the OpenAPI 3.1 features your generated clients are quietly waiting for: top-level webhooks for event-driven APIs, route-level callbacks for payment-style async flows, and the discriminator()/discriminatedUnion() pair that turns polymorphic payloads into tagged TypeScript unions you can switch on with confidence.",
-  date: "2026-06-01",
+  date: "2026-05-31",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -567,7 +567,7 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            The webhook is never bound to a path on <em>your</em> server, 
+            The webhook is never bound to a path on <em>your</em> server,
             it&apos;s a contract for consumers. What changes is what falls out
             of <code>pnpm gen</code> on the consumer&apos;s side:
           </p>
@@ -694,7 +694,7 @@ export default function BlogPostPage() {
           <p>
             Here is the pattern I keep recommending in design reviews:
             <em> one</em> webhook entry whose body is a discriminated union over
-            every event type. The alternative, one webhook per event type, 
+            every event type. The alternative, one webhook per event type,
             produces an SDK with N near-identical handlers, N opportunities to
             forget signature verification, and N opportunities to disagree with
             yourself about retry semantics. The combo collapses all of that to
@@ -752,7 +752,7 @@ export default function BlogPostPage() {
                 Discriminator mapping is required by some generators.
               </strong>{" "}
               A few SDK generators won&apos;t build proper tagged unions without
-              an explicit mapping. The helpers in DaloyJS emit one by default, 
+              an explicit mapping. The helpers in DaloyJS emit one by default,
               keep it.
             </li>
             <li>
@@ -772,7 +772,7 @@ export default function BlogPostPage() {
             <Link href="/blog/contract-first-without-the-codegen-dance">
               Contract-First Without the Codegen Dance
             </Link>{" "}
-, same philosophy, different feature surface. For the recipient side
+            , same philosophy, different feature surface. For the recipient side
             of any of this, the{" "}
             <Link href="/blog/problem-details-done-right-rfc-9457-errors">
               RFC 9457 errors post

@@ -12,7 +12,7 @@ const POST = {
     "Contract-First Without the Codegen Dance: OpenAPI, Typed Client, and Contract Tests From One Definition",
   description:
     "One app.route({...}) projects into generateOpenAPI(app), createClient(app), and runContractTests(app), plus pnpm gen for a Hey API typed fetch SDK your frontend can import. With pictures.",
-  date: "2026-05-18",
+  date: "2026-05-21",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -429,8 +429,8 @@ export default function BlogPostPage() {
             Here is the entire input. Everything that follows in this post is
             derived from this file. If it changes, everything else changes with
             it. If it doesn&apos;t, nothing else does. That is what &quot;single
-            source of truth&quot; actually has to mean, not &quot;we have a
-            wiki page about it&quot;.
+            source of truth&quot; actually has to mean, not &quot;we have a wiki
+            page about it&quot;.
           </p>
 
           <EditorFrame

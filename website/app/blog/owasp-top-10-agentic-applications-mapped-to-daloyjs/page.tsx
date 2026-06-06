@@ -11,7 +11,7 @@ const POST = {
     "OWASP Top 10 for Agentic Applications (2026), Mapped to the DaloyJS Tool Surface",
   description:
     "Aikido's write-up of the OWASP Top 10 for Agentic Applications 2026, ASI01 Agent Behavior Hijacking through ASI10 Over-reliance, is the new threat model for AI agents and the MCP-style HTTP tools they call. Here's the honest per-risk mapping of what a DaloyJS-exposed tool already blocks by default, what one opt-in line adds, and which risks live above the HTTP layer where no framework can save you.",
-  date: "2026-05-23",
+  date: "2026-06-11",
   readingTime: "12 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -343,15 +343,15 @@ export default function BlogPostPage() {
               Aikido&apos;s walkthrough of the OWASP Top 10 for Agentic
               Applications (2026)
             </a>{" "}
-, ASI01 through ASI10, released in December 2025 with input from
+            , ASI01 through ASI10, released in December 2025 with input from
             100+ practitioners. The question, again:{" "}
             <em>are we doing anything about this?</em>
           </p>
 
           <p>
             Short version: DaloyJS is a web framework, not a model runtime, so
-            we own the <strong>tool surface</strong>: the HTTP routes that an
-            AI agent calls, the auth on them, the schema they accept, the blast
+            we own the <strong>tool surface</strong>: the HTTP routes that an AI
+            agent calls, the auth on them, the schema they accept, the blast
             radius of what they do, and the supply chain they ship in. That
             covers most of ASI02 through ASI09 directly. ASI01 (Agent Behavior
             Hijacking) and ASI10 (Over-reliance) live upstream of any HTTP
@@ -495,16 +495,15 @@ export default function BlogPostPage() {
             <li>
               <strong>We don&apos;t sandbox the agent itself.</strong> Daloy
               gives you the HTTP surface the agent calls. The agent process (the
-              model, the orchestrator, the tool-loop) lives somewhere else, 
-              container, VM, serverless function, and that is where
-              ASI05&apos;s &quot;run agents in strictly sandboxed
-              environments&quot; applies.
+              model, the orchestrator, the tool-loop) lives somewhere else,
+              container, VM, serverless function, and that is where ASI05&apos;s
+              &quot;run agents in strictly sandboxed environments&quot; applies.
             </li>
             <li>
               <strong>We don&apos;t make policy decisions for you.</strong>{" "}
               Which tools are destructive, which require human approval, what
               the agent&apos;s wallet ceiling is, what the kill-switch triggers
-, those are deployment policy. The framework gives you the
+              , those are deployment policy. The framework gives you the
               primitives (multi-App split, two-step routes, structured audit
               log) so the policy is cheap to write.
             </li>

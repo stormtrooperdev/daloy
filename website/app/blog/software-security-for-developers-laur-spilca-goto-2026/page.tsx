@@ -11,7 +11,7 @@ const POST = {
     "Watch: Laur Spilca on Software Security for Developers (GOTO 2026), and What DaloyJS Already Decides for You",
   description:
     "Laurentiu Spilca and Thomas Vitale spend a GOTO 2026 conversation on why developers avoid security, the eternal encoding-vs-hashing-vs-encryption confusion, the danger of reinventing crypto, AI writing code with no security awareness, and why PKI still matters. Here is the talk, plus an honest mapping of which of those problems a DaloyJS app already takes out of your hands.",
-  date: "2026-05-31",
+  date: "2026-06-17",
   readingTime: "9 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -391,11 +391,11 @@ export default function BlogPostPage() {
 
           <p>
             Watch the talk for the literacy: the <em>why</em> behind encoding
-            versus hashing versus encryption, why reinventing crypto is a
-            losing bet, and why PKI is back on your plate whether you like it or
-            not. Then let a secure-by-default framework carry the parts that are
-            pure muscle memory, so the only security decisions left on your desk
-            are the ones that actually need a human.
+            versus hashing versus encryption, why reinventing crypto is a losing
+            bet, and why PKI is back on your plate whether you like it or not.
+            Then let a secure-by-default framework carry the parts that are pure
+            muscle memory, so the only security decisions left on your desk are
+            the ones that actually need a human.
           </p>
 
           <p>

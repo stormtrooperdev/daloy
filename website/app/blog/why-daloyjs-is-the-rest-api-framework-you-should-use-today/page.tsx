@@ -10,7 +10,7 @@ const POST = {
   title: "Why DaloyJS Is the REST API Framework You Should Use Today",
   description:
     "In 2026, security guardrails are not optional anymore. This is the blunt case for a REST framework that treats secure defaults as the baseline instead of a plugin shopping list.",
-  date: "2026-06-06",
+  date: "2026-06-21",
   readingTime: "7 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",

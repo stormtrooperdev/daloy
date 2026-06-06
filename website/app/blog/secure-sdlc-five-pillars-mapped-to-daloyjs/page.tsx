@@ -10,7 +10,7 @@ const POST = {
   title: "The 5 Pillars of a Secure SDLC, Mapped to DaloyJS",
   description:
     "Aikido's 'Secure SDLC Explained' lists the five pillars every engineering team needs, Visibility, Early Feedback, Developer Adoption, Consistency, Actionability. Here's the honest per-pillar mapping of what a DaloyJS app and its create-daloy scaffold already give you on day one, what you still configure, and the few items no framework can own.",
-  date: "2026-05-24",
+  date: "2026-06-12",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -261,7 +261,7 @@ export default function BlogPostPage() {
           <p>
             The piece is a fine high-level checklist for CTOs and engineering
             leaders. It groups everything a Secure SDLC needs into five pillars
-, {" "}
+            ,{" "}
             <strong>
               Visibility, Early Feedback, Developer Adoption, Consistency,
             </strong>{" "}
@@ -344,7 +344,7 @@ export default function BlogPostPage() {
             </a>
             : different engines catch different bug classes. Running both is the
             recommended layered posture, and the scaffolder gives you both with
-            neither sitting in your supply chain as a third-party action, 
+            neither sitting in your supply chain as a third-party action,
             Opengrep&apos;s binary is downloaded from a pinned release and
             verified by its sigstore cosign signature before it runs.
           </p>
@@ -384,11 +384,11 @@ export default function BlogPostPage() {
           <p>
             Aikido&apos;s point is that adoption fails when tooling switches
             context. Daloy&apos;s answer is to put the rules in the file the
-            agent already loads into its context window, {" "}
+            agent already loads into its context window,{" "}
             <Link href="/blog/designing-for-coding-agents-why-daloyjs-scaffolds-agents-md-and-skills">
               the AGENTS.md scaffold pattern
             </Link>{" "}
-, and to make the secure default the{" "}
+            , and to make the secure default the{" "}
             <em>shortest line of code you can type</em>.
           </p>
 
@@ -404,7 +404,7 @@ export default function BlogPostPage() {
             The reason this works is the audit framing. Daloy&apos;s
             <code> verify:parity-audits</code>,{" "}
             <code>verify:runtime-parity-audits</code>, and{" "}
-            <code>verify:routing-hardening-audits</code> are not documentation, 
+            <code>verify:routing-hardening-audits</code> are not documentation,
             they are scripts in <code>scripts/</code> that fail the build if a
             defense exists in one path but not another. The framework cannot
             ship a release where the JWT algorithm allowlist is enforced on Node

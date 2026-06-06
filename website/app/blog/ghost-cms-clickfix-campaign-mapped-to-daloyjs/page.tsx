@@ -11,7 +11,7 @@ const POST = {
     "The Ghost CMS / ClickFix Campaign, Mapped to DaloyJS, Plus the One Default We Just Tightened",
   description:
     "A pre-auth SQL injection in Ghost CMS (CVE-2026-26980) is being exploited at scale to hijack 700+ sites, including Harvard, Oxford, and DuckDuckGo, and serve a fake Cloudflare \"verify you are human\" prompt that silently stuffs a PowerShell one-liner into the visitor's clipboard. Most of the chain was already blocked by DaloyJS defaults; the last mile (the clipboard write) wasn't. Here's the stage-by-stage mapping and the one-line default we changed in response.",
-  date: "2026-05-25",
+  date: "2026-06-16",
   readingTime: "8 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -342,8 +342,8 @@ export default function BlogPostPage() {
 
           <p>
             If your app is a CMS, an admin UI, or anything else where users
-            click &quot;Copy&quot; buttons, opt back in explicitly, the
-            override fully replaces the default (no merging), so be deliberate:
+            click &quot;Copy&quot; buttons, opt back in explicitly, the override
+            fully replaces the default (no merging), so be deliberate:
           </p>
 
           <CodeBlock
@@ -435,7 +435,7 @@ app.use(secureHeaders({
             + revocation hook, CSP <code>default-src &apos;self&apos;</code>{" "}
             with the Trusted-Types path, and{" "}
             <code>frame-ancestors &apos;none&apos;</code>. Stage 5, the silent
-            clipboard write that makes the whole social engineering trick land, 
+            clipboard write that makes the whole social engineering trick land,
             wasn&apos;t. So I changed the default. Add{" "}
             <code>clipboard-write=()</code> to the Permissions-Policy string,
             write the regression test, document the override pattern, ship it.

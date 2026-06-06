@@ -11,7 +11,7 @@ const POST = {
   title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
   description:
     "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
-  date: "2026-05-18",
+  date: "2026-05-19",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -306,8 +306,8 @@ export default function BlogPostPage() {
             for <em>validation</em>, <em>TypeScript types</em>,<em> OpenAPI</em>
             , the <em>typed client</em>, and your <em>contract tests</em>. And
             that same <code>app</code> runs on Node, Bun, Deno, Cloudflare
-            Workers, and Vercel Edge, the same file, no rewrites, no
-            &quot;works on my Node version&quot; magic.
+            Workers, and Vercel Edge, the same file, no rewrites, no &quot;works
+            on my Node version&quot; magic.
           </p>
 
           <p>
@@ -358,7 +358,7 @@ export default function BlogPostPage() {
                 Standard Schema
               </a>
               . I used Zod here, but you can swap in Valibot or ArkType without
-              changing the framework. The schema isn&apos;t a decoration, 
+              changing the framework. The schema isn&apos;t a decoration,
               it&apos;s the validator, the OpenAPI body, <em>and</em> the
               TypeScript type of <code>params</code> inside <code>handler</code>
               .
@@ -461,10 +461,10 @@ export default function BlogPostPage() {
             The <code>app</code> object you defined above never imported a
             runtime. It only knows about <code>Request</code> in and{" "}
             <code>Response</code> out. The runtime quirks live in adapters at
-            the edges, where they belong. So when your platform changes, 
-            because your CFO discovered Cloudflare, or your team migrated to
-            Bun, or your boss said the word &quot;edge&quot; in a meeting, you
-            change exactly <em>one import</em>.
+            the edges, where they belong. So when your platform changes, because
+            your CFO discovered Cloudflare, or your team migrated to Bun, or
+            your boss said the word &quot;edge&quot; in a meeting, you change
+            exactly <em>one import</em>.
           </p>
 
           <EditorFrame
@@ -582,8 +582,8 @@ export default function BlogPostPage() {
             Then open <Link href="/docs/getting-started">Getting started</Link>,
             poke at <code>/openapi.json</code>, change one field in the route
             and watch the typed client complain at you in red squiggles. If
-            something breaks, please tell me, the only way a framework earns
-            the right to exist is by surviving other people&apos;s real code.
+            something breaks, please tell me, the only way a framework earns the
+            right to exist is by surviving other people&apos;s real code.
           </p>
 
           <h2>The honest part</h2>

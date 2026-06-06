@@ -12,7 +12,7 @@ const POST = {
     "Supply-Chain Hardening for TypeScript Libraries: Everything We Did and Why",
   description:
     "A maintainer's field guide to the supply-chain posture we shipped for DaloyJS, .npmrc that says no by default, pnpm 11 workspace keys (blockExoticSubdeps / strictDepBuilds / verifyDepsBeforeRun), SHA-pinned actions, permissions: {}, no Actions cache on installs, zizmor + Scorecard + CodeQL, npm trusted publishing with provenance, and the create-daloy --with-ci bundle that drops the app-safe parts into your project.",
-  date: "2026-05-19",
+  date: "2026-05-26",
   readingTime: "16 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -427,8 +427,8 @@ export default function BlogPostPage() {
             Hi, Devlin. Ten years of fullstack, currently in Norway, currently
             wishing I could un-read the changelogs of three different npm worm
             campaigns. The 2025 and 2026 supply-chain news has been
-            <em> rough</em>: chalk/debug, node-ipc, Shai-Hulud, TanStack, and
-            if you maintain a TypeScript library that other people install, you
+            <em> rough</em>: chalk/debug, node-ipc, Shai-Hulud, TanStack, and if
+            you maintain a TypeScript library that other people install, you
             probably had the same thought I did:{" "}
             <em>
               this could&apos;ve been me, and I&apos;m not actually sure my

@@ -442,8 +442,8 @@ export default function BlogPostPage() {
               <code>Sec-Fetch-Site</code>, <code>Sec-Fetch-Mode</code>,{" "}
               <code>Sec-Fetch-Dest</code>. With one rule, &quot;reject mutating
               requests whose <code>Sec-Fetch-Site</code> isn&apos;t{" "}
-              <code>same-origin</code> or <code>none</code>&quot;, you can
-              ditch the token entirely on modern browsers.
+              <code>same-origin</code> or <code>none</code>&quot;, you can ditch
+              the token entirely on modern browsers.
             </li>
           </ol>
 
@@ -568,8 +568,8 @@ export default function BlogPostPage() {
           <ul>
             <li>
               When <code>Sec-Fetch-Site</code> is <code>same-site</code> or
-              <code> cross-site</code>: usually because of a subdomain or a
-              user opening your site via a partner, we check the request&apos;s
+              <code> cross-site</code>: usually because of a subdomain or a user
+              opening your site via a partner, we check the request&apos;s
               <code> Origin</code> against the allowlist.
             </li>
             <li>
@@ -597,8 +597,8 @@ export default function BlogPostPage() {
           <p>
             One rule for predicates: keep them <em>small</em> and{" "}
             <em>readable</em>. The instant your predicate looks like a regex
-            engine, you have introduced a different CSRF vector, the one where
-            a future engineer misreads it.
+            engine, you have introduced a different CSRF vector, the one where a
+            future engineer misreads it.
           </p>
 
           <h2>Strategy 3: both, the realistic production default</h2>

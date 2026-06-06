@@ -11,7 +11,7 @@ const POST = {
     "When the Security Scanner Is the Attacker: The LiteLLM / TeamPCP Compromise, Mapped to DaloyJS",
   description:
     "On March 24, 2026 the litellm Python package was backdoored after a poisoned Trivy GitHub Action stole the maintainer's PyPI token. The same attack pattern - compromised scanner action → exfiltrated publish token → malicious release with a startup-time payload - would have to clear nine of DaloyJS's existing CI gates before it could ship. Here's the stage-by-stage mapping.",
-  date: "2026-05-24",
+  date: "2026-06-15",
   readingTime: "9 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -278,7 +278,7 @@ export default function BlogPostPage() {
 
           <p>
             DaloyJS is Node/TypeScript, not Python, so the <code>.pth</code>{" "}
-            hook is not literally applicable. But the <em>attack chain</em>: 
+            hook is not literally applicable. But the <em>attack chain</em>:
             poisoned scanner action → exfiltrated publish token → malicious
             release that runs at install time, is platform-agnostic, and is
             exactly what every JS framework that publishes to npm has to defend
@@ -331,8 +331,8 @@ export default function BlogPostPage() {
               credentials.&quot;
             </em>{" "}
             That&apos;s the whole game. If the attacker can&apos;t get the
-            credentials, every hash check in the world still passes, because
-            the bad version never ships. Removing the long-lived publish token
+            credentials, every hash check in the world still passes, because the
+            bad version never ships. Removing the long-lived publish token
             removes the prize.
           </p>
 
@@ -352,8 +352,8 @@ export default function BlogPostPage() {
             versions were on PyPI for <strong>about three hours</strong> before
             PyPI quarantined them. A pnpm install against a registry that honors
             release-age would have refused to fetch them at all. Most worm
-            campaigns we&apos;ve seen, chalk, debug, the Shai-Hulud sweeps, 
-            are caught and unpublished inside the same window.
+            campaigns we&apos;ve seen, chalk, debug, the Shai-Hulud sweeps, are
+            caught and unpublished inside the same window.
           </p>
 
           <h2>Stage 3: Persistence and lateral movement</h2>
@@ -377,7 +377,7 @@ export default function BlogPostPage() {
           <p>
             This is the single most boring decision in DaloyJS, and it&apos;s
             the one I&apos;m proudest of. Frameworks that pull in 30 transitive
-            packages at runtime cannot honestly claim a hardened supply chain, 
+            packages at runtime cannot honestly claim a hardened supply chain,
             the attacker only has to compromise the smallest of those 30. A
             zero-runtime-deps core has exactly one supply-chain target: the core
             itself, published through the gated OIDC pipeline above.
@@ -390,8 +390,8 @@ export default function BlogPostPage() {
           <p>
             Every one of those runs in <code>release.yml</code> before{" "}
             <code>npm stage publish</code> ever fires, and most of them run on
-            every PR too. None of them are aspirational, a failure blocks
-            merge. The full reasoning for each is in{" "}
+            every PR too. None of them are aspirational, a failure blocks merge.
+            The full reasoning for each is in{" "}
             <Link href="/blog/supply-chain-hardening-for-typescript-libraries">
               the supply-chain hardening post
             </Link>
@@ -420,7 +420,7 @@ export default function BlogPostPage() {
               <code>verify:no-runtime-deps</code>.
             </li>
             <li>
-              Sneak in a base64-encoded payload or invisible-unicode trick, 
+              Sneak in a base64-encoded payload or invisible-unicode trick,
               blocked by <code>verify:no-encoded-payloads</code> and{" "}
               <code>verify:no-invisible-unicode</code>.
             </li>
@@ -435,13 +435,12 @@ export default function BlogPostPage() {
           </ol>
 
           <p>
-            Could a determined attacker still find a way? Of course, security
-            is never &quot;done.&quot; But the path of least resistance the
-            LiteLLM compromise took (rewrite an action tag, steal a static
-            token, ship a release that auto-runs on install) is shut on all four
-            steps in this repo. That&apos;s the point of secure-by-default: the
-            obvious attack doesn&apos;t work, and the non-obvious ones cost real
-            effort.
+            Could a determined attacker still find a way? Of course, security is
+            never &quot;done.&quot; But the path of least resistance the LiteLLM
+            compromise took (rewrite an action tag, steal a static token, ship a
+            release that auto-runs on install) is shut on all four steps in this
+            repo. That&apos;s the point of secure-by-default: the obvious attack
+            doesn&apos;t work, and the non-obvious ones cost real effort.
           </p>
 
           <h2>What you should do in your own DaloyJS project</h2>
@@ -462,7 +461,7 @@ export default function BlogPostPage() {
             <li>
               Don&apos;t run third-party security scanners in the same job as
               your publish step. Different workflow, different permissions,
-              different runner identity. The LiteLLM team didn&apos;t, 
+              different runner identity. The LiteLLM team didn&apos;t,
               that&apos;s how they ended up here.
             </li>
             <li>

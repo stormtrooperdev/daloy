@@ -12,7 +12,7 @@ const POST = {
     "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge, Verified",
   description:
     "One Bookstore app, five entry files, five deployments. The Node serve(), the Bun handle.url, the Deno onListen, the Workers ctx.waitUntil, and Vercel's toWebHandler / toRouteHandlers / toFetchHandler, with receipts.",
-  date: "2026-05-18",
+  date: "2026-05-22",
   readingTime: "14 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -488,7 +488,7 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            <code>serve()</code> returns a small handle, {" "}
+            <code>serve()</code> returns a small handle,{" "}
             <code>{`{ server, port, close }`}</code>: so your tests can{" "}
             <code>await handle.close()</code> without doing the SIGTERM dance
             themselves. The auto-wired signals are what make Node deploys feel
@@ -761,7 +761,7 @@ export default function BlogPostPage() {
           <p>
             Runtime portability is not magic, and it&apos;s not free. It works
             because the shared application file is disciplined about two things
-, it never imports a runtime, and it never reads global state that
+            , it never imports a runtime, and it never reads global state that
             is shaped differently per runtime. The adapter at the edge does the
             platform-shaped work, and the application in the middle does the
             application-shaped work. As long as you respect that boundary, the

@@ -12,7 +12,7 @@ const POST = {
     "Secure by Default: The Defaults DaloyJS Ships So You Don't Have To Remember Them",
   description:
     "A tour of the always-on defenses in the DaloyJS request path, bounded body reads, prototype-pollution-safe JSON, CRLF sanitization, path-traversal rejection, request timeouts, problem+json with prod redaction, plus the opt-in upgrades worth turning on today.",
-  date: "2026-05-18",
+  date: "2026-05-20",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -406,11 +406,11 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            This post is the tour. Part one is the always-on stuff, the
-            defenses the framework enforces whether you remembered to ask for
-            them or not. Part two is the opt-in upgrades that are worth turning
-            on today, in five lines each. Coffee in Oslo is expensive, so
-            I&apos;ll be quick.
+            This post is the tour. Part one is the always-on stuff, the defenses
+            the framework enforces whether you remembered to ask for them or
+            not. Part two is the opt-in upgrades that are worth turning on
+            today, in five lines each. Coffee in Oslo is expensive, so I&apos;ll
+            be quick.
           </p>
 
           <h2>The empty constructor is already a security policy</h2>
@@ -698,10 +698,10 @@ export default function BlogPostPage() {
           />
 
           <p>
-            The session middleware has one parameter you must provide, a
-            signing secret, and it accepts an array so you can rotate without a
-            flag day. The default cookie shape is opinionated, in the way I wish
-            more frameworks were:
+            The session middleware has one parameter you must provide, a signing
+            secret, and it accepts an array so you can rotate without a flag
+            day. The default cookie shape is opinionated, in the way I wish more
+            frameworks were:
           </p>
 
           <EditorFrame

@@ -10,7 +10,7 @@ const POST = {
   title: "Cloud Security Architecture, Mapped to the DaloyJS App Layer",
   description:
     "Aikido's 'Cloud Security Architecture' guide is a fine high-level checklist, Zero Trust, defense-in-depth, IAM, segmentation, IaC scanning, continuous monitoring. Here's the honest, per-principle mapping of what DaloyJS already ships for the application-layer half of that checklist, what the cloud platform still owns, and the opt-ins worth turning on today.",
-  date: "2026-05-23",
+  date: "2026-06-09",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
@@ -279,11 +279,11 @@ export default function BlogPostPage() {
           />
 
           <p>
-            Zero Trust at the application layer is not a vibe, it&apos;s a
-            chain of <em>explicit verification points</em> that don&apos;t
-            collapse into &quot;the firewall said it was fine.&quot; Daloy gives
-            you the verifying middleware as first-class primitives, so the chain
-            is visible in your <code>app.ts</code>:
+            Zero Trust at the application layer is not a vibe, it&apos;s a chain
+            of <em>explicit verification points</em> that don&apos;t collapse
+            into &quot;the firewall said it was fine.&quot; Daloy gives you the
+            verifying middleware as first-class primitives, so the chain is
+            visible in your <code>app.ts</code>:
           </p>
 
           <CodeBlock language="ts" code={ZERO_TRUST} />
@@ -291,12 +291,12 @@ export default function BlogPostPage() {
           <p>
             Two non-negotiables worth pointing out: every secret comparison in
             the framework, basic auth, CSRF tokens, session HMAC, webhook
-            signatures, runs through <code>timingSafeEqual</code>. There is a
-            CI guard (<code>verify:secret-comparisons</code>) that fails the
-            build if anyone tries to slip a raw <code>===</code> back in. And
-            the JWT middleware refuses unsigned tokens, refuses{" "}
-            <code>alg: none</code>, and pins to JWKS by <code>kid</code>: so a
-            stolen audience claim doesn&apos;t silently become a master key.
+            signatures, runs through <code>timingSafeEqual</code>. There is a CI
+            guard (<code>verify:secret-comparisons</code>) that fails the build
+            if anyone tries to slip a raw <code>===</code> back in. And the JWT
+            middleware refuses unsigned tokens, refuses <code>alg: none</code>,
+            and pins to JWKS by <code>kid</code>: so a stolen audience claim
+            doesn&apos;t silently become a master key.
           </p>
 
           <h2>Principle 2: Defense-in-depth</h2>
@@ -387,7 +387,7 @@ export default function BlogPostPage() {
 
           <p>
             The cloud post is talking about Terraform scanners. The framework
-            analogue is the supply-chain CI gate. These are not aspirational, 
+            analogue is the supply-chain CI gate. These are not aspirational,
             they all run today, and a failure blocks merge:
           </p>
 
@@ -422,11 +422,11 @@ export default function BlogPostPage() {
           <CodeBlock language="ts" code={STRUCTURED_LOGS} />
 
           <p>
-            The redaction is not a string regex pass, it walks the object
-            graph, so a secret hiding inside <code>req.body.user.token</code>{" "}
-            gets redacted the same way an Authorization header does. The list of
-            keys is extensible; the defaults are conservative. If your company
-            adds a new secret-shaped header, you add one string.
+            The redaction is not a string regex pass, it walks the object graph,
+            so a secret hiding inside <code>req.body.user.token</code> gets
+            redacted the same way an Authorization header does. The list of keys
+            is extensible; the defaults are conservative. If your company adds a
+            new secret-shaped header, you add one string.
           </p>
 
           <h2>The &quot;assume breach&quot; defaults you already have</h2>

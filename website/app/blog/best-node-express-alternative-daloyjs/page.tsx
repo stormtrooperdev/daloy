@@ -11,7 +11,7 @@ const POST = {
     "The Best Node.js Express Alternative in 2026 Is Contract-First: The Case for DaloyJS",
   description:
     "Looking for a modern Node.js Express alternative? The honest argument for why a contract-first framework wins the category in 2026, and why DaloyJS is the Express alternative I now reach for, with the caveats where it does not hold.",
-  date: "2026-05-31",
+  date: "2026-06-18",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
   authorRole: "Fullstack cloud engineer",
