@@ -1,4 +1,4 @@
-# Publish to npm.
+# Publish to npm and JSR.
 #
 # This workflow exists in isolation from `ci.yml` for one reason:
 # `id-token: write` is the credential the TanStack 2026-05-11 attackers
@@ -23,6 +23,11 @@
 #     environment `npm-publish`; older Trusted Publisher configs default to
 #     `npm publish` only and fail with "OIDC permission denied for this action".
 #     No long-lived NPM_TOKEN is stored in repo secrets.
+#   * The same tag push also publishes the JSR package `@daloyjs/daloy`
+#     (raw `src/*.ts`, no build step) via JSR's GitHub Actions OIDC flow.
+#     There is likewise no long-lived JSR token in repo secrets; the job
+#     runs in the same protected `npm-publish` environment, and a JSR
+#     hiccup does NOT block the npm publishes or the GitHub Release.
 #   * No GitHub Actions cache is read or written. Cold installs only.
 #   * `actions/checkout` uses `persist-credentials: false`.
 #
@@ -47,6 +52,7 @@ on:
         options:
           - "@daloyjs/core"
           - "create-daloy"
+          - "jsr"
           - "all"
         default: "@daloyjs/core"
 
@@ -428,6 +434,121 @@ jobs:
         run: npm stage publish . --access public --provenance
         env:
           NPM_CONFIG_PROVENANCE: "true"
+
+  # ---------------------------------------------------------------------------
+  # Publish the JSR package `@daloyjs/daloy`.
+  #
+  # JSR ships the RAW `src/*.ts` source (see `jsr.json` exports) — there is no
+  # build or tarball, so this job has no SBOM/`dist` steps. It authenticates
+  # with JSR via GitHub Actions OIDC (`id-token: write`): JSR trades the
+  # short-lived OIDC token for a single-use publish credential, so there is no
+  # long-lived JSR token in repo secrets, mirroring the npm trusted-publishing
+  # jobs above.
+  #
+  # It runs on the same triggers as `@daloyjs/core` (the JSR package is the same
+  # source) plus a dedicated `jsr` dispatch option for backfilling JSR on its
+  # own. It is INDEPENDENT of `github-release` (not in its `needs:`), so a JSR
+  # outage never blocks the npm publishes or the GitHub Release.
+  # ---------------------------------------------------------------------------
+  publish-jsr:
+    name: Publish @daloyjs/daloy to JSR
+    needs: verify
+    if: |
+      github.event_name == 'push' ||
+      github.event.inputs.package == '@daloyjs/core' ||
+      github.event.inputs.package == 'jsr' ||
+      github.event.inputs.package == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ vars.NPM_PUBLISH_ENVIRONMENT || 'npm-publish' }}
+      url: https://jsr.io/@daloyjs/daloy
+    permissions:
+      contents: read
+      # `id-token: write` is required by JSR's GitHub Actions publishing (OIDC).
+      # It is granted ONLY here, ONLY after the protected environment approval,
+      # and the job runs no third-party scripts.
+      id-token: write
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2
+        with:
+          # Lock egress to exactly what a JSR OIDC publish needs:
+          #   registry.npmjs.org              — `npx jsr` fetches the JSR CLI
+          #   jsr.io / api.jsr.io             — the JSR registry + publish API
+          #   *.actions.githubusercontent.com — the GitHub OIDC token endpoint
+          #     ($ACTIONS_ID_TOKEN_REQUEST_URL lives on a dynamic subdomain),
+          #     which JSR exchanges for a single-use publish credential.
+          # If a future runner image serves the OIDC token from a new host and
+          # the publish is blocked, widen this allowlist — do NOT drop to audit.
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            *.actions.githubusercontent.com:443
+            api.jsr.io:443
+            jsr.io:443
+            registry.npmjs.org:443
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ac6db6d3c1f721f886538a378a2d73e85697340a # v6
+        with:
+          version: 11.1.3
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+
+      - name: Install (no scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+        env:
+          npm_config_ignore_scripts: "true"
+
+      - name: Verify actor is on SECURITY-CONTACTS rotation
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -eu
+          node -e '
+            const fs = require("node:fs");
+            const text = fs.readFileSync("SECURITY-CONTACTS.md", "utf8");
+            const m = text.match(/<!--\s*BEGIN ACTIVE\s*-->([\s\S]*?)<!--\s*END ACTIVE\s*-->/);
+            if (!m) { console.error("::error::SECURITY-CONTACTS.md is missing the ACTIVE block."); process.exit(1); }
+            const handles = [...m[1].matchAll(/^\s*-\s*handle:\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*$/gm)].map(x => x[1]);
+            const actor = process.env.ACTOR;
+            if (!handles.includes(actor)) {
+              console.error(`::error::Actor "${actor}" is not on the SECURITY-CONTACTS active rotation. Active: ${handles.join(", ")}.`);
+              process.exit(1);
+            }
+            console.log(`Actor "${actor}" is on the SECURITY-CONTACTS active rotation.`);
+          '
+
+      - name: Verify tag matches jsr.json version
+        if: github.event_name == 'push'
+        run: |
+          set -eu
+          tag_version="${GITHUB_REF_NAME#v}"
+          jsr_version="$(node -p "require('./jsr.json').version")"
+          if [ "$tag_version" != "$jsr_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match jsr.json version $jsr_version"
+            exit 1
+          fi
+
+      - name: Packaging signal (jsr publish dry-run)
+        run: npx --yes jsr publish --dry-run
+
+      - name: Publish @daloyjs/daloy to JSR (OIDC)
+        run: npx --yes jsr publish
 
   # ---------------------------------------------------------------------------
   # Publish the GitHub Release object for the pushed tag.
