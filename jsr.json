@@ -49,5 +49,8 @@
     "./compression": "./src/compression.ts",
     "./cookie": "./src/cookie.ts",
     "./time-claims": "./src/time-claims.ts"
+  },
+  "publish": {
+    "include": ["src", "README.md", "LICENSE"]
   }
 }

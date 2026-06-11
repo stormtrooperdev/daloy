@@ -476,17 +476,29 @@ jobs:
         with:
           # Lock egress to exactly what a JSR OIDC publish needs:
           #   registry.npmjs.org              — `npx jsr` fetches the JSR CLI
+          #   dl.deno.land                    — the `jsr` CLI downloads a Deno
+          #     runtime to perform the publish; dl.deno.land 302-redirects to
+          #     the Deno GitHub release asset (github.com → the githubusercontent
+          #     asset CDNs below), so all of those hosts must be reachable too.
+          #   objects.githubusercontent.com /
+          #   release-assets.githubusercontent.com
+          #                                   — GitHub release-asset CDN that
+          #     dl.deno.land / github.com redirect to for the Deno binary.
           #   jsr.io / api.jsr.io             — the JSR registry + publish API
           #   *.actions.githubusercontent.com — the GitHub OIDC token endpoint
           #     ($ACTIONS_ID_TOKEN_REQUEST_URL lives on a dynamic subdomain),
           #     which JSR exchanges for a single-use publish credential.
-          # If a future runner image serves the OIDC token from a new host and
-          # the publish is blocked, widen this allowlist — do NOT drop to audit.
+          # If a future runner image serves the OIDC token or the Deno binary
+          # from a new host and the publish is blocked, widen this allowlist —
+          # do NOT drop to audit.
           egress-policy: block
           allowed-endpoints: >
             api.github.com:443
             github.com:443
             *.actions.githubusercontent.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            dl.deno.land:443
             api.jsr.io:443
             jsr.io:443
             registry.npmjs.org:443
