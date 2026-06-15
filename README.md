@@ -30,6 +30,19 @@ DaloyJS is maintained in the GitHub organization at <https://github.com/daloyjs>
 
 ---
 
+## Built for the vibe-coding era
+
+Most backend code is now written with AI. Non-developers describe an app and ship whatever the model produces; engineers let agents install dependencies, run tests, and open PRs. The code works on the happy path and gets deployed within the hour — usually with no body limits, skippable input validation, admin routes left mounted on the public app, and an outbound `fetch` that will happily call cloud-metadata endpoints. At the same time, the dependency tree itself has become the attack surface: self-replicating npm worms, malicious `postinstall` scripts, CI cache-poisoning, and **slopsquatting** — where an attacker pre-registers a package name an AI assistant is likely to hallucinate.
+
+DaloyJS is built for exactly this moment, from two directions at once:
+
+- **A secure-by-default runtime.** Body limits, prototype-pollution-safe JSON, path-traversal rejection, request timeouts, header-injection guards, real `405`s, and RFC 9457 problem+json with prod-mode redaction are on in the constructor — the dangerous things are off when nobody remembered to turn them off. The app also *refuses to boot* on unsafe configuration (wildcard CORS with credentials, weak session secrets, a state-changing session route with no CSRF protection, unconfigured `X-Forwarded-*` in production).
+- **A hardened supply chain.** `@daloyjs/core` ships **zero runtime dependencies**, is published with npm provenance and CycloneDX + SPDX SBOMs, and the pnpm posture (`ignore-scripts`, a 24-hour release-age cooldown, source-verified lockfiles) plus the CI `verify:*` gates shrink the blast radius of the campaigns making headlines.
+
+The point is that none of this costs you developer experience or portability: you keep contract-first DX in the league of ts-rest, Elysia, and FastAPI, and Hono-grade portability across Node, Bun, Deno, Workers, Vercel, Fastly, and Lambda. The secure path is simply the path of least resistance. See [Vibe Coding Security: what DaloyJS already blocks](https://daloyjs.dev/blog/vibe-coding-security-what-daloyjs-already-blocks) and the [security docs](https://daloyjs.dev/docs/security).
+
+---
+
 DaloyJS exists to be the framework you'd build if you took the best ideas from each modern stack:
 
 | You want                                                | Today's best-of                                       | What DaloyJS gives you                                                                                                                               |

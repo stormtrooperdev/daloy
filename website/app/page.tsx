@@ -41,6 +41,9 @@ export const metadata = buildMetadata({
     "supply-chain attack protection",
     "slopsquatting protection",
     "AI-era supply chain security",
+    "vibe coding security",
+    "secure vibe coding framework",
+    "AI-generated code security",
     "runtime-portable framework",
     "TypeScript HTTP framework",
     "contract-first TypeScript",
@@ -132,8 +135,8 @@ const DEVELOPER_PITCH = [
   },
   {
     icon: RobotIcon,
-    title: "Built for AI-assisted teams",
-    body: "LLMs make teams faster, and they also make attackers faster at finding dependency mistakes. DaloyJS assumes coding agents are in the loop and ships scaffolds with security defaults, agent guidance, and source-verified installs.",
+    title: "Built for the vibe-coding era",
+    body: "When code is vibe-coded and deployed within the hour, the dangerous defaults have to be off when nobody remembered to turn them off. DaloyJS assumes coding agents are in the loop: body limits, prototype-pollution-safe JSON, and path-traversal rejection ship in the constructor, scaffolds carry agent guidance, and installs are source-verified.",
   },
 ];
 
@@ -253,9 +256,11 @@ export default function HomePage() {
               className="float-up max-w-3xl text-base font-medium text-foreground/80 sm:text-lg"
               style={{ animationDelay: "120ms" }}
             >
-              Secure-by-default runtime. Blocked install scripts.
-              Source-verified lockfiles. Typed end-to-end. Optional hardened
-              GitHub Actions bundle for teams on GitHub.
+              Most backend code is now AI-written and shipped before anyone
+              reviews it. DaloyJS makes the safe path the default: a
+              secure-by-default runtime, blocked install scripts,
+              source-verified lockfiles, a zero-runtime-dependency core, and an
+              optional hardened GitHub Actions bundle for teams on GitHub.
             </p>
             <ContractFlowVisual />
             <p
