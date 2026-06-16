@@ -389,7 +389,7 @@ export default function BlogIndexPage() {
           {POSTS.map((post, index) => (
             <li key={post.slug} className="group">
               {(() => {
-                const href: Route = `/blog/${post.slug}`;
+                const href = `/blog/${post.slug}` as Route;
                 const accent = POST_ACCENTS[index % POST_ACCENTS.length];
 
                 return (
