@@ -56,24 +56,39 @@ pnpm vercel dev`}
 
       <h2>1. Vercel Node.js Functions (standalone API)</h2>
       <p>
-        For a standalone DaloyJS REST API on the Node.js runtime, use a
-        catch-all file in <code>/api</code>. Vercel Node.js Functions expect a
+        For a standalone DaloyJS REST API on the Node.js runtime, use a single
+        function at <code>api/index.ts</code>. Vercel Node.js Functions expect a
         default export with a <code>fetch</code> method.
       </p>
       <CodeBlock
         language="ts"
-        code={`// api/[...path].ts
+        code={`// api/index.ts
 import { toFetchHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/server.ts";
 
 // Node.js is the default runtime. No runtime export needed.
 export default toFetchHandler(app);`}
       />
+      <p>
+        Vercel maps <code>api/index.ts</code> to <code>/api</code>, but a DaloyJS
+        app registers its routes at the <strong>root</strong> (
+        <code>/healthz</code>, <code>/docs</code>, …). Add a{" "}
+        <strong>rewrite</strong> so every path reaches the function and DaloyJS
+        owns routing at the site root, without it the deployed root domain
+        returns a Vercel 404:
+      </p>
+      <CodeBlock
+        language="json"
+        code={`// vercel.json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+}`}
+      />
 
       <h2>2. Vercel Edge Functions (standalone API)</h2>
       <CodeBlock
         language="ts"
-        code={`// api/[...path].ts
+        code={`// api/index.ts
 import { toWebHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/server.ts";
 
@@ -81,6 +96,7 @@ export const runtime = "edge";
 export default toWebHandler(app);`}
       />
       <p>
+        The same <code>/(.*)</code> → <code>/api</code> rewrite applies.{" "}
         <code>toEdgeHandler</code> is still exported as a backward-compatible
         alias of <code>toWebHandler</code>; new code should prefer{" "}
         <code>toWebHandler</code>.
@@ -88,14 +104,16 @@ export default toWebHandler(app);`}
 
       <h2>vercel.json</h2>
       <p>
-        Most projects don&apos;t need <code>vercel.json</code> at all. Add it
-        for per-function memory/duration limits or to pin a region.
+        The <code>rewrites</code> rule above is required for root routing. Add{" "}
+        <code>functions</code> for per-function memory/duration limits, and{" "}
+        <code>regions</code> to pin a region:
       </p>
       <CodeBlock
         language="json"
         code={`{
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
   "functions": {
-    "api/[...path].ts": { "memory": 1024, "maxDuration": 30 }
+    "api/index.ts": { "memory": 1024, "maxDuration": 30 }
   },
   "regions": ["fra1"]
 }`}

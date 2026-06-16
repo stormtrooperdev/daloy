@@ -6,10 +6,16 @@ import { toFetchHandler } from "@daloyjs/core/vercel";
 // recommends for standalone functions (it runs on Fluid Compute, with the
 // performance of the edge network but full Node API support). Node.js is the
 // default runtime, so no `runtime` export is needed. Vercel Node.js Functions
-// in `/api` expect a default export with a `fetch` method, which is exactly
-// what `toFetchHandler(app)` returns. If you specifically need the Edge runtime
+// expect a default export with a `fetch` method, which is exactly what
+// `toFetchHandler(app)` returns. If you specifically need the Edge runtime
 // instead, add `export const runtime = "edge"` and switch the default export to
 // `toWebHandler(app)` from "@daloyjs/core/vercel".
+//
+// This single function owns ALL routing: `vercel.json` rewrites every path to
+// `/api`, and DaloyJS matches the original request path (`/healthz`, `/docs`,
+// …). So the app's routes are served at the site root, not under `/api/*`.
+// Do not split this into per-path files — keep one entry so the middleware
+// chain and the generated OpenAPI spec stay unified.
 
 const app = new App({
   bodyLimitBytes: 256 * 1024,

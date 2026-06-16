@@ -27,7 +27,7 @@ curl http://localhost:3000/books/1
 - OpenAPI 3.1 YAML: <http://localhost:3000/openapi.yaml>
 
 After deploying, the same routes serve `/docs`, `/openapi.json`, and `/openapi.yaml` from your Vercel deployment URL.
-To brand Scalar, change `docs: true` in `api/[...path].ts` to `docs: { scalar: { theme, customCss } }`.
+To brand Scalar, change `docs: true` in `api/index.ts` to `docs: { scalar: { theme, customCss } }`.
 
 <!-- daloy-minimal:strip-end docs -->
 
@@ -37,7 +37,7 @@ To brand Scalar, change `docs: true` in `api/[...path].ts` to `docs: { scalar: {
 pnpm deploy
 ```
 
-The API entry lives at `api/[...path].ts` and uses `@daloyjs/core/vercel`:
+The API entry lives at `api/index.ts` and uses `@daloyjs/core/vercel`:
 
 ```ts
 import { toFetchHandler } from "@daloyjs/core/vercel";
@@ -59,14 +59,24 @@ export const runtime = "edge";
 export default toWebHandler(app);
 ```
 
-That catch-all API route lets DaloyJS own routing while Vercel handles the runtime.
+`vercel.json` rewrites every path to this single function:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/api" }] }
+```
+
+So DaloyJS owns all routing and the app's routes are served at the **site root**
+(`/healthz`, `/docs`, `/openapi.json`, …) rather than under `/api/*`. Without
+this rewrite the function only answers `/api/*` and the root domain returns a
+Vercel 404. (The demo defines no `/` route, so the bare root returns the app's
+problem+json 404 — visit `/docs` or `/healthz`.)
 
 ## Imports
 
 This project uses TypeScript with `"allowImportingTsExtensions"`. Relative imports use the `.ts` extension — the actual file on disk:
 
 ```ts
-import handler from "../api/[...path].ts";
+import handler from "../api/index.ts";
 ```
 
 Vercel bundles the `api/` functions at deploy time and resolves `.ts` directly, and the test runner (tsx) does too.

@@ -165,8 +165,9 @@ bun  create daloy           my-api`}
       <p>
         A Vercel API on the Node.js runtime (Vercel&apos;s recommended runtime
         for standalone functions) using <code>@daloyjs/core/vercel</code> with a
-        catch-all <code>api/[...path].ts</code> route exporting{" "}
-        <code>toFetchHandler(app)</code>, <code>vercel dev</code> /{" "}
+        single <code>api/index.ts</code> function exporting{" "}
+        <code>toFetchHandler(app)</code> (plus a <code>vercel.json</code> rewrite
+        so DaloyJS routes at the site root), <code>vercel dev</code> /{" "}
         <code>vercel deploy</code> scripts, <code>secureHeaders</code> +{" "}
         <code>requestId</code> enabled by default, smaller serverless-friendly
         body and timeout limits, and the same health and bookstore examples as

@@ -255,15 +255,21 @@ await app.shutdown(15_000);`}
         instead of a long-lived Node process.
       </p>
       <p>
-        For a standalone Vercel REST API, create a catch-all{" "}
-        <code>api/[...path].ts</code> and export the web-standard fetch handler:
+        For a standalone Vercel REST API, create a single{" "}
+        <code>api/index.ts</code> function and export the web-standard fetch
+        handler, plus a <code>vercel.json</code> rewrite so DaloyJS routes at the
+        site root (without it the root domain 404s):
       </p>
       <CodeBlock
         language="ts"
-        code={`import { toFetchHandler } from "@daloyjs/core/vercel";
+        code={`// api/index.ts
+import { toFetchHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/server.js";
 
-export default toFetchHandler(app);`}
+export default toFetchHandler(app);
+
+// vercel.json
+// { "rewrites": [{ "source": "/(.*)", "destination": "/api" }] }`}
       />
       <p>
         See <Link href="/docs/adapters/vercel">Vercel</Link>,{" "}

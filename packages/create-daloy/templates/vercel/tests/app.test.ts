@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import handler from "../api/[...path].ts";
+import handler from "../api/index.ts";
 
 test("Vercel Node.js handler responds through DaloyJS", async () => {
   // Vercel Node.js Functions invoke the default export's `fetch` method.

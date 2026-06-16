@@ -77,7 +77,7 @@ test("node-basic health route preserves literal true type", async () => {
 
 test("vercel template preserves the literal true type on the Node.js handler", async () => {
   const source = await readFile(
-    path.join(pkgRoot, "templates/vercel/api/[...path].ts"),
+    path.join(pkgRoot, "templates/vercel/api/index.ts"),
     "utf8",
   );
   assert.match(
@@ -179,12 +179,38 @@ test("node-basic separates buildApp() from server boot so codegen has no side ef
 
 test("vercel template opts into the auto-mounted /docs and /openapi.json", async () => {
   const source = await readFile(
-    path.join(pkgRoot, "templates/vercel/api/[...path].ts"),
+    path.join(pkgRoot, "templates/vercel/api/index.ts"),
     "utf8",
   );
   assert.match(source, /docs:\s*true/);
   assert.match(source, /openapi:\s*\{/);
   assert.match(source, /info:\s*\{\s*title:\s*"My Daloy Vercel API"/);
+});
+
+test("vercel template routes all paths to a single api/index.ts via a rewrite", async () => {
+  // Vercel maps `api/<file>` to `/api/<file>`. A DaloyJS app registers its
+  // routes at the root (/healthz, /docs), so without a rewrite the deployed
+  // site 404s at the root domain. The template ships a single `api/index.ts`
+  // function plus a `/(.*)` -> `/api` rewrite so DaloyJS owns routing at the
+  // root. Both pieces are required; this guards against regressing either.
+  const pkgRootVercel = path.join(pkgRoot, "templates/vercel");
+  // Single entrypoint named index.ts (not a per-path catch-all).
+  await access(path.join(pkgRootVercel, "api/index.ts"));
+  await assert.rejects(access(path.join(pkgRootVercel, "api/[...path].ts")));
+
+  const vercelJson = JSON.parse(
+    await readFile(path.join(pkgRootVercel, "vercel.json"), "utf8"),
+  );
+  assert.ok(
+    Array.isArray(vercelJson.rewrites),
+    "vercel.json must declare a rewrites array",
+  );
+  assert.ok(
+    vercelJson.rewrites.some(
+      (r) => r?.source === "/(.*)" && r?.destination === "/api",
+    ),
+    "vercel.json must rewrite every path to /api so DaloyJS routes at the root",
+  );
 });
 
 test("every template ships a hardened _Dockerfile and _dockerignore", async () => {
@@ -1622,7 +1648,7 @@ test("deprecated --template vercel-edge alias resolves to the vercel template", 
     assert.match(stderr, /vercel-edge.*deprecated/i);
     // The scaffolded project is the Node.js-runtime `vercel` template.
     const handler = await readFile(
-      path.join(tmpDir, projectName, "api/[...path].ts"),
+      path.join(tmpDir, projectName, "api/index.ts"),
       "utf8",
     );
     assert.match(handler, /export default toFetchHandler\(app\)/);
