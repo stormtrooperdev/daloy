@@ -12,6 +12,57 @@ For the forward-looking plan and the full thematic release log, see
 > `create-daloy` are published together — a new core release always ships a
 > matching scaffolder so generated projects pin the latest peer.
 
+## [0.38.2] — 2026-06-16
+
+`@daloyjs/core` has no runtime changes in this release; it is a lockstep version
+bump published alongside the `create-daloy` scaffolder fixes below, so newly
+scaffolded projects pin the latest peer.
+
+### Fixed
+
+- **Scaffolded apps now boot cleanly behind a PaaS edge proxy** (Railway,
+  Render, Fly, Heroku). Three deploy-blocking issues in the `create-daloy`
+  templates are resolved:
+  - The reverse-proxy posture is now an opt-in env knob: set
+    `TRUST_PROXY_HOPS` (a single PaaS edge is `1`) and the template wires
+    `behindProxy: { hops: N }`. Previously, with the posture unconfigured, the
+    production boot guard returned `500 problem+json` on every request carrying
+    an `X-Forwarded-*` header (which, behind such a proxy, is every request).
+    The secure default is preserved when the variable is unset.
+  - The OpenAPI `servers` URL is resolved at runtime
+    (`PUBLIC_URL` → `RAILWAY_PUBLIC_DOMAIN` → localhost) so the Scalar "Try it"
+    panel targets the deployed origin instead of `localhost` (which the browser
+    blocked under the `connect-src 'self'` CSP).
+  - The `node-basic` production build now emits a flat `dist/index.js`
+    (`tsconfig.build.json` roots at `src`), matching the `start` script and
+    Dockerfile `CMD` (`node dist/index.js`). It previously emitted
+    `dist/src/index.js`, crashing the container with `MODULE_NOT_FOUND`.
+- **Bun template no longer crashes on startup.** Removed the `export default app`
+  line from the Bun entrypoint: Bun auto-starts a second server from any module
+  whose default export has a `fetch` method, colliding with the explicit
+  `serve()` on the same port (`EADDRINUSE`) and surfacing on Railway as an
+  "Uncaught exception — exiting" restart loop.
+
+### Changed
+
+- **The Vercel template now targets Vercel's Node.js runtime** (on Fluid
+  Compute), which Vercel recommends for standalone functions after deprecating
+  standalone Edge Functions. The template was renamed `vercel-edge` → `vercel`
+  and now exports `toFetchHandler(app)` (the `{ fetch }` shape Node.js Functions
+  expect, no `runtime` export needed); opting into the Edge runtime stays
+  documented as a one-line alternative. `--template vercel-edge` keeps working as
+  a deprecated alias that resolves to `vercel`.
+
+### Documentation
+
+- New Railway deployment guidance (the `TRUST_PROXY_HOPS` posture and public-URL
+  resolution) and a corrected start command; the deployment-overview "Reverse
+  proxy" section now documents the real `behindProxy` API instead of a
+  nonexistent option. Refreshed the Vercel adapter and scaffolder docs for the
+  Node.js-runtime template, and corrected the `SECURITY.md` container-hardening
+  section (every scaffolded template ships a hardened `Dockerfile`; the
+  `HEALTHCHECK` targets `/healthz`).
+
 ## [0.38.1] — 2026-06-11
 
 ### Changed
@@ -991,7 +1042,8 @@ For the forward-looking plan and the full thematic release log, see
   publish with provenance, `pnpm create daloy` scaffolder (`node-basic`,
   `vercel-edge`, `cloudflare-worker`), docs metadata + ORM guides.
 
-[Unreleased]: https://github.com/daloyjs/daloy/compare/v0.38.1...HEAD
+[Unreleased]: https://github.com/daloyjs/daloy/compare/v0.38.2...HEAD
+[0.38.2]: https://github.com/daloyjs/daloy/compare/v0.38.1...v0.38.2
 [0.38.1]: https://github.com/daloyjs/daloy/compare/v0.38.0...v0.38.1
 [0.38.0]: https://github.com/daloyjs/daloy/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/daloyjs/daloy/compare/f37ce20...v0.37.0
