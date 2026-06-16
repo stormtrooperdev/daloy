@@ -20,6 +20,19 @@ export function buildApp(): App {
     bodyLimitBytes: 1024 * 1024,
     requestTimeoutMs: 5_000,
     production: process.env.NODE_ENV === "production",
+    // Reverse-proxy posture. When the app runs behind a trusted edge proxy
+    // (Railway, Render, Fly, Heroku, a single nginx / load balancer), set the
+    // TRUST_PROXY_HOPS env var to the number of proxy hops in front of it — a
+    // single PaaS edge is 1. DaloyJS then reads the real client IP from the
+    // matching X-Forwarded-For slot (used by rateLimit, requestId, and audit
+    // logs). Leave it unset when the app is exposed directly to the public
+    // internet: DaloyJS refuses to honor spoofable X-Forwarded-* headers
+    // (returning 500 on the first forwarded request) rather than trust a
+    // header an attacker can set. See the DaloyJS deployment guide for the
+    // per-platform hop counts.
+    ...(process.env.TRUST_PROXY_HOPS
+      ? { behindProxy: { hops: Number(process.env.TRUST_PROXY_HOPS) } }
+      : {}),
     // daloy-minimal:strip-start docs
     // Auto-mounted docs (when `docs: true`):
     //   GET /openapi.json — OpenAPI 3.1 spec (JSON)
@@ -32,7 +45,19 @@ export function buildApp(): App {
     // `info.title` / `info.version` are pulled from package.json by default;
     // set `openapi.info` here to override them.
     openapi: {
-      servers: [{ url: `http://localhost:${process.env.PORT ?? 3000}` }],
+      // Advertise the public origin so the Scalar "Try it" panel calls the
+      // deployed URL (and stays within the connect-src 'self' CSP) instead of
+      // localhost. Resolves PUBLIC_URL, then Railway's injected domain, then
+      // the local dev port.
+      servers: [
+        {
+          url:
+            process.env.PUBLIC_URL ??
+            (process.env.RAILWAY_PUBLIC_DOMAIN
+              ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+              : `http://localhost:${process.env.PORT ?? 3000}`),
+        },
+      ],
     },
     docs: true,
     // daloy-minimal:strip-end docs

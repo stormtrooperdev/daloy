@@ -160,8 +160,16 @@ test("node-basic separates buildApp() from server boot so codegen has no side ef
   // build tsconfig for `pnpm build`.
   assert.equal(pkg.scripts.build, "tsc -p tsconfig.build.json");
   assert.equal(buildTsconfig.extends, "./tsconfig.json");
-  assert.deepEqual(buildTsconfig.include, ["src/**/*", "scripts/**/*"]);
+  // The production build compiles ONLY src/, rooted at src/, so the emitted
+  // entrypoint is a flat dist/index.js — exactly what `start` and the Dockerfile
+  // CMD run. scripts/dump-openapi.ts runs via tsx (see gen:openapi), never from
+  // dist; including it here would re-root the output at the project dir
+  // (dist/src/index.js) and break `node dist/index.js` at boot.
+  assert.deepEqual(buildTsconfig.include, ["src/**/*"]);
+  assert.equal(buildTsconfig.compilerOptions.rootDir, "src");
   assert.deepEqual(buildTsconfig.exclude, ["node_modules", "dist", "tests"]);
+  // The build output path must match how the app is actually started.
+  assert.equal(pkg.scripts.start, "node dist/index.js");
 });
 
 test("vercel-edge template opts into the auto-mounted /docs and /openapi.json", async () => {
@@ -1499,6 +1507,58 @@ test("deno-basic template ships a runtime-native scaffold", async () => {
     denoJson.imports["@daloyjs/core/openapi"],
     "jsr:@daloyjs/daloy@^0.38.1/openapi",
   );
+});
+
+test("server templates ship deploy-portable proxy + OpenAPI server defaults", async () => {
+  // Every long-running server template must boot cleanly behind a PaaS edge
+  // proxy (Railway/Render/Fly/Heroku) without 500ing on the framework's
+  // unconfigured-proxy boot guard, and must advertise the deployed origin to
+  // the Scalar "Try it" panel instead of localhost. Both are driven by env so
+  // the same template stays correct across platforms — and the proxy posture
+  // stays a conscious opt-in (the secure default is preserved when unset).
+  for (const template of ["node-basic", "bun-basic", "deno-basic"]) {
+    const buildApp = await readFile(
+      path.join(pkgRoot, `templates/${template}/src/build-app.ts`),
+      "utf8",
+    );
+
+    // Reverse-proxy posture is opt-in via TRUST_PROXY_HOPS, not hardcoded.
+    assert.match(
+      buildApp,
+      /TRUST_PROXY_HOPS/,
+      `${template} must expose the TRUST_PROXY_HOPS proxy-posture knob`,
+    );
+    assert.match(
+      buildApp,
+      /behindProxy:\s*\{\s*hops:\s*Number\(/,
+      `${template} must derive behindProxy.hops from the env (not a literal)`,
+    );
+    // A hardcoded numeric hop count would bake in a platform-specific,
+    // security-sensitive assumption and weaken the secure default.
+    assert.doesNotMatch(
+      buildApp,
+      /behindProxy:\s*\{\s*hops:\s*\d/,
+      `${template} must not hardcode behindProxy.hops`,
+    );
+    assert.doesNotMatch(
+      buildApp,
+      /behindProxy:\s*true/,
+      `${template} must not blanket-trust forwarded headers`,
+    );
+
+    // OpenAPI server URL resolves the public origin, falling back to the dev
+    // port — it must not be hardcoded to localhost only.
+    assert.match(
+      buildApp,
+      /PUBLIC_URL/,
+      `${template} must resolve the OpenAPI server URL from PUBLIC_URL`,
+    );
+    assert.match(
+      buildApp,
+      /RAILWAY_PUBLIC_DOMAIN/,
+      `${template} must fall back to Railway's injected public domain`,
+    );
+  }
 });
 
 test("jsr package exports cover the Deno template surface", async () => {

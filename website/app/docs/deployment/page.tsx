@@ -212,17 +212,28 @@ await app.shutdown(15_000);`}
       />
 
       <h2>Reverse proxy</h2>
-      <p>If you sit behind nginx / Caddy / an LB, set:</p>
+      <p>
+        If you sit behind nginx / Caddy / a load balancer / a PaaS edge (Railway,
+        Render, Fly, Heroku), declare the proxy posture so DaloyJS resolves the
+        real client IP and stops refusing forwarded requests:
+      </p>
       <ul>
         <li>
-          <code>X-Forwarded-For</code> / <code>X-Forwarded-Proto</code>{" "}
-          propagation for accurate logs.
+          Set <code>behindProxy: {"{ hops: N }"}</code> on{" "}
+          <code>new App({"{ ... }"})</code>, where <code>N</code> is the number of
+          trusted proxy hops in front of the app (a single edge proxy is{" "}
+          <code>1</code>; Cloudflare in front of one PaaS edge is <code>2</code>).
+          In production an <strong>unconfigured</strong> posture makes DaloyJS
+          return <code>500</code> on the first request carrying an{" "}
+          <code>X-Forwarded-*</code> header, so a misconfigured chain cannot feed
+          spoofable client IPs to <code>rateLimit()</code>, request-id propagation,
+          or audit logs. Use <code>behindProxy: &quot;none&quot;</code> when the app
+          faces the public internet directly.
         </li>
         <li>
-          If you use <code>rateLimit()</code>, either pass an explicit{" "}
-          <code>keyGenerator</code> or enable{" "}
-          <code>trustProxyHeaders: true</code> only after the proxy strips
-          client-supplied forwarding headers.
+          Once the posture is declared, <code>rateLimit()</code> keys on the
+          resolved client IP automatically, no custom <code>keyGenerator</code>{" "}
+          required.
         </li>
         <li>
           Make the LB&apos;s idle timeout <strong>greater</strong> than
