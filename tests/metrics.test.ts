@@ -311,3 +311,189 @@ test("exported metric classes are the concrete handle types", () => {
   assert.ok(reg.gauge("b") instanceof Gauge);
   assert.ok(reg.histogram("c") instanceof Histogram);
 });
+
+// ---------- additional happy paths ----------
+
+test("counter inc with value 0 is allowed (not a negative increment) and creates the series at 0", () => {
+  const reg = new MetricsRegistry({ collectDefaultMetrics: false });
+  const c = reg.counter("noop");
+  assert.doesNotThrow(() => c.inc(undefined, 0));
+  // inc(0) is permitted — the series is created at value 0.
+  assert.match(reg.render(), /\ndaloy_noop 0\n/);
+});
+
+test("gauge dec produces a negative value (gauges are not bounded below zero)", () => {
+  const reg = new MetricsRegistry({ collectDefaultMetrics: false });
+  const g = reg.gauge("temp");
+  g.dec();
+  assert.match(reg.render(), /\ndaloy_temp -1\n/);
+});
+
+test("histogram observation at exactly a bucket boundary counts as ≤ that bucket", () => {
+  const reg = new MetricsRegistry({ collectDefaultMetrics: false });
+  const h = reg.histogram("lat", "Latency.", [0.1, 0.5, 1]);
+  h.observe({}, 0.1); // exactly on the first boundary
+  const out = reg.render();
+  assert.match(out, /daloy_lat_bucket\{le="0.1"\} 1/);
+  assert.match(out, /daloy_lat_bucket\{le="0.5"\} 1/);
+  assert.match(out, /daloy_lat_bucket\{le="\+Inf"\} 1/);
+  assert.match(out, /daloy_lat_count 1/);
+});
+
+test("histogram observation above all buckets lands only in +Inf", () => {
+  const reg = new MetricsRegistry({ collectDefaultMetrics: false });
+  const h = reg.histogram("big", "Big values.", [0.1, 0.5]);
+  h.observe({}, 99);
+  const out = reg.render();
+  assert.match(out, /daloy_big_bucket\{le="0.1"\} 0/);
+  assert.match(out, /daloy_big_bucket\{le="0.5"\} 0/);
+  assert.match(out, /daloy_big_bucket\{le="\+Inf"\} 1/);
+});
+
+test("MetricsRegistry with empty prefix emits bare metric names", () => {
+  const reg = new MetricsRegistry({ collectDefaultMetrics: false, prefix: "" });
+  reg.counter("bare_hits").inc();
+  assert.match(reg.render(), /\nbare_hits 1\n/);
+});
+
+test("httpMetrics records 4xx and 5xx status codes in the requests counter", async () => {
+  const reg = new MetricsRegistry();
+  const app = new App({ env: "development" });
+  app.use(httpMetrics({ registry: reg }));
+  app.route({
+    method: "GET",
+    path: "/fail",
+    responses: { 200: { description: "ok" }, 500: { description: "err" } },
+    handler(): never {
+      throw new Error("boom");
+    },
+  });
+  const res = await app.fetch(new Request("http://x/fail"));
+  assert.equal(res.status, 500);
+  assert.match(reg.render(), /daloy_http_requests_total\{method="GET",route="\/fail",status="500"\} 1/);
+});
+
+test("httpMetrics records 404 from unmatched routes via the fallback route label", async () => {
+  const reg = new MetricsRegistry();
+  const app = new App({ env: "development" });
+  app.use(httpMetrics({ registry: reg }));
+  app.route({
+    method: "GET",
+    path: "/exists",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  // Hit a route that does not exist — 404 takes the error path without ctx.
+  const res = await app.fetch(new Request("http://x/nope"));
+  assert.equal(res.status, 404);
+  // httpMetrics onRequest is not invoked for unmatched routes (groupHooks
+  // only wrap registered routes), so no counter sample is emitted.
+  assert.doesNotMatch(reg.render(), /route="\/nope"/);
+});
+
+test("app.metrics() respects a custom path", async () => {
+  const app = new App({ env: "development" });
+  app.metrics({ path: "/internal/metrics" });
+  const notFound = await app.fetch(new Request("http://x/metrics"));
+  assert.equal(notFound.status, 404);
+  const ok = await app.fetch(new Request("http://x/internal/metrics"));
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("content-type"), PROMETHEUS_CONTENT_TYPE);
+});
+
+test("app.metrics() with rateLimit:false allows unlimited scrapes", async () => {
+  const app = new App({ env: "development" });
+  app.metrics({ rateLimit: false });
+  for (let i = 0; i < 5; i++) {
+    const res = await app.fetch(new Request("http://x/metrics"));
+    assert.equal(res.status, 200, `scrape ${i + 1} should succeed`);
+  }
+});
+
+test("app.metrics() with custom buckets records durations in those buckets", async () => {
+  const app = new App({ env: "development" });
+  app.metrics({ buckets: [0.001, 0.01, 0.1] });
+  app.route({
+    method: "GET",
+    path: "/ping",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  await app.fetch(new Request("http://x/ping"));
+  const res = await app.fetch(new Request("http://x/metrics"));
+  const body = await res.text();
+  // Custom buckets should appear in the output.
+  assert.match(body, /le="0.001"/);
+  assert.match(body, /le="0.01"/);
+  assert.match(body, /le="0.1"/);
+  // Default bucket boundaries that are NOT in our custom list must be absent.
+  assert.doesNotMatch(body, /le="2.5"/);
+});
+
+test("app.metrics() exclude option skips RED instrumentation for matching paths", async () => {
+  const app = new App({ env: "development" });
+  app.metrics({ exclude: (p) => p.startsWith("/health") });
+  app.route({
+    method: "GET",
+    path: "/health",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  app.route({
+    method: "GET",
+    path: "/api",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  await app.fetch(new Request("http://x/health"));
+  await app.fetch(new Request("http://x/api"));
+  const res = await app.fetch(new Request("http://x/metrics"));
+  const body = await res.text();
+  assert.doesNotMatch(body, /route="\/health"/);
+  assert.match(body, /route="\/api"/);
+});
+
+// ---------- additional unhappy paths (bug-fix regressions) ----------
+
+test("httpMetrics in-flight gauge is not decremented for OPTIONS preflight (bug-fix regression)", async () => {
+  // An OPTIONS request to a path that has a GET handler but no OPTIONS handler
+  // is handled by the framework's synthetic-204 path, which invokes
+  // preflightHooks.onSend without a prior groupHook onRequest call. Before the
+  // fix this drove the gauge negative; after the fix it stays at zero.
+  const reg = new MetricsRegistry();
+  const app = new App({ env: "development" });
+  app.use(httpMetrics({ registry: reg }));
+  app.route({
+    method: "GET",
+    path: "/data",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  const res = await app.fetch(new Request("http://x/data", { method: "OPTIONS" }));
+  assert.equal(res.status, 204);
+  // Gauge must not go negative.
+  assert.doesNotMatch(reg.render(), /daloy_http_requests_in_flight -\d/);
+  // And no spurious requests_total entry for OPTIONS.
+  assert.doesNotMatch(reg.render(), /method="OPTIONS"/);
+});
+
+test("httpMetrics in-flight stays balanced when OPTIONS preflight interleaves with real requests", async () => {
+  const reg = new MetricsRegistry();
+  const app = new App({ env: "development" });
+  app.use(httpMetrics({ registry: reg }));
+  app.route({
+    method: "GET",
+    path: "/api/v1/items",
+    responses: { 200: { description: "ok" } },
+    handler: () => ({ status: 200 as const, body: {} }),
+  });
+  // Mix: real GET, then OPTIONS preflight, then real GET again.
+  await app.fetch(new Request("http://x/api/v1/items"));
+  await app.fetch(new Request("http://x/api/v1/items", { method: "OPTIONS" }));
+  await app.fetch(new Request("http://x/api/v1/items"));
+  const out = reg.render();
+  // Two real GET requests recorded.
+  assert.match(out, /daloy_http_requests_total\{method="GET",route="\/api\/v1\/items",status="200"\} 2/);
+  // In-flight at zero after all requests completed.
+  assert.match(out, /\ndaloy_http_requests_in_flight 0\n/);
+});

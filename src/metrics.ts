@@ -527,18 +527,20 @@ export function httpMetrics(opts: HttpMetricsOptions): Hooks {
           return "/";
         }
       })();
-      // Always balance the in-flight gauge, even for excluded paths whose
-      // onRequest already incremented it.
       const started = START_TIMES.get(ctx.request);
       START_TIMES.delete(ctx.request);
+      // Only balance in-flight and record metrics when onRequest was actually
+      // called for this Request. Framework-synthesised contexts such as an OPTIONS
+      // preflight handled via preflightHooks (no registered OPTIONS route) invoke
+      // onSend without a prior groupHook onRequest, so started is undefined and
+      // decrementing the gauge would drive it negative.
+      if (started === undefined) return;
       inFlight.dec();
       if (opts.exclude && opts.exclude(path)) return;
       const method = ctx.request.method.toUpperCase();
       const route = routeLabel(ctx);
       requests.inc({ method, route, status: res.status });
-      if (started !== undefined) {
-        duration.observe({ method, route }, (nowMs() - started) / 1000);
-      }
+      duration.observe({ method, route }, (nowMs() - started) / 1000);
     },
   };
 }

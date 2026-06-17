@@ -104,6 +104,116 @@ app.route({
         </li>
       </ul>
 
+      <h2>Options reference</h2>
+      <p>
+        All fields are optional. The table below covers the full{" "}
+        <code>MetricsRouteOptions</code> surface:
+      </p>
+      <div className="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>path</code></td>
+              <td><code>string</code></td>
+              <td><code>"/metrics"</code></td>
+              <td>Override the scrape endpoint path.</td>
+            </tr>
+            <tr>
+              <td><code>token</code></td>
+              <td><code>string</code></td>
+              <td>—</td>
+              <td>
+                Require <code>Authorization: Bearer &lt;token&gt;</code>, compared via{" "}
+                <code>timingSafeEqual</code>. Required in production unless{" "}
+                <code>acknowledgeUnauthenticated</code> is set.
+              </td>
+            </tr>
+            <tr>
+              <td><code>rateLimit</code></td>
+              <td><code>{`{ limit?, windowMs? }`} | false`</code></td>
+              <td><code>{`{ limit: 60, windowMs: 60_000 }`}</code></td>
+              <td>
+                Per-IP fixed-window rate limit. Pass <code>false</code> to disable
+                entirely (useful inside private VPC networks).
+              </td>
+            </tr>
+            <tr>
+              <td><code>registry</code></td>
+              <td><code>MetricsRegistry</code></td>
+              <td>fresh registry</td>
+              <td>
+                Bring your own registry to co-render business metrics alongside the
+                built-in HTTP series.
+              </td>
+            </tr>
+            <tr>
+              <td><code>route</code></td>
+              <td><code>(ctx) =&gt; string | undefined</code></td>
+              <td>pathname (capped)</td>
+              <td>
+                Resolve the low-cardinality <code>route</code> label. Always prefer
+                the route template over the raw pathname.
+              </td>
+            </tr>
+            <tr>
+              <td><code>maxRouteCardinality</code></td>
+              <td><code>number</code></td>
+              <td><code>100</code></td>
+              <td>
+                Hard cap on distinct pathname-derived route labels. Overflow collapses
+                to <code>&lt;other&gt;</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>buckets</code></td>
+              <td><code>number[]</code></td>
+              <td>conventional Prometheus defaults</td>
+              <td>
+                Custom latency histogram bucket boundaries in seconds.
+              </td>
+            </tr>
+            <tr>
+              <td><code>exclude</code></td>
+              <td><code>(path: string) =&gt; boolean</code></td>
+              <td>—</td>
+              <td>
+                Skip RED instrumentation for matching paths (e.g. health probes). The
+                scrape path itself is always excluded automatically.
+              </td>
+            </tr>
+            <tr>
+              <td><code>acknowledgeUnauthenticated</code></td>
+              <td><code>boolean</code></td>
+              <td><code>false</code></td>
+              <td>
+                Opt-in bypass for the production refuse-to-boot guard when you
+                intentionally run without a token (e.g. behind a private load
+                balancer).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <CodeBlock
+        code={`app.metrics({
+  path: "/internal/metrics",
+  token: process.env.METRICS_TOKEN,
+  rateLimit: false,            // safe inside a private VPC
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.5, 1],
+  exclude: (p) => p === "/healthz" || p === "/readyz",
+  maxRouteCardinality: 50,
+});`}
+        language="ts"
+      />
+
       <h2>The route label</h2>
       <p>
         High-cardinality labels are the classic way to melt a Prometheus server.
@@ -178,6 +288,112 @@ app.route({
   }),
 });`}
         language="ts"
+      />
+
+      <h2>Grafana + Prometheus integration</h2>
+      <p>
+        The repository ships a ready-to-use Docker Compose stack under{" "}
+        <code>examples/observability/</code> that spins up Prometheus and Grafana with a
+        pre-built dashboard, zero extra configuration needed.
+      </p>
+      <h3>1. Start the app</h3>
+      <p>
+        Run any DaloyJS server that calls <code>app.metrics()</code>. The example
+        in the repo uses port 3001:
+      </p>
+      <CodeBlock
+        code={`node --import tsx examples/metrics-demo.ts
+# DaloyJS metrics demo running at http://localhost:3001
+# Prometheus scrape target: http://localhost:3001/metrics`}
+        language="sh"
+      />
+      <h3>2. Start the observability stack</h3>
+      <CodeBlock
+        code={`docker compose -f examples/observability/docker-compose.yml up`}
+        language="sh"
+      />
+      <p>
+        This brings up:
+      </p>
+      <ul>
+        <li>
+          <strong>Prometheus</strong> at{" "}
+          <code>http://localhost:9090</code> — pre-configured to scrape{" "}
+          <code>host.docker.internal:3001/metrics</code> every 10 seconds.
+        </li>
+        <li>
+          <strong>Grafana</strong> at{" "}
+          <code>http://localhost:3000</code> (admin / admin) — Prometheus
+          datasource and the DaloyJS dashboard are auto-provisioned on first
+          start, no manual import required.
+        </li>
+      </ul>
+      <h3>3. Open the dashboard</h3>
+      <p>
+        Navigate to{" "}
+        <code>http://localhost:3000/d/daloy-http-metrics</code>. The dashboard
+        ships nine panels out of the box:
+      </p>
+      <ul>
+        <li>Request rate by route</li>
+        <li>Error rate (4xx / 5xx)</li>
+        <li>Latency percentiles (p50 / p95 / p99)</li>
+        <li>In-flight requests</li>
+        <li>Request rate by method</li>
+        <li>Business metric panel (orders created, from the demo)</li>
+        <li>Memory usage (RSS + heap)</li>
+        <li>Process uptime</li>
+        <li>Request duration heatmap</li>
+      </ul>
+      <h3>Pointing at your own app</h3>
+      <p>
+        Edit <code>examples/observability/prometheus.yml</code> and replace the target:
+      </p>
+      <CodeBlock
+        code={`scrape_configs:
+  - job_name: my_app
+    static_configs:
+      - targets:
+          - "host.docker.internal:3000"   # your app port
+    metrics_path: /metrics                # or /internal/metrics etc.
+    scrape_interval: 15s`}
+        language="yaml"
+      />
+      <p>
+        If your app requires a bearer token, add it as a HTTP header:
+      </p>
+      <CodeBlock
+        code={`scrape_configs:
+  - job_name: my_app
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+    authorization:
+      credentials: \${METRICS_TOKEN}`}
+        language="yaml"
+      />
+      <p>
+        On Linux you may need to replace <code>host.docker.internal</code> with
+        your host IP address, or add{" "}
+        <code>extra_hosts: - "host.docker.internal:host-gateway"</code> to the{" "}
+        Prometheus service in <code>examples/observability/docker-compose.yml</code>.
+      </p>
+      <h3>Useful PromQL queries</h3>
+      <CodeBlock
+        code={`# Request rate (req/s) by route over the last 5 minutes
+sum by (route) (rate(daloy_http_requests_total[5m]))
+
+# 5xx error rate as a fraction
+sum(rate(daloy_http_requests_total{status=~"5.."}[5m]))
+  / sum(rate(daloy_http_requests_total[5m]))
+
+# p99 latency per route
+histogram_quantile(0.99,
+  sum by (le, route) (rate(daloy_http_request_duration_seconds_bucket[5m]))
+)
+
+# Currently in-flight requests
+daloy_http_requests_in_flight`}
+        language="promql"
       />
 
       <h2>Security posture</h2>
