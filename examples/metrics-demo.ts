@@ -7,13 +7,13 @@
  *   POST /orders   — simulated order creation
  *   GET /health    — liveness probe (excluded from RED metrics)
  *
- * Pair with the Docker Compose stack in the project root:
+ * Pair with the Docker Compose stack in examples/observability/:
  *
  *   # Terminal 1 — run the app
  *   node --import tsx examples/metrics-demo.ts
  *
  *   # Terminal 2 — start Prometheus + Grafana
- *   docker compose up
+ *   docker compose -f examples/observability/docker-compose.yml up
  *
  * Then open:
  *   http://localhost:9090   — Prometheus
