@@ -161,6 +161,26 @@ export interface ResponseCacheOptions {
    * store.
    */
   groupId?: string;
+  /**
+   * Whether to cache responses to requests that carry an `Authorization`
+   * header. Default: `false`.
+   *
+   * A shared response cache keyed on method + URL (the default) does not
+   * include the credential, so caching an authenticated response would serve
+   * one user's private data to the next user requesting the same URL
+   * (CWE-524 — cross-tenant cached-response disclosure). For that reason, and
+   * per RFC 9111 §3.5 (a shared cache MUST NOT reuse a response to an
+   * `Authorization`-bearing request unless explicitly permitted), such
+   * requests bypass the cache entirely by default.
+   *
+   * Set this to `true` only when the response is genuinely shareable across
+   * principals (e.g. public reference data served behind a bearer gate) — and
+   * then also add the credential to {@link varyHeaders} or a custom
+   * {@link keyGenerator} so distinct callers cannot collide.
+   *
+   * @since 0.40.0
+   */
+  cacheAuthenticatedRequests?: boolean;
 }
 
 // ---------- Default store ----------
@@ -371,6 +391,7 @@ export function responseCache(opts: ResponseCacheOptions = {}): Hooks {
   }
 
   const methods = new Set((opts.methods ?? ["GET", "HEAD"]).map((m) => m.toUpperCase()));
+  const cacheAuthenticatedRequests = opts.cacheAuthenticatedRequests === true;
   const cacheableStatus = opts.cacheableStatus ?? ((status: number) => status === 200);
   const varyHeaders = (opts.varyHeaders ?? []).map((h) => h.toLowerCase());
   const statusHeaderName =
@@ -416,6 +437,14 @@ export function responseCache(opts: ResponseCacheOptions = {}): Hooks {
     async beforeHandle(ctx) {
       const method = ctx.request.method.toUpperCase();
       if (!methods.has(method)) return undefined;
+
+      // RFC 9111 §3.5 / CWE-524: a shared cache keyed on method+URL must not
+      // store or reuse a response to an Authorization-bearing request, or it
+      // would serve one principal's private data to the next caller. Opt in
+      // via `cacheAuthenticatedRequests` for genuinely shareable content.
+      if (!cacheAuthenticatedRequests && ctx.request.headers.has("authorization")) {
+        return undefined;
+      }
 
       const reqCc = parseCacheControl(ctx.request.headers.get("cache-control"));
       if (reqCc.has("no-store")) return undefined;

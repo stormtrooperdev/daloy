@@ -179,6 +179,24 @@ export interface IdempotencyOptions {
    * store; supply an explicit `store` to coordinate across processes.
    */
   groupId?: string;
+  /**
+   * Namespace idempotency keys by the calling principal so one client can
+   * never replay another client's stored response by reusing the same key
+   * (CWE-524 — cross-tenant cached-response disclosure). The returned string
+   * is mixed into the store key, so two principals using the *same*
+   * `Idempotency-Key` get independent reservations.
+   *
+   * Defaults to the request's `Authorization` header value, which scopes the
+   * common bearer- / API-key-authenticated case (Stripe-style idempotency)
+   * out of the box. Override it when identity lives elsewhere, e.g.
+   * `scope: (ctx) => ctx.state.session?.id` for cookie-based sessions, or
+   * return `undefined` to opt a request out of scoping (e.g. truly public,
+   * unauthenticated idempotent writes). Returning a stable per-user id is
+   * preferable to the raw credential when tokens rotate between retries.
+   *
+   * @since 0.40.0
+   */
+  scope?: (ctx: BaseContext<any, any>) => string | undefined | Promise<string | undefined>;
 }
 
 // ---------- Default store ----------
@@ -298,7 +316,17 @@ function stableStringify(value: unknown): string {
 async function computeFingerprint(method: string, ctx: BaseContext<any, any>): Promise<string> {
   const url = new URL(ctx.request.url);
   const material = `${method}\n${url.pathname}${url.search}\n${stableStringify(ctx.body)}`;
-  const digest = new Uint8Array(await getSubtle().digest("SHA-256", enc.encode(material)));
+  return sha256Hex(material);
+}
+
+/**
+ * SHA-256 hex of an arbitrary string. Used to fingerprint requests and to
+ * derive a fixed-length, delimiter-safe tag for the caller-scope namespace so
+ * a long or attacker-controlled `Authorization` value cannot inject into or
+ * bloat the store key.
+ */
+async function sha256Hex(input: string): Promise<string> {
+  const digest = new Uint8Array(await getSubtle().digest("SHA-256", enc.encode(input)));
   return bytesToHex(digest);
 }
 
@@ -430,7 +458,14 @@ export function idempotency(opts: IdempotencyOptions = {}): Hooks {
       validateKey(key, headerName, maxKeyLength);
 
       const fingerprint = await computeFingerprint(method, ctx);
-      const storeKey = `${keyPrefix}${key}`;
+      // Namespace the key by the calling principal so client B can never
+      // replay client A's stored response by reusing the same Idempotency-Key
+      // (CWE-524). Defaults to the Authorization header; `scope` overrides.
+      const scopeRaw = opts.scope
+        ? await opts.scope(ctx)
+        : (ctx.request.headers.get("authorization") ?? undefined);
+      const scopeTag = scopeRaw ? `${await sha256Hex(scopeRaw)}:` : "";
+      const storeKey = `${keyPrefix}${scopeTag}${key}`;
       const now = Date.now();
       const record: IdempotencyRecord = {
         fingerprint,

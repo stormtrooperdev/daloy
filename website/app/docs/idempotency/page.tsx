@@ -223,6 +223,19 @@ async function createChargeWithRetries(amount: number) {
           The stored body is capped by <code>maxResponseBytes</code> to bound
           memory growth from large replies.
         </li>
+        <li>
+          <strong>Keys are namespaced per principal (CWE-524).</strong> Without
+          this, any client that reused another client&apos;s{" "}
+          <code>Idempotency-Key</code> with the same body would receive that
+          client&apos;s stored response. The store key is namespaced by the
+          caller, defaulting to the <code>Authorization</code> header so the
+          common bearer- / API-key case is isolated automatically. For
+          cookie-based sessions, pass a stable identity via{" "}
+          <code>scope</code>, e.g.{" "}
+          <code>scope: (ctx) =&gt; ctx.state.session?.id</code>. Unauthenticated
+          requests (no <code>Authorization</code>, no <code>scope</code>) still
+          dedupe by key alone.
+        </li>
       </ul>
     </>
   );

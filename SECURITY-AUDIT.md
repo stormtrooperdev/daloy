@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-18
 **Method:** Adversarial black/grey-box testing (a 104-attack red-team suite across four waves) plus targeted source review of the security-critical paths (request pipeline, serialization, JWT/HMAC, SSRF guard, auth/authz middleware, router, access-control modules).
-**Overall posture:** **Strong.** One High-severity finding was identified, remediated, and independently verified closed. Remaining items are documented residual risks with explicit owners and mitigations.
+**Overall posture:** **Strong.** Three High-severity findings were identified, remediated, and verified closed (one response over-exposure, two cross-tenant cached-response disclosures). Remaining items are documented residual risks with explicit owners and mitigations.
 
 This document is generated and maintained alongside the red-team suite
 (`tests/red-team-attacks*.test.ts`, run as the `pnpm test:red-team` CI gate)
@@ -32,7 +32,7 @@ the residual DNS-rebinding window noted under R-2.
 | #     | Category                                     | Verdict                     | Evidence (red-team coverage)                                                                                  |
 | ----- | -------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | API1  | Broken Object-Level Authorization (BOLA)     | Operator scope              | Framework enforces *who* can call a route; *which records* is application logic (documented)                  |
-| API2  | Broken Authentication                        | Pass                        | JWT (`none`/confusion/tamper/expiry/weak-key/**header key-injection**), bearer/basic, session signing, HTTP signatures |
+| API2  | Broken Authentication                        | Pass (remediated)           | JWT (`none`/confusion/tamper/expiry/weak-key/**header key-injection**), bearer/basic, session signing, HTTP signatures; **cross-tenant idempotency replay (F-2) and response-cache disclosure (F-3) closed** |
 | API3  | Broken Object **Property**-Level Auth        | Pass (remediated)           | Request strips extra keys; **response strips undeclared fields at all depths** (F-1); schema-coverage audit (R-1) |
 | API4  | Unrestricted Resource Consumption            | Pass                        | body `413`, header-count `431`, decompression-bomb `413`, concurrency/load-shedding `503`, rate-limit `429`, ReDoS-bounded WAF |
 | API5  | Broken Function-Level Authorization          | Pass                        | `requireScopes`, exact case-sensitive routing, `except()` fail-closed path matching, no method-override        |
@@ -54,7 +54,21 @@ the residual DNS-rebinding window noted under R-2.
 - **Remediation:** the serializer now serializes the validator's parsed `value`, so undeclared fields are stripped before the wire. Verified complete at all depths — top-level, nested objects, and arrays-of-objects — and `.passthrough()` opt-in is honored. A `.strict()` response schema converts over-exposure into a safe `500` instead of a leak.
 - **Verification:** `tests/red-team-attacks.test.ts` (top-level + async + passthrough + strict) and `tests/red-team-attacks-4.test.ts` (nested + array).
 
-No other defects were identified across the four red-team waves.
+### F-2 — Cross-tenant idempotent-response replay — HIGH — **CLOSED**
+
+- **Class:** CWE-524 (Use of Cache Containing Sensitive Information); OWASP API2/API3.
+- **Description:** `idempotency()` keyed its store solely on the `Idempotency-Key` header (plus optional `groupId`) and fingerprinted only `method + path + body`. A second principal that reused another principal's key with the same body on a shared path (`/me`, `/cart`) received the first principal's stored response. Confirmed with a live exploit: client B received `owner: "Bearer USER_A"` with `idempotency-replayed: true`.
+- **Remediation:** the store key is now namespaced by the calling principal — the `Authorization` header by default (covering the dominant bearer / API-key idempotency case), or a caller-supplied `scope(ctx)` for cookie/custom identity. Same-principal retries still replay; unauthenticated idempotency still dedupes by key.
+- **Verification:** `tests/red-team-attacks-5.test.ts`.
+
+### F-3 — Cross-tenant response-cache disclosure — HIGH — **CLOSED**
+
+- **Class:** CWE-524; OWASP API2/API3.
+- **Description:** `responseCache()` keyed on `method + URL + varyHeaders` and did not refuse to cache `Authorization`-bearing requests. An authenticated response with no explicit `private`/`no-store` directive was cached and served to the next caller of the same URL. Confirmed with a live exploit (fully automatic, no attacker effort): client B received `owner: "Bearer USER_A"` with `x-cache: HIT`.
+- **Remediation:** requests carrying an `Authorization` header now bypass the shared cache by default (RFC 9111 §3.5), with an explicit `cacheAuthenticatedRequests: true` opt-in for genuinely shareable content. Unauthenticated/public responses are still cached.
+- **Verification:** `tests/red-team-attacks-5.test.ts`.
+
+No other defects were identified across the five red-team waves.
 
 ---
 
@@ -73,12 +87,13 @@ No other defects were identified across the four red-team waves.
 
 ## Red-team suite inventory
 
-The adversarial suite (`pnpm test:red-team`, gated in CI) contains **104 attacks** across four files:
+The adversarial suite (`pnpm test:red-team`, gated in CI) contains **111 attacks** across five files:
 
 - **Wave 1** (`red-team-attacks.test.ts`): prototype pollution, body/header DoS, request smuggling and header injection, JWT, SSRF, open redirect, NoSQL operators, path traversal, constant-time compare, webhook HMAC, CORS, rate limit, CSRF, WAF, content-type, mass assignment, error redaction, secure headers, strong-secret guard, response over-exposure.
 - **Wave 2** (`red-team-attacks-2.test.ts`): decompression bombs, signed-value/session integrity, cookie attribute guards, mTLS header spoofing, HTTP message signatures, bearer/basic/scopes/fetch-metadata, WebSocket frame protocol and CSWSH, pagination cursors, idempotency, concurrency, multipart magic-bytes, refuse-to-boot, internal-service preset.
 - **Wave 3** (`red-team-attacks-3.test.ts`): bot-guard spoofed-crawler, geo-block allow/deny, IP-reputation denylist, auto-ban strike escalation, auto-ban shared-bucket footgun refusal.
 - **Wave 4** (`red-team-attacks-4.test.ts`): nested/array response over-exposure (independent verification of F-1), JWT header key-injection (`jwk`/`jku`/`x5u`/`kid`), uppercase `NONE` bypass attempt, HTTP method-override smuggling, path-confusion `except()` fail-closed, WAF ReDoS bound.
+- **Wave 5** (`red-team-attacks-5.test.ts`): cross-tenant cached-response disclosure — idempotency replay isolation (F-2) and response-cache Authorization bypass (F-3), including the same-principal/public happy paths and the explicit opt-in path.
 
 ---
 

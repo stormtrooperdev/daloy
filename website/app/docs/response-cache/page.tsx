@@ -231,6 +231,19 @@ app.use(responseCache({ store: redisResponseCacheStore }));`}
           the same skip posture as <code>etag()</code>.
         </li>
         <li>
+          <strong>
+            Requests carrying an <code>Authorization</code> header bypass the
+            cache entirely (CWE-524, RFC&nbsp;9111&nbsp;§3.5).
+          </strong>{" "}
+          A shared cache keyed on method + URL does not include the credential,
+          so caching an authenticated response would serve one user&apos;s
+          private data to the next caller of the same URL. Set{" "}
+          <code>cacheAuthenticatedRequests: true</code> only for content that is
+          genuinely shareable across principals, and pair it with{" "}
+          <code>varyHeaders: [&quot;authorization&quot;]</code> (or a custom{" "}
+          <code>keyGenerator</code>) so distinct callers cannot collide.
+        </li>
+        <li>
           Only <code>200 OK</code> is cached unless you widen{" "}
           <code>cacheableStatus</code>, so error pages do not poison the cache.
         </li>
