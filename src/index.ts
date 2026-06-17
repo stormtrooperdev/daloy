@@ -1,5 +1,6 @@
 export { App } from "./app.js";
 export { createApp } from "./app.js";
+export { findRoutesMissingResponseBodySchema } from "./app.js";
 export { _resetPackageJsonCacheForTests } from "./app.js";
 export { _resetCrashHandlersForTests } from "./app.js";
 export { _resetInsecureDefaultsLogForTests } from "./app.js";

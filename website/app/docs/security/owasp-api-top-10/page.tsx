@@ -139,7 +139,11 @@ export default function Page() {
             </td>
             <td>
               Author response schemas that omit internal fields. Don&apos;t
-              spread raw ORM rows into responses.
+              spread raw ORM rows into responses. Stripping only runs when a{" "}
+              <code>2xx</code> response declares a <code>body</code> schema, so{" "}
+              <code>daloy doctor</code> emits{" "}
+              <code>audit.response.bodySchema</code> (and a dev-mode boot
+              warning) for any success response that has none.
             </td>
           </tr>
           <tr>

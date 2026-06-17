@@ -11,6 +11,7 @@
  */
 
 import type { App, IntrospectedRoute } from "./app.js";
+import { findRoutesMissingResponseBodySchema } from "./app.js";
 import { runContractTests } from "./contract.js";
 import { diffOpenAPI, type OpenAPIChange } from "./openapi-diff.js";
 import { generateOpenAPI, openapiToYAML } from "./openapi.js";
@@ -835,6 +836,32 @@ async function runDoctor(opts: CliOptions, io: CliIO): Promise<CliResult> {
         message:
           "Server-Timing in production leaks performance side channels. " +
           "Disable or gate behind authenticated routes.",
+      });
+    }
+
+    // Response-body-schema coverage audit (OWASP API3 — Broken Object
+    // Property Level Authorization). Response-field stripping only runs when
+    // a 2xx response declares a body schema; a schema-less 2xx ships whatever
+    // the handler returns, so a stray `passwordHash` or spread ORM row would
+    // leak. Advisory (warn) because a route may legitimately return no body.
+    const routes =
+      (app as unknown as {
+        routes?: readonly { method: string; path: string; responses: Record<number, unknown> }[];
+      }).routes ?? [];
+    const missingBody = findRoutesMissingResponseBodySchema(routes as any);
+    if (missingBody.length > 0) {
+      const sample = missingBody
+        .slice(0, 5)
+        .map((r) => `${r.method} ${r.path} (${r.statuses.join("/")})`)
+        .join(", ");
+      findings.push({
+        level: "warn",
+        code: "audit.response.bodySchema",
+        message:
+          `${missingBody.length} route(s) declare a 2xx response with no body schema, so ` +
+          `response field-level stripping (OWASP API3) is not applied: ${sample}` +
+          `${missingBody.length > 5 ? ", …" : ""}. Declare a response body schema so undeclared ` +
+          "handler fields cannot leak, or ignore if the route intentionally returns no body.",
       });
     }
   }

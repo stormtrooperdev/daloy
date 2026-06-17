@@ -1084,6 +1084,15 @@ export class App<
   private trustProxyWarned = false;
 
   /**
+   * One-shot guard for the development-mode warning about `2xx` responses
+   * that declare no body schema (OWASP API3 output filtering is absent
+   * there). Flipped on the first {@link App.fetch} so all routes are
+   * registered by the time the scan runs, and so the scan never repeats on
+   * the hot path.
+   */
+  private responseBodySchemaAuditDone = false;
+
+  /**
   * Cached merge of `options.hooks` only. Used on the cold 404/405 path
   * and as the baseline for cross-origin guard decisions when no route
   * matches.
@@ -2811,6 +2820,10 @@ export class App<
    *   to RFC 9457 `application/problem+json` automatically.
    */
   fetch = async (request: Request): Promise<Response> => {
+    if (!this.responseBodySchemaAuditDone) {
+      this.responseBodySchemaAuditDone = true;
+      this.warnMissingResponseBodySchemas();
+    }
     const response = await this.dispatch(request);
     // In-flight responses that finish during draining advertise
     // `Connection: close` so HTTP/1.1 load balancers stop re-using the
@@ -3211,6 +3224,32 @@ export class App<
    *
    * @returns Array of one {@link IntrospectedRoute} per registered route.
    */
+  /**
+   * Emit a one-time development warning when any route declares a `2xx`
+   * response without a body schema, because response-field stripping
+   * (OWASP API3) does not run for those responses — a handler returning
+   * undeclared fields would leak them. Silent in production (operators run
+   * `daloy doctor` in CI for the same finding) and when
+   * `secureDefaults: false`. See {@link findRoutesMissingResponseBodySchema}.
+   */
+  private warnMissingResponseBodySchemas(): void {
+    if (this.isProduction()) return;
+    if (this.options.secureDefaults === false) return;
+    const offending = findRoutesMissingResponseBodySchema(this.routes);
+    if (offending.length === 0) return;
+    this.log.warn(
+      {
+        event: "security.response.bodySchemaMissing",
+        count: offending.length,
+        routes: offending.slice(0, 20),
+      },
+      `${offending.length} route(s) declare a 2xx response with no body schema; ` +
+        "response field-level stripping (OWASP API3) is not applied there, so a handler that " +
+        "returns undeclared fields will leak them. Declare a response body schema, or ignore if " +
+        "the route intentionally returns no body. Run `daloy doctor` to list them.",
+    );
+  }
+
   introspect(): IntrospectedRoute[] {
     return this.routes.map((r) => {
       const route: IntrospectedRoute = {
@@ -3722,6 +3761,54 @@ function hasRequestSchema(
   key: keyof RequestSchemas,
 ): boolean {
   return !!request && !!request[key];
+}
+
+/**
+ * Identify registered routes whose successful (`2xx`, excluding the
+ * body-less `204`/`205`) responses declare no `body` schema.
+ *
+ * Response-body validation — and the OWASP API3 ("Broken Object Property
+ * Level Authorization") output filtering that strips fields a handler
+ * returns but the contract does not declare — only runs when a response
+ * `body` schema is present. A `2xx` response without one therefore ships
+ * whatever the handler returns verbatim: a stray `passwordHash` or a
+ * spread ORM row would leak. This helper surfaces those routes so the gap
+ * is visible rather than silent.
+ *
+ * It powers both the `daloy doctor` `audit.response.bodySchema` finding and
+ * the development-mode boot warning emitted on the first request. The result
+ * is advisory — a route may legitimately return no body — so callers treat
+ * it as a `warn`, never a hard error.
+ *
+ * @param routes - Route definitions to inspect (typically `app.routes`).
+ * @returns One entry per offending route with the affected `2xx` status codes.
+ * @since 0.40.0
+ */
+export function findRoutesMissingResponseBodySchema(
+  routes: readonly Pick<
+    RouteDefinition<any, any, any, any>,
+    "method" | "path" | "responses"
+  >[],
+): Array<{ method: string; path: string; statuses: number[] }> {
+  const offending: Array<{ method: string; path: string; statuses: number[] }> = [];
+  for (const route of routes) {
+    const statuses: number[] = [];
+    const responses = route.responses as Record<number, { body?: unknown } | undefined>;
+    for (const key of Object.keys(responses)) {
+      const status = Number(key);
+      // Only successful responses can carry an over-exposing body, and 204/205
+      // are body-less by HTTP semantics so they are never flagged.
+      if (!Number.isInteger(status) || status < 200 || status > 299) continue;
+      if (status === 204 || status === 205) continue;
+      const spec = responses[status];
+      if (spec && spec.body === undefined) statuses.push(status);
+    }
+    if (statuses.length > 0) {
+      statuses.sort((a, b) => a - b);
+      offending.push({ method: route.method, path: route.path, statuses });
+    }
+  }
+  return offending;
 }
 
 /**
