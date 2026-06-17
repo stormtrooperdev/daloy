@@ -1,0 +1,25 @@
+## Prometheus configuration for DaloyJS
+##
+## Scrapes the metrics-demo example app running on the host machine at port 3001.
+## Adjust the targets list to match your own application's host and port.
+##
+## On macOS/Windows: host.docker.internal resolves to the Docker host.
+## On Linux: replace with the host IP or add extra_hosts in docker-compose.yml.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: daloy
+
+scrape_configs:
+  - job_name: daloy_app
+    static_configs:
+      - targets:
+          - "host.docker.internal:3001"
+        labels:
+          app: daloy-metrics-demo
+          env: development
+    metrics_path: /metrics
+    scrape_interval: 10s
+    scrape_timeout: 5s
