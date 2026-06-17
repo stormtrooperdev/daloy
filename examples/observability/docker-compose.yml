@@ -1,16 +1,22 @@
 ##
-## DaloyJS observability stack — Prometheus + Grafana
+## DaloyJS observability stack — Prometheus + Grafana + Jaeger
 ##
-## Usage (from the repo root):
-##   1. Start the demo app:
+## Metrics (RED + process gauges):
+##   1. Start the metrics demo app:
 ##        node --import tsx examples/metrics-demo.ts
-##   2. In another terminal:
-##        docker compose -f examples/observability/docker-compose.yml up
+##   2. docker compose -f examples/observability/docker-compose.yml up
 ##   3. Open Grafana: http://localhost:3000  (admin / admin)
 ##      Open Prometheus: http://localhost:9090
 ##
-## Prometheus is configured to scrape the demo app at
-## host.docker.internal:3001/metrics (host-to-container bridge).
+## Traces (OpenTelemetry / OTLP):
+##   1. Start the tracing demo app (exports OTLP spans to Jaeger):
+##        node --import tsx examples/otel-tracing-demo.ts
+##   2. docker compose -f examples/observability/docker-compose.yml up
+##   3. Open Jaeger: http://localhost:16686  (service: daloy-otel-demo)
+##
+## Prometheus scrapes the metrics demo at host.docker.internal:3001/metrics.
+## The tracing demo pushes spans to Jaeger's OTLP/HTTP endpoint on
+## localhost:4318 (the demo runs on the host, Jaeger receives on the host port).
 ##
 ## On Linux, ensure "extra_hosts: host.docker.internal:host-gateway" works
 ## or replace host.docker.internal with your host IP in prometheus.yml.
@@ -50,6 +56,17 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.58
+    container_name: daloy_jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP receiver
+      - "4317:4317" # OTLP gRPC receiver
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
     restart: unless-stopped
 
 volumes:
