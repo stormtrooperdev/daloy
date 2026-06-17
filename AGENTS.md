@@ -46,12 +46,12 @@ pnpm verify:governance-audits
 pnpm verify:sbom
 ```
 
-If a change touches `website/`, also run `cd website && pnpm typecheck && pnpm build` before committing.
+If a change touches `website/`, also run `cd website && pnpm typecheck && pnpm build` before committing. The docs/marketing site is **deployed automatically by Vercel** (Git integration: every push to `main` ships a production deploy of [daloyjs.dev](https://daloyjs.dev), PRs get preview deploys), so this local build is a pre-commit verification step only — **not** a deploy. The website is **not** part of the `@daloyjs/core` / `create-daloy` package release (npm + JSR); tagging a release never builds or deploys it, so do not run or wait on a website deploy as part of cutting a release.
 
 ### General rules
 
 - After any new feature, bug fix, or refactor, always run `pnpm typecheck` and `pnpm test`
-- If a change touches `website`, also run `cd website && pnpm typecheck && pnpm build`
+- If a change touches `website`, also run `cd website && pnpm typecheck && pnpm build` (a local verification only — Vercel auto-deploys the site on push to `main`; it is not part of the package release)
 - Do not consider the task complete until these checks pass, unless the user explicitly asks not to run them or the environment prevents it
 - Every new feature must include automated happy and unhappy path tests that cover the new behavior, including both happy paths and unhappy paths where practical
 - Bug fixes should include a regression happy and unhappy path tests when practical

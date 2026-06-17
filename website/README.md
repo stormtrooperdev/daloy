@@ -25,6 +25,12 @@ pnpm build        # statically pre-renders every docs page
 pnpm start        # serve the production build
 ```
 
+## Deploy
+
+This site is **deployed automatically by [Vercel](https://vercel.com)** through its Git integration: every push to `main` ships a production deploy of [daloyjs.dev](https://daloyjs.dev), and pull requests get preview deployments. There is no manual deploy step — `pnpm build` is only a local verification.
+
+Deployment is **independent of the package release pipeline.** Tagging a `vX.Y.Z` release publishes `@daloyjs/core` (npm + JSR) and `create-daloy` (npm); it does **not** build or deploy this site. The framework version shown in the docs comes from `CORE_PACKAGE_VERSION` in [`lib/seo.ts`](lib/seo.ts) (overridable via the `NEXT_PUBLIC_CORE_PACKAGE_VERSION` env var), which falls back to a hardcoded value — bump that fallback whenever the core version changes.
+
 ## Structure
 
 This project uses Next.js' App Router at the repository root (no `src/` directory).

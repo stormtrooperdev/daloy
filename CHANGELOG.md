@@ -12,6 +12,41 @@ For the forward-looking plan and the full thematic release log, see
 > `create-daloy` are published together — a new core release always ships a
 > matching scaffolder so generated projects pin the latest peer.
 
+## [0.39.0] — 2026-06-17
+
+### Added
+
+- **Redoc is now a third built-in OpenAPI docs UI**, alongside Scalar (default)
+  and Swagger UI. Set `docs: { ui: "redoc" }` on the `App` constructor to render
+  Redoc at `/docs`, and pass Redoc options through `docs.redoc` (forwarded to
+  `Redoc.init`). A new `redocHtml` helper is exported from `@daloyjs/core/docs`
+  for manual mounting, with matching `RedocConfiguration` and `RedocHtmlOptions`
+  types. Because Redoc spins up a `blob:` Web Worker for search, the
+  auto-mounted `/docs` CSP widens with `worker-src 'self' blob:` **for
+  `ui: "redoc"` only** — Scalar and Swagger UI keep the tighter default.
+
+### Fixed
+
+- **`otelTracing` now follows the OTel HTTP semantic conventions for
+  `server.address`/`server.port`.** The span attribute `server.address`
+  previously carried the host *with* its port (e.g. `api.example.com:8443`);
+  it now holds the bare hostname and the port is emitted separately as the
+  numeric `server.port`, so traces line up with conformant backends.
+- **`httpMetrics` no longer drives the in-flight gauge negative on OPTIONS
+  preflight.** A CORS preflight handled by the framework's `preflightHooks`
+  (when no `OPTIONS` route is registered) calls `onSend` without a prior
+  `onRequest`, so the gauge is now only balanced — and request/duration metrics
+  recorded — when a matching `onRequest` actually ran for that request.
+
+### Documentation
+
+- Added runnable observability example stacks: an OpenTelemetry tracing demo
+  wired to Jaeger over OTLP, and a Prometheus + Grafana metrics integration
+  stack.
+
+`create-daloy` is a lockstep `0.39.0` bump: every template now pins
+`@daloyjs/core@^0.39.0` (`jsr:@daloyjs/daloy@^0.39.0` for the Deno template).
+
 ## [0.38.3] — 2026-06-16
 
 `@daloyjs/core` has no runtime changes; this is a lockstep bump alongside the
@@ -1099,6 +1134,7 @@ scaffolded projects pin the latest peer.
   `vercel-edge`, `cloudflare-worker`), docs metadata + ORM guides.
 
 [Unreleased]: https://github.com/daloyjs/daloy/compare/v0.38.3...HEAD
+[0.39.0]: https://github.com/daloyjs/daloy/compare/v0.38.3...v0.39.0
 [0.38.3]: https://github.com/daloyjs/daloy/compare/v0.38.2...v0.38.3
 [0.38.2]: https://github.com/daloyjs/daloy/compare/v0.38.1...v0.38.2
 [0.38.1]: https://github.com/daloyjs/daloy/compare/v0.38.0...v0.38.1
