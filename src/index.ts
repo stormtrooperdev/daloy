@@ -388,6 +388,8 @@ export type {
   ScalarJsonValue,
   ScalarReferenceConfiguration,
   ScalarTheme,
+  RedocConfiguration,
+  RedocHtmlOptions,
   DocsAssetOptions,
 } from "./docs.js";
 

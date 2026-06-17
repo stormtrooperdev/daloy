@@ -90,6 +90,69 @@ test("docs: { ui: 'swagger' } selects Swagger UI", async () => {
   assert.match(html, /Swagger Demo/);
 });
 
+test("docs: { ui: 'redoc' } selects Redoc and grants worker-src blob in CSP", async () => {
+  const app = withRoute(
+    new App({
+      logger: false,
+      docs: { ui: "redoc" },
+      title: "Redoc Demo",
+      version: "3.0.0",
+    }),
+  );
+
+  const docs = await app.request("/docs");
+  assert.equal(docs.status, 200);
+  const html = await docs.text();
+  // Redoc markers + the live spec URL forwarded to Redoc.init.
+  assert.match(html, /redoc\.standalone\.js/);
+  assert.match(html, /Redoc\.init\("\/openapi\.json"/);
+  assert.match(html, /Redoc Demo/);
+  // Redoc spawns a blob: Web Worker, so this UI's CSP must allow it.
+  const csp = docs.headers.get("content-security-policy") ?? "";
+  assert.match(csp, /worker-src 'self' blob:/);
+  assert.equal(docs.headers.get("x-content-type-options"), "nosniff");
+});
+
+test("docs: { ui: 'redoc', redoc } forwards Redoc configuration to Redoc.init", async () => {
+  const app = withRoute(
+    new App({
+      logger: false,
+      docs: {
+        ui: "redoc",
+        redoc: {
+          disableSearch: true,
+          hideDownloadButtons: true,
+          theme: { colors: { primary: { main: "#2563eb" } } },
+        },
+      },
+      openapi: { info: { title: "Configured Redoc", version: "1.0.0" } },
+    }),
+  );
+  const docs = await app.request("/docs");
+  assert.equal(docs.status, 200);
+  const html = await docs.text();
+  // Config is embedded as a raw JS object literal inside the init script
+  // (no HTML-attribute escaping, unlike Scalar's data-configuration).
+  assert.match(html, /"disableSearch":true/);
+  assert.match(html, /"hideDownloadButtons":true/);
+  assert.match(html, /"primary":\{"main":"#2563eb"\}/);
+});
+
+test("docs: scalar and swagger UIs keep the tighter CSP without worker-src", async () => {
+  for (const ui of ["scalar", "swagger"] as const) {
+    const app = withRoute(
+      new App({
+        logger: false,
+        docs: { ui },
+        openapi: { info: { title: "T", version: "1" } },
+      }),
+    );
+    const csp =
+      (await app.request("/docs")).headers.get("content-security-policy") ?? "";
+    assert.doesNotMatch(csp, /worker-src/);
+  }
+});
+
 test("docs: { scalar } forwards Scalar UI configuration", async () => {
   const app = withRoute(
     new App({

@@ -1,9 +1,9 @@
 /**
  * Built-in API documentation handlers.
  *
- * Scalar and Swagger UI helpers serve a single HTML page that loads the spec
- * at `specUrl` and fetches UI assets from a CDN by default. No build step,
- * no extra deps.
+ * Scalar, Swagger UI, and Redoc helpers serve a single HTML page that loads
+ * the spec at `specUrl` and fetches UI assets from a CDN by default. No build
+ * step, no extra deps.
  *
  * (You can self-host the assets if your CSP forbids CDNs.)
  */
@@ -100,6 +100,88 @@ export interface ScalarReferenceConfiguration {
 }
 
 /**
+ * Subset of Redoc standalone configuration safe to serialize from the server.
+ *
+ * Every field is a plain JSON value, so the whole object is forwarded verbatim
+ * to `Redoc.init(specUrl, configuration, element)` in the generated page. The
+ * index signature accepts any additional Redoc option (the standalone bundle's
+ * option set drifts across versions); the named fields exist for editor
+ * autocompletion of the common, stable ones. Function-typed options are not
+ * representable here on purpose — they cannot cross the server→HTML boundary.
+ *
+ * @since 0.39.0
+ */
+export interface RedocConfiguration {
+  [key: string]: ScalarJsonValue | undefined;
+  /** Disable the search bar (also skips spawning the search Web Worker). */
+  disableSearch?: boolean;
+  /** Minimum query length before search runs. */
+  minCharacterLengthToInitSearch?: number;
+  /** Which responses to expand by default, e.g. `"200,201"` or `"all"`. */
+  expandResponses?: string;
+  /** Expand the single-property schema field instead of collapsing it. */
+  expandSingleSchemaField?: boolean;
+  /** Expand `default` server-variable values in the sidebar. */
+  expandDefaultServerVariables?: boolean;
+  /** How deep to expand generated JSON samples; a number or `"all"`. */
+  jsonSampleExpandLevel?: number | string;
+  /** How deep to expand nested schemas; a number or `"all"`. */
+  schemasExpansionLevel?: number | string;
+  /** Hide the "Download" button(s) for the spec. */
+  hideDownloadButtons?: boolean;
+  /** Override the URL used by the download button. */
+  downloadDefinitionUrl?: string;
+  /** Hide the API host from the docs. */
+  hideHostname?: boolean;
+  /** Hide the loading spinner. */
+  hideLoading?: boolean;
+  /** Hide the request payload sample tab. */
+  hideRequestPayloadSample?: boolean;
+  /** Hide the `pattern` shown for string schemas. */
+  hideSchemaPattern?: boolean;
+  /** Hide schema title captions. */
+  hideSchemaTitles?: boolean;
+  /** Hide the entire Security section. */
+  hideSecuritySection?: boolean;
+  /** Hide the single-sample tab when there is only one request sample. */
+  hideSingleRequestSampleTab?: boolean;
+  /** Largest number of enum values to show before collapsing. */
+  maxDisplayedEnumValues?: number;
+  /** Collapse sidebar items on selection (single-expanded menu behaviour). */
+  menuToggle?: boolean;
+  /** Use the browser's native scrollbars instead of custom ones. */
+  nativeScrollbars?: boolean;
+  /** Show only required fields in request samples. */
+  onlyRequiredInSamples?: boolean;
+  /** Render the path in the middle panel instead of the right one. */
+  pathInMiddlePanel?: boolean;
+  /** Index of the request sample shown first. */
+  payloadSampleIdx?: number;
+  /** Sort required properties before optional ones. */
+  requiredPropsFirst?: boolean;
+  /** Pixels of fixed offset for in-page anchor scrolling; a number or selector. */
+  scrollYOffset?: number | string;
+  /** Show vendor `x-` extensions; `true`/`false` or an allowlist of names. */
+  showExtensions?: boolean | string[];
+  /** Show object schema examples. */
+  showObjectSchemaExamples?: boolean;
+  /** Show the HTTP verb badge for webhooks. */
+  showWebhookVerb?: boolean;
+  /** Use a simple `oneOf` type label instead of an expandable selector. */
+  simpleOneOfTypeLabel?: boolean;
+  /** Sort enum values alphabetically. */
+  sortEnumValuesAlphabetically?: boolean;
+  /** Sort operations alphabetically. */
+  sortOperationsAlphabetically?: boolean;
+  /** Sort schema properties alphabetically. */
+  sortPropsAlphabetically?: boolean;
+  /** Sort tags alphabetically. */
+  sortTagsAlphabetically?: boolean;
+  /** Nested Redoc theme object (colors, typography, sidebar, etc.). */
+  theme?: { [key: string]: ScalarJsonValue | undefined };
+}
+
+/**
  * Override CDN URLs and pin Subresource Integrity (SRI) hashes for the docs
  * UI assets.
  *
@@ -141,6 +223,15 @@ export interface DocsAssetOptions {
    * @since 0.37.0
    */
   swaggerUiBundleIntegrity?: string;
+  /** Override the Redoc standalone bundle URL (useful for self-hosting). */
+  redocScriptUrl?: string;
+  /**
+   * SRI hash for {@link redocScriptUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.39.0
+   */
+  redocScriptIntegrity?: string;
   /**
    * `crossorigin` attribute value emitted alongside any pinned integrity
    * hash. SRI on a cross-origin asset requires CORS, so this defaults to
@@ -173,6 +264,16 @@ export interface ScalarHtmlOptions extends DocsOptions {
   configuration?: ScalarReferenceConfiguration;
 }
 
+/**
+ * Options for {@link redocHtml}; adds Redoc-specific UI configuration.
+ *
+ * @since 0.39.0
+ */
+export interface RedocHtmlOptions extends DocsOptions {
+  /** Forwarded as the options object to `Redoc.init(specUrl, configuration, element)`. */
+  configuration?: RedocConfiguration;
+}
+
 /** Options for {@link docsContentSecurityPolicy}. */
 export interface DocsContentSecurityPolicyOptions {
   /** Extra origins to allow for `script-src` / `style-src` (defaults to jsDelivr). */
@@ -181,6 +282,16 @@ export interface DocsContentSecurityPolicyOptions {
   scriptNonce?: string;
   /** When `false`, omits `'unsafe-inline'` from `style-src`. Defaults to `true`. */
   allowInlineStyles?: boolean;
+  /**
+   * When `true`, append `worker-src 'self' blob:` so a UI that constructs a
+   * Web Worker from a `blob:` URL can run under this CSP. Redoc does this for
+   * its search index, so the auto-mounted docs route enables it automatically
+   * for `ui: "redoc"`; Scalar and Swagger UI do not need it. Defaults to
+   * `false`, leaving the policy unchanged.
+   *
+   * @since 0.39.0
+   */
+  allowBlobWorkers?: boolean;
 }
 
 /** Options for {@link htmlResponse}. */
@@ -301,6 +412,45 @@ export function swaggerUiHtml(opts: DocsOptions): string {
 }
 
 /**
+ * Render a Redoc HTML page that loads `opts.specUrl`. Same usage as
+ * {@link scalarHtml} / {@link swaggerUiHtml} but emits the Redoc standalone
+ * bundle and forwards {@link RedocHtmlOptions.configuration} to `Redoc.init`.
+ *
+ * Redoc constructs a Web Worker from a `blob:` URL for its search index, so
+ * serve this page with a CSP that allows `worker-src 'self' blob:` — pass
+ * `allowBlobWorkers: true` to {@link docsContentSecurityPolicy} /
+ * {@link htmlResponse} (the `docs: { ui: "redoc" }` auto-mount does this for
+ * you). The spec URL and configuration are embedded with `<`-escaped JSON so
+ * an attacker-controlled value cannot break out of the inline `<script>`.
+ *
+ * @since 0.39.0
+ */
+export function redocHtml(opts: RedocHtmlOptions): string {
+  const title = escapeHtml(opts.title ?? "API Docs");
+  const scriptUrl = escapeHtml(
+    opts.assets?.redocScriptUrl ??
+      `${JSDELIVR_ORIGIN}/npm/redoc/bundles/redoc.standalone.js`,
+  );
+  const scriptSri = integrityAttr(
+    opts.assets?.redocScriptIntegrity,
+    opts.assets?.crossOrigin,
+  );
+  const nonce = nonceAttr(opts.scriptNonce);
+  const specArg = jsonForScript(opts.specUrl);
+  const optionsArg = jsonForScript(opts.configuration ?? {});
+  return `<!doctype html>
+<html><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${title}</title>
+</head><body>
+<div id="redoc"></div>
+<script src="${scriptUrl}"${scriptSri}${nonce}></script>
+<script${nonce}>Redoc.init(${specArg},${optionsArg},document.getElementById("redoc"));</script>
+</body></html>`;
+}
+
+/**
  * Build a Content-Security-Policy string compatible with the docs HTML
  * produced by {@link scalarHtml} / {@link swaggerUiHtml}.
  *
@@ -318,13 +468,19 @@ export function docsContentSecurityPolicy(
   const styleSrc = ["'self'", ...assetOrigins];
   if (opts.allowInlineStyles !== false) styleSrc.push("'unsafe-inline'");
 
-  return [
+  const directives = [
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
     `style-src ${styleSrc.join(" ")}`,
     "img-src 'self' data: https:",
     "connect-src 'self'",
-  ].join("; ");
+  ];
+  // Redoc spawns a Web Worker from a `blob:` URL; without an explicit
+  // worker-src the browser falls back to script-src, which forbids `blob:`
+  // and breaks the page. Scope this relaxation to callers that opt in.
+  if (opts.allowBlobWorkers) directives.push("worker-src 'self' blob:");
+
+  return directives.join("; ");
 }
 
 /**
@@ -359,6 +515,20 @@ function escapeHtml(s: string): string {
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
         c
       ]!,
+  );
+}
+
+/**
+ * Serialize a value as a JSON literal safe to embed inside an inline
+ * `<script>` element. `JSON.stringify` already escapes quotes and backslashes;
+ * we additionally escape `<` (so `</script>`, `<!--`, and `<script` can't end
+ * or reopen the script) and the U+2028/U+2029 line separators that are illegal
+ * in older JS string literals. The result is valid JSON *and* valid JS.
+ */
+function jsonForScript(value: unknown): string {
+  return JSON.stringify(value).replace(
+    /[<\u2028\u2029]/g,
+    (c) => ({ "<": "\\u003c", "\u2028": "\\u2028", "\u2029": "\\u2029" })[c]!,
   );
 }
 

@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Docs UI asset integrity (SRI)",
   description:
-    "Pin version-exact Subresource Integrity (SRI) hashes on the CDN-loaded Scalar / Swagger UI assets that power the built-in /docs page, or point them at self-hosted copies, so a poisoned jsDelivr asset can't execute. Opt-in, validated, and zero runtime dependencies.",
+    "Pin version-exact Subresource Integrity (SRI) hashes on the CDN-loaded Scalar / Swagger UI / Redoc assets that power the built-in /docs page, or point them at self-hosted copies, so a poisoned jsDelivr asset can't execute. Opt-in, validated, and zero runtime dependencies.",
   path: "/docs/docs-asset-integrity",
   keywords: [
     "Subresource Integrity",
@@ -17,6 +17,7 @@ export const metadata = buildMetadata({
     "jsDelivr",
     "Scalar",
     "Swagger UI",
+    "Redoc",
     "supply chain",
     "DaloyJS",
   ],
@@ -28,8 +29,9 @@ export default function Page() {
     <>
       <h1>Docs UI asset integrity (SRI)</h1>
       <p>
-        The built-in <code>/docs</code> page renders Scalar (default) or Swagger
-        UI by loading their JavaScript and CSS bundles from the jsDelivr CDN. A
+        The built-in <code>/docs</code> page renders Scalar (default), Swagger
+        UI, or Redoc by loading their JavaScript and CSS bundles from the
+        jsDelivr CDN. A
         CDN keeps the framework dependency-free and means no build step for the
         docs UI — but it also means the browser will execute whatever bytes the
         CDN serves. If a CDN asset were ever poisoned, that code would run in
@@ -89,6 +91,22 @@ const app = new App({
       swaggerUiBundleUrl:
         "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js",
       swaggerUiBundleIntegrity: "sha384-<bundle-digest>",
+    },
+  },
+});`}
+      />
+      <p>
+        Redoc loads a single standalone bundle, so it takes one URL/hash pair:
+      </p>
+      <CodeBlock
+        language="ts"
+        code={`const app = new App({
+  docs: {
+    ui: "redoc",
+    assets: {
+      redocScriptUrl:
+        "https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js",
+      redocScriptIntegrity: "sha384-<redoc-digest>",
     },
   },
 });`}
@@ -156,9 +174,9 @@ new App({
 
       <h2>Low-level helpers</h2>
       <p>
-        The same options flow through the <code>scalarHtml()</code> and{" "}
-        <code>swaggerUiHtml()</code> helpers (from the{" "}
-        <code>@daloyjs/core/docs</code> subpath) if you render the docs page
+        The same options flow through the <code>scalarHtml()</code>,{" "}
+        <code>swaggerUiHtml()</code>, and <code>redocHtml()</code> helpers (from
+        the <code>@daloyjs/core/docs</code> subpath) if you render the docs page
         yourself. Multiple digests are supported — separate them with
         whitespace, and the strongest one the browser understands wins. The{" "}
         <code>crossOrigin</code> field defaults to{" "}

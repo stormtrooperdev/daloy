@@ -38,10 +38,12 @@ import {
 } from "./openapi.js";
 import {
   docsContentSecurityPolicy,
+  redocHtml,
   scalarHtml,
   swaggerUiHtml,
   type DocsAssetOptions,
   type DocsContentSecurityPolicyOptions,
+  type RedocConfiguration,
   type ScalarReferenceConfiguration,
 } from "./docs.js";
 import {
@@ -491,7 +493,7 @@ export interface AppOptions {
   /**
    * Enable the built-in API documentation surface — a `/openapi.json` route
    * that serves the live OpenAPI 3.1 spec and a `/docs` route that serves a
-   * Scalar (default) or Swagger UI HTML page that loads it. This is the
+   * Scalar (default), Swagger UI, or Redoc HTML page that loads it. This is the
    * one-line equivalent of FastAPI's automatic `/docs` UI.
    *
    * - `false` (default) — never mount. Write your own with `generateOpenAPI`
@@ -501,7 +503,7 @@ export interface AppOptions {
    *   is a "secure by default" choice: production deployments should opt in
    *   explicitly so internal APIs do not accidentally publish a browsable
    *   schema.
-    * - object — full configuration (custom paths, UI choice, title, Scalar UI
+    * - object — full configuration (custom paths, UI choice, title, per-UI
     *   config, CSP overrides). The `enabled` field on the object can override the
    *   auto/prod rule.
    *
@@ -547,10 +549,21 @@ export interface DocsRouteOptions {
    * @since 0.13.1
    */
   openapiYamlPath?: PathString | false;
-  /** Which built-in UI to render. Default `"scalar"` (smaller payload, modern UI). */
-  ui?: "scalar" | "swagger";
-  /** Scalar API reference UI configuration. Ignored when `ui: "swagger"`. */
+  /**
+   * Which built-in UI to render. Default `"scalar"` (smaller payload, modern
+   * UI). `"swagger"` renders classic Swagger UI; `"redoc"` (since 0.39.0)
+   * renders Redoc.
+   */
+  ui?: "scalar" | "swagger" | "redoc";
+  /** Scalar API reference UI configuration. Ignored unless `ui` is `"scalar"`. */
   scalar?: ScalarReferenceConfiguration;
+  /**
+   * Redoc UI configuration, forwarded to `Redoc.init`. Ignored unless
+   * `ui: "redoc"`.
+   *
+   * @since 0.39.0
+   */
+  redoc?: RedocConfiguration;
   /** Page `<title>`. Defaults to the resolved OpenAPI `info.title`. */
   title?: string;
   /**
@@ -1693,6 +1706,17 @@ export class App<
       });
     }
 
+    // Redoc builds a Web Worker from a `blob:` URL, which the strict docs CSP
+    // would otherwise block; grant `worker-src 'self' blob:` for that UI only
+    // (unless the caller explicitly overrode it). Scalar / Swagger UI keep the
+    // tighter default. The policy is deterministic from `ui` + `opts.csp`, so
+    // compute it once at mount time instead of per request.
+    const docsCsp = docsContentSecurityPolicy(
+      ui === "redoc"
+        ? { ...opts.csp, allowBlobWorkers: opts.csp?.allowBlobWorkers ?? true }
+        : opts.csp,
+    );
+
     this.route({
       method: "GET",
       path: docsPath,
@@ -1711,18 +1735,25 @@ export class App<
                 title,
                 assets: opts.assets,
               })
-            : scalarHtml({
-                specUrl: openapiPath,
-                title,
-                configuration: opts.scalar,
-                assets: opts.assets,
-              });
+            : ui === "redoc"
+              ? redocHtml({
+                  specUrl: openapiPath,
+                  title,
+                  configuration: opts.redoc,
+                  assets: opts.assets,
+                })
+              : scalarHtml({
+                  specUrl: openapiPath,
+                  title,
+                  configuration: opts.scalar,
+                  assets: opts.assets,
+                });
         return {
           status: 200 as const,
           body: html,
           headers: {
             "content-type": "text/html; charset=utf-8",
-            "content-security-policy": docsContentSecurityPolicy(opts.csp),
+            "content-security-policy": docsCsp,
             "x-content-type-options": "nosniff",
             "referrer-policy": "no-referrer",
           },

@@ -27,7 +27,7 @@ export default function Page() {
 @daloyjs/core/openapi     // OpenAPI 3.1 document generation + security-scheme builders
 @daloyjs/core/client      // Typed in-process client + Hey API SDK glue
 @daloyjs/core/contract    // Contract-tests harness (assert OpenAPI parity)
-@daloyjs/core/docs        // Scalar / Swagger UI HTML + CSP helper
+@daloyjs/core/docs        // Scalar / Swagger UI / Redoc HTML + CSP helper
 @daloyjs/core/streaming   // SSE + NDJSON helpers
 @daloyjs/core/multipart   // File-field + multipart object schema helpers
 @daloyjs/core/session     // Cookie sessions + signed-value helpers
@@ -680,16 +680,32 @@ interface ContractIssue  { route: string; method: HttpMethod; code: string; mess
       <CodeBlock
         code={`scalarHtml(opts: ScalarHtmlOptions): string;
 swaggerUiHtml(opts: DocsOptions): string;
+redocHtml(opts: RedocHtmlOptions): string;
 docsContentSecurityPolicy(opts?: DocsContentSecurityPolicyOptions): string;
 htmlResponse(html: string, opts?: HtmlResponseOptions): Response;
 
-interface DocsOptions { specUrl: string; title?: string; assets?: string; scriptNonce?: string }
+interface DocsOptions { specUrl: string; title?: string; assets?: DocsAssetOptions; scriptNonce?: string }
 interface ScalarHtmlOptions extends DocsOptions { configuration?: ScalarReferenceConfiguration }
+interface RedocHtmlOptions  extends DocsOptions { configuration?: RedocConfiguration }
+
+interface DocsAssetOptions {
+  // version-pinned URL + matching SRI hash per asset (see /docs/docs-asset-integrity)
+  scalarScriptUrl?: string;       scalarScriptIntegrity?: string;
+  swaggerUiCssUrl?: string;       swaggerUiCssIntegrity?: string;
+  swaggerUiBundleUrl?: string;    swaggerUiBundleIntegrity?: string;
+  redocScriptUrl?: string;        redocScriptIntegrity?: string;
+  crossOrigin?: "anonymous" | "use-credentials";  // default: "anonymous"
+}
+
+// RedocConfiguration is an index-signature bag of JSON-serializable Redoc
+// standalone options (disableSearch, hideDownloadButtons, sortPropsAlphabetically,
+// theme, ...), forwarded verbatim to Redoc.init(specUrl, configuration, element).
 
 interface DocsContentSecurityPolicyOptions {
   assetOrigins?: readonly string[];
   scriptNonce?: string;
   allowInlineStyles?: boolean;
+  allowBlobWorkers?: boolean;     // append worker-src 'self' blob: (Redoc needs it)
 }
 
 interface HtmlResponseOptions extends DocsContentSecurityPolicyOptions {

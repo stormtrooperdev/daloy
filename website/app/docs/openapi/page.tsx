@@ -17,6 +17,7 @@ export const metadata = buildMetadata({
     "automatic API docs",
     "Swagger UI",
     "Scalar API reference",
+    "Redoc",
     "docs UI switch",
   ],
   type: "article",
@@ -65,7 +66,7 @@ const app = new App({
     path: "/reference",              // default: "/docs"
     openapiPath: "/spec.json",       // default: "/openapi.json"
     openapiYamlPath: "/spec.yaml",   // default: "/openapi.yaml"; false disables it
-    ui: "scalar",                     // "scalar" (default) | "swagger"
+    ui: "scalar",                     // "scalar" (default) | "swagger" | "redoc"
     scalar: {
       theme: "kepler",
       customCss: ":root { --scalar-color-accent: #2563eb; }",
@@ -76,6 +77,40 @@ const app = new App({
   },
 });`}
       />
+
+      <h2>Pick a UI: Scalar, Swagger UI, or Redoc</h2>
+      <p>
+        Set <code>ui</code> to <code>&quot;scalar&quot;</code> (default),{" "}
+        <code>&quot;swagger&quot;</code>, or <code>&quot;redoc&quot;</code>. All
+        three render the same live spec, mount on the same paths, and ship the
+        same strict CSP and CDN-hosted assets, so switching is a one-word change.
+      </p>
+      <CodeBlock
+        code={`new App({
+  openapi: { info: { title: "My API", version: "1.0.0" } },
+  docs: {
+    ui: "redoc",
+    redoc: {
+      // Any Redoc standalone option is accepted (forwarded to Redoc.init):
+      disableSearch: false,
+      hideDownloadButtons: true,
+      sortPropsAlphabetically: true,
+      theme: { colors: { primary: { main: "#2563eb" } } },
+    },
+  },
+});`}
+      />
+      <p>
+        The <code>redoc</code> object is forwarded verbatim to{" "}
+        <code>Redoc.init(specUrl, configuration, element)</code>. Because Redoc
+        builds its search index in a <code>blob:</code> Web Worker, the
+        auto-mounted <code>/docs</code> route automatically widens that page&apos;s
+        CSP with <code>worker-src &apos;self&apos; blob:</code> for{" "}
+        <code>ui: &quot;redoc&quot;</code> only. Scalar and Swagger UI keep the
+        tighter policy. The <code>scalar</code> option is ignored unless{" "}
+        <code>ui</code> is <code>&quot;scalar&quot;</code>, and likewise for{" "}
+        <code>redoc</code>.
+      </p>
 
       <p>
         The <code>scalar</code> object is forwarded to Scalar&apos;s HTML API as
@@ -103,7 +138,7 @@ console.log(JSON.stringify(doc, null, 2));`}
 
       <h2>Advanced: serve docs from your own route</h2>
       <CodeBlock
-        code={`import { swaggerUiHtml, scalarHtml, htmlResponse } from "@daloyjs/core/docs";
+        code={`import { swaggerUiHtml, scalarHtml, redocHtml, htmlResponse } from "@daloyjs/core/docs";
 
 app.route({
   method: "GET",
@@ -123,10 +158,22 @@ app.route({
       />
 
       <p>
-        Both <code>swaggerUiHtml</code> and <code>scalarHtml</code> return
-        self-contained HTML pages that load their assets from jsDelivr with a
-        strict CSP allowing only that origin.
+        <code>swaggerUiHtml</code>, <code>scalarHtml</code>, and{" "}
+        <code>redocHtml</code> all return self-contained HTML pages that load
+        their assets from jsDelivr with a strict CSP allowing only that origin.
+        When you hand-roll the route with <code>redocHtml</code>, pass{" "}
+        <code>allowBlobWorkers: true</code> to <code>htmlResponse</code> (or{" "}
+        <code>docsContentSecurityPolicy</code>) so Redoc&apos;s{" "}
+        <code>blob:</code> search worker is allowed by the CSP:
       </p>
+      <CodeBlock
+        code={`import { redocHtml, htmlResponse } from "@daloyjs/core/docs";
+
+const res = htmlResponse(
+  redocHtml({ specUrl: "/openapi.json", title: "My API", configuration: { hideDownloadButtons: true } }),
+  { allowBlobWorkers: true },
+);`}
+      />
 
       <p>
         If you want to test your docs UX against a much larger contract, see the{" "}

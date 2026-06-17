@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { App } from "../src/index.js";
-import { scalarHtml, swaggerUiHtml, htmlResponse, docsContentSecurityPolicy } from "../src/docs.js";
+import { scalarHtml, swaggerUiHtml, redocHtml, htmlResponse, docsContentSecurityPolicy } from "../src/docs.js";
 import { createLogger } from "../src/logger.js";
 import { toFetchHandler as toCloudflareFetchHandler } from "../src/adapters/cloudflare.js";
 import { toEdgeHandler, toWebHandler, toRouteHandlers, toFetchHandler as toVercelFetchHandler } from "../src/adapters/vercel.js";
@@ -159,6 +159,81 @@ test("docs helpers reject a malformed SRI integrity value", () => {
       }),
     /Invalid Subresource Integrity value/,
   );
+});
+
+test("redocHtml escapes the title and is immune to </script> breakout in the spec URL", () => {
+  const html = redocHtml({
+    title: "<img src=x onerror=alert(1)>",
+    specUrl: "/openapi.json?x=</script><script>alert(1)</script>",
+  });
+  // Title flows into an HTML text node, so it is HTML-escaped.
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(html, /<img src=x/);
+  // The spec URL is embedded inside an inline <script> via <-escaped JSON, so
+  // the injected closing tag cannot terminate the script element.
+  assert.doesNotMatch(html, /<\/script><script>alert\(1\)/);
+  assert.match(html, /\\u003c\/script>\\u003cscript>alert\(1\)\\u003c\/script>/);
+  // The init call is still well-formed.
+  assert.match(html, /Redoc\.init\("\/openapi\.json\?x=/);
+});
+
+test("redocHtml escapes U+2028 / U+2029 line separators in embedded JSON", () => {
+  const lineSep = String.fromCharCode(0x2028);
+  const paraSep = String.fromCharCode(0x2029);
+  const html = redocHtml({ specUrl: `/openapi.json?a=${lineSep}b=${paraSep}` });
+  // The raw separators (illegal in older JS string literals) are replaced...
+  assert.doesNotMatch(html, new RegExp(lineSep));
+  assert.doesNotMatch(html, new RegExp(paraSep));
+  // ...with their escape sequences.
+  assert.match(html, /\\u2028/);
+  assert.match(html, /\\u2029/);
+});
+
+test("redocHtml supports self-hosted assets, a nonce, and forwards configuration", () => {
+  const html = redocHtml({
+    specUrl: "/openapi.json",
+    scriptNonce: "nonce-123",
+    assets: { redocScriptUrl: "/docs-assets/redoc.js" },
+    configuration: { disableSearch: true, hideDownloadButtons: true },
+  });
+  assert.match(html, /src="\/docs-assets\/redoc\.js"/);
+  assert.match(html, /nonce="nonce-123"/);
+  assert.match(
+    html,
+    /Redoc\.init\("\/openapi\.json",\{"disableSearch":true,"hideDownloadButtons":true\},document\.getElementById\("redoc"\)\)/,
+  );
+});
+
+test("redocHtml emits pinned SRI and rejects a malformed integrity value", () => {
+  const html = redocHtml({
+    specUrl: "/openapi.json",
+    assets: {
+      redocScriptUrl:
+        "https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js",
+      redocScriptIntegrity: "sha384-abcDEF123+/456ghiJKL789mnoPQR012stuVWX",
+    },
+  });
+  assert.match(
+    html,
+    /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/redoc@2\.1\.5\/bundles\/redoc\.standalone\.js" integrity="sha384-abcDEF123\+\/456ghiJKL789mnoPQR012stuVWX" crossorigin="anonymous">/,
+  );
+
+  assert.throws(
+    () =>
+      redocHtml({
+        specUrl: "/openapi.json",
+        assets: { redocScriptIntegrity: "md5-notallowed" },
+      }),
+    /Invalid Subresource Integrity value/,
+  );
+});
+
+test("docsContentSecurityPolicy adds worker-src blob only when allowBlobWorkers is set", () => {
+  const base = docsContentSecurityPolicy();
+  assert.doesNotMatch(base, /worker-src/);
+
+  const withWorkers = docsContentSecurityPolicy({ allowBlobWorkers: true });
+  assert.match(withWorkers, /worker-src 'self' blob:/);
 });
 
 test("scalarHtml serializes custom Scalar UI configuration safely", () => {
