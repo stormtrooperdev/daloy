@@ -107,7 +107,7 @@ The adversarial suite (`pnpm test:red-team`, gated in CI) contains **127 attacks
 - **Wave 4** (`red-team-attacks-4.test.ts`): nested/array response over-exposure (independent verification of F-1), JWT header key-injection (`jwk`/`jku`/`x5u`/`kid`), uppercase `NONE` bypass attempt, HTTP method-override smuggling, path-confusion `except()` fail-closed, WAF ReDoS bound.
 - **Wave 5** (`red-team-attacks-5.test.ts`): cross-tenant cached-response disclosure — idempotency replay isolation (F-2) and response-cache Authorization bypass (F-3), including the same-principal/public happy paths and the explicit opt-in path.
 - **Wave 6** (`red-team-attacks-6.test.ts`): defense verification — session fixation/forgery + `regenerate()` rotation, `__Host-` cookie scoping, BREACH-aware compression skips, multipart per-file cap, WAF single-encoding catch + the documented double-encoding limitation.
-- **Wave 7** (`red-team-attacks-7.test.ts`): three-front nation-state simulation — (R) production docs/OpenAPI hidden, error-response leak-free, forged-JWT privilege-escalation rejected; (C) request-timeout slowloris cutoff, deep-nest stack-bomb rejected fast, wide-JSON hash-flood bounded; (N) prototype-gadget pollutes nothing, no dynamic code-execution primitive on the public surface.
+- **Wave 7** (`red-team-attacks-7.test.ts`): three-front offensive simulation — (R) production docs/OpenAPI hidden, error-response leak-free, forged-JWT privilege-escalation rejected; (C) request-timeout slowloris cutoff, deep-nest stack-bomb rejected fast, wide-JSON hash-flood bounded; (N) prototype-gadget pollutes nothing, no dynamic code-execution primitive on the public surface.
 
 ---
 

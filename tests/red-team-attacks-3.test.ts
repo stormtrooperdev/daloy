@@ -83,14 +83,17 @@ test("[bot-guard] explicitly blocked user-agents are rejected; ordinary clients 
 // 2. geoBlock — country gating (stubbed GeoIP)
 // ===========================================================================
 
+// Stubbed GeoIP using reserved ISO 3166-1 codes (XA/ZZ are not assigned to any
+// real country), so the test exercises allow/deny logic without making any
+// statement about a real nation.
 const COUNTRY: Record<string, string> = {
-  "203.0.113.7": "KP", // North Korea
-  "8.8.8.8": "US",
+  "203.0.113.7": "ZZ", // an example blocked region
+  "8.8.8.8": "XA", // an example allowed region
 };
 
 test("[geo-block] allowlist mode blocks a country not on the list (403)", async () => {
   const app = devApp();
-  app.use(geoBlock({ allow: ["US", "CA", "GB"], trustProxyHeaders: true, lookupCountry: (ip) => COUNTRY[ip] }));
+  app.use(geoBlock({ allow: ["XA", "XB", "XC"], trustProxyHeaders: true, lookupCountry: (ip) => COUNTRY[ip] }));
   okRoute(app);
   assert.equal((await app.request("/", { headers: { "x-forwarded-for": "203.0.113.7" } })).status, 403);
   assert.equal((await app.request("/", { headers: { "x-forwarded-for": "8.8.8.8" } })).status, 200);
@@ -98,7 +101,7 @@ test("[geo-block] allowlist mode blocks a country not on the list (403)", async 
 
 test("[geo-block] denylist mode blocks a listed country, passes everything else (403)", async () => {
   const app = devApp();
-  app.use(geoBlock({ deny: ["KP", "IR"], trustProxyHeaders: true, lookupCountry: (ip) => COUNTRY[ip] }));
+  app.use(geoBlock({ deny: ["ZZ", "ZY"], trustProxyHeaders: true, lookupCountry: (ip) => COUNTRY[ip] }));
   okRoute(app);
   assert.equal((await app.request("/", { headers: { "x-forwarded-for": "203.0.113.7" } })).status, 403);
   assert.equal((await app.request("/", { headers: { "x-forwarded-for": "8.8.8.8" } })).status, 200);

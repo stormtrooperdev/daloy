@@ -12,6 +12,80 @@ For the forward-looking plan and the full thematic release log, see
 > `create-daloy` are published together — a new core release always ships a
 > matching scaffolder so generated projects pin the latest peer.
 
+## [0.40.0] — 2026-06-18
+
+A security-hardening release focused on **response-side data exposure** and
+**cross-tenant cache isolation** (OWASP API3 / API2, CWE-524 / CWE-213), plus a
+large internal quality pass that brings the entire test suite and build scripts
+under type-checking in CI.
+
+> **Behavior changes (pre-1.0 minor).** Three secure-by-default changes may
+> affect apps that relied on the previous looser behavior — see **Changed**
+> below. Each has an explicit opt-out where a legitimate use case exists.
+
+### Security
+
+- **Response schemas now filter output, not just validate it (OWASP API3 /
+  CWE-213).** Response-body validation previously checked the handler's return
+  against the declared schema but serialized the original object, so fields a
+  handler returned that were **not** declared in the response schema (a stray
+  `passwordHash`, a spread ORM row) were emitted to the client. The serializer
+  now emits the validator's parsed value, so **only declared fields are sent**,
+  at every nesting depth (objects and arrays). Schemas that opt into
+  pass-through keep their extra fields.
+- **`idempotency()` keys are now namespaced per principal (CWE-524).**
+  Previously a client that reused another client's `Idempotency-Key` with the
+  same request shape received the other client's stored response. The store key
+  is now scoped by the caller — the `Authorization` header by default, or a new
+  `scope(ctx)` option for cookie/custom identity. Same-principal retries still
+  replay; unauthenticated idempotency still dedupes by key alone.
+- **`responseCache()` no longer caches `Authorization`-bearing requests by
+  default (CWE-524, RFC 9111 §3.5).** A shared cache keyed on method + URL would
+  otherwise serve one user's private response to the next caller of the same
+  URL. Opt back in with `cacheAuthenticatedRequests: true` for genuinely
+  shareable content (pair it with `varyHeaders: ["authorization"]`).
+
+### Added
+
+- **`findRoutesMissingResponseBodySchema()`** introspection helper, a
+  `daloy doctor` **`audit.response.bodySchema`** finding, and a development-mode
+  boot warning that surface routes whose `2xx` responses declare no body schema
+  (where the new output filtering above cannot run).
+- **`idempotency({ scope })`** — namespace idempotency keys by a caller-supplied
+  identity.
+- **`responseCache({ cacheAuthenticatedRequests })`** — opt in to caching
+  responses for `Authorization`-bearing requests.
+- **`typecheck:tests`** package script (and `pnpm typecheck` now also
+  type-checks `tests/**` and `scripts/**`).
+
+### Changed
+
+- See **Security** above: response field stripping, per-principal idempotency
+  keys, and the response-cache `Authorization` bypass are all enabled by
+  default.
+
+### Fixed
+
+- **`MemoryIdempotencyStore` / `MemoryResponseCacheStore` method arity** now
+  matches the `IdempotencyStore` / `ResponseCacheStore` interfaces (the
+  `ttlMs` parameter the framework's own call sites already pass).
+- **Synthetic 404 / preflight contexts** in the request pipeline now compile
+  when a consumer augments `AppState` (the documented
+  `interface AppState extends SessionState {}` pattern).
+- **The test suite and build scripts are now type-checked in CI.** They were
+  previously excluded from `pnpm typecheck`, which let ~64 latent type errors
+  accumulate — including a Zod v4 `z.record(key, value)` arity break,
+  `@types/node` v22 `Dirent` / `parseInt` drift in `scripts/`, and a real
+  test bug that passed an object to `app.close(timeoutMs: number)`. All fixed
+  and gated.
+
+### Tests
+
+- Expanded the adversarial red-team suite to **127 attacks across 7 waves**
+  (injection, SSRF, DoS, auth/authz, smuggling, cross-tenant isolation, and a
+  three-front offensive simulation covering exfiltration, denial of service,
+  and code execution), run as a dedicated `pnpm test:red-team` CI gate.
+
 ## [0.39.1] — 2026-06-17
 
 `@daloyjs/core` has no runtime changes; this is a lockstep re-release whose only
@@ -1153,6 +1227,7 @@ scaffolded projects pin the latest peer.
   `vercel-edge`, `cloudflare-worker`), docs metadata + ORM guides.
 
 [Unreleased]: https://github.com/daloyjs/daloy/compare/v0.38.3...HEAD
+[0.40.0]: https://github.com/daloyjs/daloy/compare/v0.39.1...v0.40.0
 [0.39.1]: https://github.com/daloyjs/daloy/compare/v0.39.0...v0.39.1
 [0.39.0]: https://github.com/daloyjs/daloy/compare/v0.38.3...v0.39.0
 [0.38.3]: https://github.com/daloyjs/daloy/compare/v0.38.2...v0.38.3

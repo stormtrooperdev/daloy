@@ -1,8 +1,8 @@
 /**
- * RED-TEAM ATTACK SUITE — WAVE 7 (three-front nation-state simulation)
- * ===================================================================
+ * RED-TEAM ATTACK SUITE — WAVE 7 (three-front offensive simulation)
+ * =================================================================
  *
- * A simulated coordinated engagement, framed as three offensive campaigns,
+ * A simulated coordinated engagement across three offensive campaigns,
  * each run against THIS framework in the test harness:
  *
  *   Campaign R — penetrate & exfiltrate (steal data / leak internals)
