@@ -1,0 +1,328 @@
+import { CodeBlock } from "../../../components/code-block";
+
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
+  title: "Multitenancy",
+  description:
+    "Resolve, validate, and isolate tenants with the secure-by-default tenancy() middleware: pluggable resolution (subdomain, header, path, JWT claim, or custom), refuse-unresolved by default, format-validated tenant ids, no-enumeration rejection, and a tenantScope() helper that partitions rateLimit, concurrencyLimit, idempotency, and responseCache per tenant.",
+  path: "/docs/multitenancy",
+  keywords: [
+    "multitenancy",
+    "multi-tenant",
+    "tenant isolation",
+    "DaloyJS tenancy",
+    "tenantScope",
+    "tenantFromSubdomain",
+    "per-tenant rate limit",
+    "subdomain routing",
+    "tenant context",
+    "SaaS",
+  ],
+  type: "article",
+});
+
+export default function Page() {
+  return (
+    <>
+      <h1>Multitenancy</h1>
+      <p>
+        As of <strong>0.42.0</strong> DaloyJS ships <code>tenancy()</code>, a{" "}
+        <strong>dependency-free</strong>, secure-by-default <code>Hooks</code>{" "}
+        bundle that resolves the calling tenant <em>once</em> per request,
+        validates and normalizes it, and exposes it on{" "}
+        <code>ctx.state.tenant</code>. It is the single source of truth for
+        &ldquo;who is this request for&rdquo; so the per-tenant isolation knobs
+        already on the framework (<code>rateLimit</code>,{" "}
+        <code>concurrencyLimit</code>, <code>idempotency</code>,{" "}
+        <code>responseCache</code>) can all key off the same resolved value via{" "}
+        <code>tenantScope()</code>.
+      </p>
+
+      <h2>Quick start</h2>
+      <p>
+        Resolve the tenant from the request subdomain, bound the space with an
+        allowlist, and give every tenant its own rate-limit bucket. Register{" "}
+        <code>tenancy()</code> <strong>before</strong> the isolation middleware
+        so <code>ctx.state.tenant</code> is set by the time they run.
+      </p>
+      <CodeBlock
+        code={`import { App, rateLimit, tenancy, tenantFromSubdomain, tenantScope } from "@daloyjs/core";
+
+const app = new App({
+  // Global hook → resolves before any group hook below.
+  hooks: tenancy({
+    resolve: tenantFromSubdomain({ baseDomain: "example.com" }),
+    allow: ["acme", "globex"],
+  }),
+});
+
+// Each tenant gets an independent 100-req/min bucket.
+app.use(rateLimit({ windowMs: 60_000, max: 100, keyGenerator: tenantScope() }));
+
+app.route({
+  method: "GET",
+  path: "/orders",
+  operationId: "listOrders",
+  responses: { 200: { description: "ok" } },
+  handler: ({ state }) => {
+    // acme.example.com → state.tenant === "acme"
+    const tenant = state.tenant as string;
+    return { status: 200 as const, body: { tenant, orders: ordersFor(tenant) } };
+  },
+});`}
+        language="ts"
+      />
+
+      <h2>Resolving the tenant</h2>
+      <p>
+        Pass one resolver to <code>resolve</code>, or an array tried in order
+        until one returns a non-empty value (e.g. prefer a verified JWT claim,
+        fall back to the subdomain). A resolver is just a{" "}
+        <code>(ctx) =&gt; string | undefined</code>, so you can write your own.
+      </p>
+      <div className="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Resolver</th>
+              <th>Source</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>tenantFromSubdomain({`{ baseDomain }`})</code></td>
+              <td><code>acme.example.com</code> → <code>acme</code></td>
+              <td>
+                PSL-aware via <code>subdomains()</code>. A <code>Host</code> not
+                under <code>baseDomain</code> resolves to <em>unresolved</em>{" "}
+                (host-spoof safe), never a <code>500</code>. Recommended for
+                production.
+              </td>
+            </tr>
+            <tr>
+              <td><code>tenantFromHeader(&quot;x-tenant-id&quot;)</code></td>
+              <td>request header</td>
+              <td>
+                <strong>Spoofable.</strong> Only trust behind a proxy that{" "}
+                <em>overwrites</em> the header on every inbound request. Always
+                pair with <code>allow</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>tenantFromPathPrefix()</code></td>
+              <td><code>/acme/orders</code> → <code>acme</code></td>
+              <td>
+                Reads the segment only (does not rewrite the path); your routes
+                still include the tenant segment.
+              </td>
+            </tr>
+            <tr>
+              <td><code>tenantFromClaim(&quot;org&quot;)</code></td>
+              <td><code>ctx.state.auth.credentials.org</code></td>
+              <td>
+                For a verified JWT/session claim. The auth middleware that
+                populates it must run <em>before</em> <code>tenancy()</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>(ctx) =&gt; string | undefined</code></td>
+              <td>anything</td>
+              <td>Custom resolver — derive the id however you like.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <CodeBlock
+        code={`// Prefer a verified claim, fall back to the subdomain.
+tenancy({
+  resolve: [tenantFromClaim("org"), tenantFromSubdomain({ baseDomain: "example.com" })],
+});`}
+        language="ts"
+      />
+
+      <h2>Options reference</h2>
+      <div className="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>resolve</code></td>
+              <td><code>TenantResolver | TenantResolver[]</code></td>
+              <td>— (required)</td>
+              <td>Resolver(s) tried in order; first non-empty wins.</td>
+            </tr>
+            <tr>
+              <td><code>require</code></td>
+              <td><code>boolean</code></td>
+              <td><code>true</code></td>
+              <td>
+                Reject unresolved requests. The secure default — an
+                unresolved request is never served as an ambient
+                &ldquo;default&rdquo; tenant.
+              </td>
+            </tr>
+            <tr>
+              <td><code>allow</code></td>
+              <td><code>string[] | (id, ctx) =&gt; boolean</code></td>
+              <td>—</td>
+              <td>
+                Bound the tenant space. Array entries are validated at
+                construction. A disallowed id is rejected with{" "}
+                <code>invalidStatus</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>normalize</code></td>
+              <td><code>(raw) =&gt; string | undefined</code></td>
+              <td>trim + lowercase + strict charset</td>
+              <td>
+                Validate/canonicalize the raw id. Return <code>undefined</code>{" "}
+                to reject. The default accepts only{" "}
+                <code>[a-z0-9_-]</code>, 1–63 chars.
+              </td>
+            </tr>
+            <tr>
+              <td><code>stateKey</code></td>
+              <td><code>string</code></td>
+              <td><code>&quot;tenant&quot;</code></td>
+              <td><code>ctx.state</code> key the resolved id is written to.</td>
+            </tr>
+            <tr>
+              <td><code>unresolvedStatus</code></td>
+              <td><code>400 | 401 | 403 | 404</code></td>
+              <td><code>400</code></td>
+              <td>Status when <code>require</code> is true and nothing resolved.</td>
+            </tr>
+            <tr>
+              <td><code>invalidStatus</code></td>
+              <td><code>400 | 403 | 404</code></td>
+              <td><code>404</code></td>
+              <td>
+                Status for a resolved-but-disallowed/malformed id.{" "}
+                <code>404</code> avoids tenant enumeration.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Per-tenant isolation with <code>tenantScope()</code></h2>
+      <p>
+        <code>tenantScope()</code> returns a <code>(ctx) =&gt; string</code> key
+        function that reads <code>ctx.state.tenant</code> and returns a{" "}
+        <code>tenant:&lt;id&gt;</code> partition key. Drop it into the isolation
+        knobs so each tenant gets its own bucket / namespace and cannot exhaust,
+        read, or poison another tenant&apos;s:
+      </p>
+      <CodeBlock
+        code={`import { tenantScope, rateLimit, concurrencyLimit, idempotency, responseCache } from "@daloyjs/core";
+
+rateLimit({ windowMs: 60_000, max: 100, keyGenerator: tenantScope() });
+concurrencyLimit({ maxConcurrent: 20, scope: tenantScope() });
+idempotency({ scope: tenantScope() });   // CWE-524 cross-tenant cached-response defense
+responseCache({ ttlMs: 30_000, scope: tenantScope() });`}
+        language="ts"
+      />
+      <p>
+        <strong>Ordering matters.</strong> <code>tenancy()</code> resolves in{" "}
+        <code>beforeHandle</code>, and so do these consumers. Register{" "}
+        <code>tenancy()</code> first — as a global hook (
+        <code>new App({`{ hooks: tenancy(...) }`}</code>) or the first{" "}
+        <code>app.use(...)</code> — so the tenant is populated before any{" "}
+        <code>keyGenerator</code> / <code>scope</code> callback runs. If a
+        limiter runs first, its key falls back to{" "}
+        <code>tenant:unknown</code>.
+      </p>
+
+      <h2>Typing <code>ctx.state.tenant</code></h2>
+      <p>
+        Augment <code>AppState</code> so the resolved tenant is strongly typed
+        in every handler and hook:
+      </p>
+      <CodeBlock
+        code={`// src/types.d.ts
+declare module "@daloyjs/core" {
+  interface AppState {
+    tenant?: string;
+  }
+}
+
+// Now ctx.state.tenant is string | undefined everywhere.`}
+        language="ts"
+      />
+
+      <h2>Security posture</h2>
+      <ul>
+        <li>
+          <strong>Refuse-unresolved by default.</strong> With{" "}
+          <code>require: true</code>, a request whose tenant cannot be resolved
+          is rejected rather than silently served as a default tenant — the
+          failure mode that leaks one tenant&apos;s data to another.
+        </li>
+        <li>
+          <strong>Format-validated ids.</strong> Resolved ids are normalized to
+          a conservative <code>[a-z0-9_-]</code> charset before they are stored
+          or used as a key. A spoofable header value cannot smuggle newlines,{" "}
+          <code>:</code>, <code>/</code>, or <code>*</code> into rate-limit
+          keys, cache keys, or log lines (key/log injection, cache poisoning).
+        </li>
+        <li>
+          <strong>No enumeration.</strong> A resolved-but-unknown tenant is{" "}
+          <code>404</code> by default, indistinguishable from a missing route,
+          so attackers cannot probe for valid tenant names.
+        </li>
+        <li>
+          <strong>Host-spoof safe.</strong> <code>tenantFromSubdomain</code>{" "}
+          treats a <code>Host</code> that is not under the declared{" "}
+          <code>baseDomain</code> as unresolved instead of trusting it.
+        </li>
+        <li>
+          <strong>Header resolution is opt-in and spoofable.</strong> Only use{" "}
+          <code>tenantFromHeader</code> behind a trusted proxy that overwrites
+          the header, and bound it with <code>allow</code>.
+        </li>
+      </ul>
+
+      <h2>Runnable example</h2>
+      <p>
+        <code>examples/multitenancy-demo.ts</code> wires subdomain resolution +
+        an allowlist + per-tenant rate limiting + a per-tenant in-memory store.
+        The Node adapter builds the request URL from the <code>Host</code>{" "}
+        header, so you can exercise subdomains locally without DNS:
+      </p>
+      <CodeBlock
+        code={`node --import tsx examples/multitenancy-demo.ts
+
+# acme's data is isolated from globex's:
+curl -s localhost:3003/orders -H 'Host: acme.example.com'
+curl -s -X POST localhost:3003/orders -H 'Host: acme.example.com' \\
+  -H 'content-type: application/json' -d '{"item":"widget","total":9.99}'
+curl -s localhost:3003/orders -H 'Host: globex.example.com'   # still empty
+
+# Unknown tenant → 404 (no enumeration); no subdomain → 400:
+curl -s -o /dev/null -w '%{http_code}\\n' localhost:3003/orders -H 'Host: intruder.example.com'
+curl -s -o /dev/null -w '%{http_code}\\n' localhost:3003/orders -H 'Host: example.com'`}
+        language="sh"
+      />
+
+      <h2>Tree-shake-friendly subpath</h2>
+      <CodeBlock
+        code={`// Main barrel:
+import { tenancy, tenantScope } from "@daloyjs/core";
+
+// Or, to keep your bundle minimal:
+import { tenancy, tenantScope } from "@daloyjs/core/tenancy";`}
+        language="ts"
+      />
+    </>
+  );
+}

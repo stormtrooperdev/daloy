@@ -37,6 +37,7 @@ export const docsNav: DocsNavSection[] = [
       { title: "Idempotency keys", href: "/docs/idempotency" },
       { title: "Response caching", href: "/docs/response-cache" },
       { title: "Pagination", href: "/docs/pagination" },
+      { title: "Multitenancy", href: "/docs/multitenancy" as Route },
     ],
   },
   {

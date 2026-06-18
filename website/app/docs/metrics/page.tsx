@@ -123,7 +123,7 @@ app.route({
             <tr>
               <td><code>path</code></td>
               <td><code>string</code></td>
-              <td><code>"/metrics"</code></td>
+              <td><code>&quot;/metrics&quot;</code></td>
               <td>Override the scrape endpoint path.</td>
             </tr>
             <tr>
@@ -374,7 +374,8 @@ app.route({
       <p>
         On Linux you may need to replace <code>host.docker.internal</code> with
         your host IP address, or add{" "}
-        <code>extra_hosts: - "host.docker.internal:host-gateway"</code> to the{" "}
+        <code>extra_hosts: - &quot;host.docker.internal:host-gateway&quot;</code>{" "}
+        to the{" "}
         Prometheus service in <code>examples/observability/docker-compose.yml</code>.
       </p>
       <h3>Useful PromQL queries</h3>

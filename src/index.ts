@@ -557,6 +557,26 @@ export type {
 } from "./tracing.js";
 
 export {
+  tenancy,
+  tenantScope,
+  tenantFromSubdomain,
+  tenantFromHeader,
+  tenantFromPathPrefix,
+  tenantFromClaim,
+  defaultTenantNormalize,
+} from "./tenancy.js";
+export type {
+  TenancyOptions,
+  TenantResolver,
+  TenantScopeOptions,
+  SubdomainTenantOptions,
+  PathPrefixTenantOptions,
+  ClaimTenantOptions,
+  UnresolvedStatus,
+  InvalidStatus,
+} from "./tenancy.js";
+
+export {
   defineWebSocket,
   WebSocketRegistry,
   WebSocketProtocolError,

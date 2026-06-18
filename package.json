@@ -113,6 +113,10 @@
       "types": "./dist/tracing.d.ts",
       "import": "./dist/tracing.js"
     },
+    "./tenancy": {
+      "types": "./dist/tenancy.d.ts",
+      "import": "./dist/tenancy.js"
+    },
     "./multipart": {
       "types": "./dist/multipart.d.ts",
       "import": "./dist/multipart.js"

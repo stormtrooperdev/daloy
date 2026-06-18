@@ -21,6 +21,7 @@
     "./streaming": "./src/streaming.ts",
     "./websocket": "./src/websocket.ts",
     "./tracing": "./src/tracing.ts",
+    "./tenancy": "./src/tenancy.ts",
     "./multipart": "./src/multipart.ts",
     "./rate-limit-redis": "./src/rate-limit-redis.ts",
     "./cli": "./src/cli.ts",
