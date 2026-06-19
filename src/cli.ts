@@ -638,9 +638,14 @@ async function runDiff(opts: CliOptions, io: CliIO): Promise<CliResult> {
 
 /**
  * `daloy doctor` — boot-time + CLI audit. Loads the user's
- * App entry and runs the secure-by-default checklist. Exits non-zero on any
- * finding so the command can guard container `HEALTHCHECK` and CI deploy
- * steps.
+ * App entry and runs the secure-by-default checklist so the command can guard
+ * container `HEALTHCHECK` and CI deploy steps.
+ *
+ * Exit code: non-zero (`1`) only when at least one **`error`-level** finding is
+ * present; `warn`-level findings are advisory and leave the exit code at `0`.
+ * The `--json` output reports `ok: true` only when there are **no findings at
+ * all** (any level), so `ok` is a stricter signal than the exit code — a
+ * warn-only run prints `ok: false` but still exits `0`.
  *
  * @internal
  */
