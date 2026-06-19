@@ -8,6 +8,7 @@ export type {
   AppOptions,
   AppOpenAPIOptions,
   DocsRouteOptions,
+  AsyncAPIRouteOptions,
   HealthRouteOptions,
   CspReportRouteOptions,
   MetricsRouteOptions,
@@ -391,6 +392,7 @@ export type {
   ScalarTheme,
   RedocConfiguration,
   RedocHtmlOptions,
+  AsyncApiHtmlOptions,
   DocsAssetOptions,
 } from "./docs.js";
 

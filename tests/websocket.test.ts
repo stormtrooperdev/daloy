@@ -1064,6 +1064,69 @@ test("Node adapter propagates abnormal client disconnect via close(1006)", async
   }
 });
 
+test("Node adapter does not fire error() after a clean close when the socket is reset", async () => {
+  // Regression: a peer that completes the close handshake and then resets the
+  // TCP connection (crashed client, dropped network) must not surface a second
+  // lifecycle event. error() firing after close() breaks the lifecycle contract
+  // and double-runs handler cleanup.
+  // The reset must race the close-handshake teardown, so run several attempts;
+  // the invariant under test is order-based and must hold on every attempt.
+  const net = await import("node:net");
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const timeline: string[] = [];
+    const app = new App({ logger: false });
+    app.ws("/clean-then-reset", {
+      open() {},
+      close() {
+        timeline.push("close");
+      },
+      error() {
+        timeline.push("error");
+      },
+    });
+    const handle = await startApp(app);
+    try {
+      const port = (handle.server.address() as AddressInfo).port;
+      const socket = net.connect({ port, host: "127.0.0.1" });
+      await once(socket, "connect");
+      socket.write(
+        "GET /clean-then-reset HTTP/1.1\r\n" +
+          `Host: 127.0.0.1:${port}\r\n` +
+          "Upgrade: websocket\r\n" +
+          "Connection: Upgrade\r\n" +
+          "Sec-WebSocket-Version: 13\r\n" +
+          "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+          "\r\n",
+      );
+      await once(socket, "data"); // 101 response
+      // Send a clean masked CLOSE frame (code 1000) and immediately reset the
+      // TCP connection, so the ECONNRESET arrives while the server is still
+      // tearing the connection down after firing close().
+      socket.write(Buffer.from([0x88, 0x82, 0x00, 0x00, 0x00, 0x00, 0x03, 0xe8]));
+      if (
+        typeof (socket as { resetAndDestroy?: () => void }).resetAndDestroy ===
+        "function"
+      ) {
+        (socket as { resetAndDestroy: () => void }).resetAndDestroy();
+      } else {
+        socket.destroy(new Error("reset"));
+      }
+      await new Promise((r) => setTimeout(r, 80));
+      // The contract: error() never fires after close() has already fired.
+      const closeIdx = timeline.indexOf("close");
+      const errorAfterClose =
+        closeIdx !== -1 && timeline.indexOf("error", closeIdx + 1) !== -1;
+      assert.equal(
+        errorAfterClose,
+        false,
+        `attempt ${attempt}: error() fired after close() — timeline ${JSON.stringify(timeline)}`,
+      );
+    } finally {
+      await handle.close();
+    }
+  }
+});
+
 test("Node adapter installs upgrade handler only when WS routes exist", async () => {
   const app = new App({ logger: false });
   const handle = await startApp(app);

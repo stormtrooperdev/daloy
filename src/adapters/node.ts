@@ -730,6 +730,17 @@ class NodeWebSocketConnection implements WebSocketConnection {
   }
 
   _handleSocketError(err: Error): void {
+    // A socket error arriving after the connection is already closed — e.g. the
+    // peer resets the TCP connection right after the close handshake, or a
+    // terminate() raced the OS — is teardown noise. Surfacing it to the
+    // handler's error() callback would fire a lifecycle event *after* close(),
+    // breaking the "no events after close" contract and risking double cleanup.
+    // Swallow it and just make sure the socket is gone.
+    if (this.closeHandled || this.readyState === WS_READY_STATE.CLOSED) {
+      this.readyState = WS_READY_STATE.CLOSED;
+      this.socket.destroy();
+      return;
+    }
     this._invokeError(err);
     this.readyState = WS_READY_STATE.CLOSED;
     this.socket.destroy();

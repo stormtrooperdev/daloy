@@ -232,6 +232,24 @@ export interface DocsAssetOptions {
    * @since 0.39.0
    */
   redocScriptIntegrity?: string;
+  /** Override the AsyncAPI React standalone bundle URL (useful for self-hosting). */
+  asyncapiScriptUrl?: string;
+  /**
+   * SRI hash for {@link asyncapiScriptUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.42.0
+   */
+  asyncapiScriptIntegrity?: string;
+  /** Override the AsyncAPI React component stylesheet URL (useful for self-hosting). */
+  asyncapiStyleUrl?: string;
+  /**
+   * SRI hash for {@link asyncapiStyleUrl}. One or more space-separated
+   * `sha256-`/`sha384-`/`sha512-` base64 digests. Invalid values throw.
+   *
+   * @since 0.42.0
+   */
+  asyncapiStyleIntegrity?: string;
   /**
    * `crossorigin` attribute value emitted alongside any pinned integrity
    * hash. SRI on a cross-origin asset requires CORS, so this defaults to
@@ -272,6 +290,19 @@ export interface ScalarHtmlOptions extends DocsOptions {
 export interface RedocHtmlOptions extends DocsOptions {
   /** Forwarded as the options object to `Redoc.init(specUrl, configuration, element)`. */
   configuration?: RedocConfiguration;
+}
+
+/**
+ * Options for {@link asyncapiHtml}; adds AsyncAPI-specific UI configuration.
+ *
+ * @since 0.42.0
+ */
+export interface AsyncApiHtmlOptions extends DocsOptions {
+  /**
+   * Forwarded as the `config` object to `AsyncApiStandalone.render({ schema, config }, el)`.
+   * Defaults to showing the sidebar and inline errors.
+   */
+  configuration?: { [key: string]: ScalarJsonValue | undefined };
 }
 
 /** Options for {@link docsContentSecurityPolicy}. */
@@ -447,6 +478,58 @@ export function redocHtml(opts: RedocHtmlOptions): string {
 <div id="redoc"></div>
 <script src="${scriptUrl}"${scriptSri}${nonce}></script>
 <script${nonce}>Redoc.init(${specArg},${optionsArg},document.getElementById("redoc"));</script>
+</body></html>`;
+}
+
+/**
+ * Render an AsyncAPI HTML page that loads `opts.specUrl` (an AsyncAPI 3.0
+ * document) into the official AsyncAPI React component. Same shape as
+ * {@link redocHtml}: a prebuilt standalone bundle is loaded from a CDN via a
+ * `<script>` tag (no build step, no extra deps) and the spec URL is handed to
+ * `AsyncApiStandalone.render(...)`. This is the AsyncAPI equivalent of the
+ * Scalar / Swagger UI / Redoc OpenAPI viewers.
+ *
+ * Serve it with the same CSP as the OpenAPI docs UIs ({@link docsContentSecurityPolicy}):
+ * it needs the asset origin (jsDelivr by default) in `script-src` / `style-src`
+ * and `connect-src 'self'` so the component can `fetch` the spec. The spec URL
+ * and configuration are embedded with `<`-escaped JSON so an attacker-controlled
+ * value cannot break out of the inline `<script>`.
+ *
+ * @since 0.42.0
+ */
+export function asyncapiHtml(opts: AsyncApiHtmlOptions): string {
+  const title = escapeHtml(opts.title ?? "AsyncAPI");
+  const scriptUrl = escapeHtml(
+    opts.assets?.asyncapiScriptUrl ??
+      `${JSDELIVR_ORIGIN}/npm/@asyncapi/react-component/browser/standalone/index.js`,
+  );
+  const styleUrl = escapeHtml(
+    opts.assets?.asyncapiStyleUrl ??
+      `${JSDELIVR_ORIGIN}/npm/@asyncapi/react-component/styles/default.min.css`,
+  );
+  const scriptSri = integrityAttr(
+    opts.assets?.asyncapiScriptIntegrity,
+    opts.assets?.crossOrigin,
+  );
+  const styleSri = integrityAttr(
+    opts.assets?.asyncapiStyleIntegrity,
+    opts.assets?.crossOrigin,
+  );
+  const nonce = nonceAttr(opts.scriptNonce);
+  const specArg = jsonForScript(opts.specUrl);
+  const configArg = jsonForScript(
+    opts.configuration ?? { show: { sidebar: true, errors: true } },
+  );
+  return `<!doctype html>
+<html><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${title}</title>
+<link rel="stylesheet" href="${styleUrl}"${styleSri} />
+</head><body>
+<div id="asyncapi"></div>
+<script src="${scriptUrl}"${scriptSri}${nonce}></script>
+<script${nonce}>AsyncApiStandalone.render({schema:{url:${specArg},options:{method:"GET"}},config:${configArg}},document.getElementById("asyncapi"));</script>
 </body></html>`;
 }
 

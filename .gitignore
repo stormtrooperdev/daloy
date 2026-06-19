@@ -46,3 +46,5 @@ monorepo-bff-architecture
 write-ups
 
 .claude/settings.local.json
+
+.idea/

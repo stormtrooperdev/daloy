@@ -306,7 +306,7 @@ test("tenantScope isolates rate-limit buckets per tenant", async () => {
     path: "/x",
     operationId: "x",
     responses: { 200: { description: "ok" } },
-    handler: () => ({ status: 200 as const }),
+    handler: () => ({ status: 200 as const, body: { ok: true } }),
   });
 
   const hit = (tenant: string) =>

@@ -37,6 +37,7 @@ import {
   type OpenAPIOptions,
 } from "./openapi.js";
 import {
+  asyncapiHtml,
   docsContentSecurityPolicy,
   redocHtml,
   scalarHtml,
@@ -44,8 +45,15 @@ import {
   type DocsAssetOptions,
   type DocsContentSecurityPolicyOptions,
   type RedocConfiguration,
+  type ScalarJsonValue,
   type ScalarReferenceConfiguration,
 } from "./docs.js";
+import {
+  generateAsyncAPI,
+  asyncapiToYAML,
+  type AsyncAPIInfo,
+  type AsyncAPIServer,
+} from "./asyncapi.js";
 import {
   secureHeaders as secureHeadersMiddleware,
   CORS_HOOK_MARKER,
@@ -514,6 +522,24 @@ export interface AppOptions {
    * @since 0.3.0
    */
   docs?: boolean | "auto" | DocsRouteOptions;
+  /**
+   * Enable the built-in AsyncAPI surface for your `app.ws()` channels — the
+   * WebSocket counterpart to {@link AppOptions.docs}. Mirrors the same modes:
+   *
+   * - `false` (default) — never mount.
+   * - `true` — always mount `/asyncapi.json`, `/asyncapi.yaml`, and an
+   *   interactive `/asyncapi` UI (the official AsyncAPI React component, loaded
+   *   from a CDN exactly like the Scalar / Swagger / Redoc OpenAPI viewers).
+   * - `"auto"` — mount everywhere except production.
+   * - object form — {@link AsyncAPIRouteOptions} for full control.
+   *
+   * The document is generated lazily per request, so `app.ws()` routes
+   * registered after construction are included. With no WebSocket routes the
+   * document simply has no channels.
+   *
+   * @since 0.42.0
+   */
+  asyncapi?: boolean | "auto" | AsyncAPIRouteOptions;
 }
 
 /**
@@ -588,6 +614,55 @@ export interface DocsRouteOptions {
    * the URLs at self-hosted copies. See {@link DocsAssetOptions}.
    *
    * @since 0.37.0
+   */
+  assets?: DocsAssetOptions;
+}
+
+/**
+ * Options for the auto-mounted AsyncAPI surface — the WebSocket-channel
+ * counterpart to {@link DocsRouteOptions}. Enabled via {@link AppOptions.asyncapi}.
+ *
+ * @since 0.42.0
+ */
+export interface AsyncAPIRouteOptions {
+  /** Path the interactive AsyncAPI UI is served from. Default `"/asyncapi"`. */
+  path?: PathString;
+  /** Path the AsyncAPI 3.0 JSON document is served from. Default `"/asyncapi.json"`. */
+  jsonPath?: PathString;
+  /**
+   * Path the AsyncAPI 3.0 YAML document is served from. Default
+   * `"/asyncapi.yaml"`. Set to `false` to disable the YAML route.
+   */
+  yamlPath?: PathString | false;
+  /** Page `<title>`. Defaults to the resolved AsyncAPI `info.title`. */
+  title?: string;
+  /**
+   * Named AsyncAPI servers (`{ production: { host, protocol } }`). Defaults to
+   * the `openapi.servers` mapping when omitted, else no servers.
+   */
+  servers?: Record<string, AsyncAPIServer>;
+  /**
+   * Forwarded as the `config` object to `AsyncApiStandalone.render`. Defaults
+   * to showing the sidebar and inline errors.
+   */
+  configuration?: { [key: string]: ScalarJsonValue | undefined };
+  /**
+   * Force the routes to mount regardless of `NODE_ENV`. When `"auto"` (default
+   * for the object form), skips mounting in production — same semantics as
+   * {@link DocsRouteOptions.enabled}.
+   */
+  enabled?: boolean | "auto";
+  /**
+   * Tags attached to the auto-mounted operations in the generated OpenAPI
+   * spec. Default: `["AsyncAPI"]`. Pass an empty array to omit tags.
+   */
+  tags?: string[];
+  /** Override the Content-Security-Policy applied to the UI HTML response. */
+  csp?: DocsContentSecurityPolicyOptions;
+  /**
+   * Override the UI asset URLs and pin SRI hashes (see {@link DocsAssetOptions}).
+   * The relevant fields are `asyncapiScriptUrl` / `asyncapiScriptIntegrity` /
+   * `asyncapiStyleUrl` / `asyncapiStyleIntegrity`.
    */
   assets?: DocsAssetOptions;
 }
@@ -1141,6 +1216,7 @@ export class App<
     this.installSecureDefaults();
     this.maybeInstallCrashHandlers();
     this.maybeMountDocs();
+    this.maybeMountAsyncAPI();
   }
 
   /**
@@ -1769,6 +1845,156 @@ export class App<
         };
       },
     });
+  }
+
+  /**
+   * Resolve {@link AppOptions.asyncapi} and, when enabled, mount the AsyncAPI
+   * JSON / YAML / UI routes. Called once during construction; the document is
+   * generated lazily so `app.ws()` routes registered afterwards are included.
+   */
+  private maybeMountAsyncAPI(): void {
+    const raw = this.options.asyncapi;
+    if (raw === undefined || raw === false) return;
+
+    let resolvedOpts: AsyncAPIRouteOptions;
+    if (raw === true) {
+      resolvedOpts = {};
+    } else if (raw === "auto") {
+      if (this.isProduction()) return;
+      resolvedOpts = {};
+    } else {
+      const enabled = raw.enabled ?? true;
+      if (enabled === false) return;
+      if (enabled === "auto" && this.isProduction()) return;
+      resolvedOpts = raw;
+    }
+
+    this.mountAsyncAPI(resolvedOpts);
+  }
+
+  /**
+   * Register the `/asyncapi.json`, `/asyncapi.yaml`, and `/asyncapi` (UI)
+   * routes. The WebSocket-channel counterpart to {@link App.mountDocs} — same
+   * lazy-generation, CDN-hosted-UI, SRI/CSP-hardened posture.
+   */
+  private mountAsyncAPI(opts: AsyncAPIRouteOptions): void {
+    const jsonPath = (opts.jsonPath ?? "/asyncapi.json") as PathString;
+    const yamlPath =
+      opts.yamlPath === false
+        ? null
+        : ((opts.yamlPath ?? "/asyncapi.yaml") as PathString);
+    const uiPath = (opts.path ?? "/asyncapi") as PathString;
+    const tags = opts.tags ?? ["AsyncAPI"];
+
+    const resolveInfo = async (): Promise<AsyncAPIInfo> => {
+      const fromOpenapi = this.options.openapi?.info ?? {};
+      const fromPkg = await readHostPackageJsonInfo();
+      const title =
+        fromOpenapi.title ?? this.options.title ?? fromPkg.title ?? "DaloyJS API";
+      const version =
+        fromOpenapi.version ?? this.options.version ?? fromPkg.version ?? "0.0.0";
+      return { title, version };
+    };
+
+    const servers =
+      opts.servers ?? this.asyncapiServersFromOpenAPI();
+
+    const generate = async (): Promise<Record<string, unknown>> =>
+      generateAsyncAPI(this, {
+        info: await resolveInfo(),
+        ...(servers ? { servers } : {}),
+      });
+
+    this.route({
+      method: "GET",
+      path: jsonPath,
+      operationId: "getAsyncAPIDocument",
+      ...(tags.length ? { tags } : {}),
+      summary: "AsyncAPI 3.0 document",
+      responses: {
+        200: { description: "AsyncAPI 3.0 document for this application's WebSocket channels." },
+      },
+      handler: async () => ({ status: 200 as const, body: await generate() }),
+    });
+
+    if (yamlPath) {
+      this.route({
+        method: "GET",
+        path: yamlPath,
+        operationId: "getAsyncAPIDocumentYaml",
+        ...(tags.length ? { tags } : {}),
+        summary: "AsyncAPI 3.0 document (YAML)",
+        responses: {
+          200: { description: "AsyncAPI 3.0 document for this application, in YAML." },
+        },
+        handler: async () => ({
+          status: 200 as const,
+          body: asyncapiToYAML(await generate()),
+          headers: {
+            "content-type": "text/yaml; charset=utf-8",
+            "content-disposition": "inline",
+            "x-content-type-options": "nosniff",
+          },
+        }),
+      });
+    }
+
+    const uiCsp = docsContentSecurityPolicy(opts.csp);
+
+    this.route({
+      method: "GET",
+      path: uiPath,
+      operationId: "getAsyncAPIUI",
+      ...(tags.length ? { tags } : {}),
+      summary: "Interactive AsyncAPI reference",
+      responses: {
+        200: { description: "Interactive AsyncAPI documentation UI." },
+      },
+      handler: async () => {
+        const title = opts.title ?? (await resolveInfo()).title;
+        const html = asyncapiHtml({
+          specUrl: jsonPath,
+          title,
+          ...(opts.configuration ? { configuration: opts.configuration } : {}),
+          ...(opts.assets ? { assets: opts.assets } : {}),
+        });
+        return {
+          status: 200 as const,
+          body: html,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "content-security-policy": uiCsp,
+            "x-content-type-options": "nosniff",
+            "referrer-policy": "no-referrer",
+          },
+        };
+      },
+    });
+  }
+
+  /**
+   * Best-effort conversion of the OpenAPI `servers` array into AsyncAPI's
+   * name-keyed server map, so an app that already declares HTTP servers gets
+   * sensible AsyncAPI servers for free. Returns `undefined` when none apply.
+   */
+  private asyncapiServersFromOpenAPI(): Record<string, AsyncAPIServer> | undefined {
+    const servers = this.options.openapi?.servers;
+    if (!servers || servers.length === 0) return undefined;
+    const out: Record<string, AsyncAPIServer> = {};
+    servers.forEach((srv, i) => {
+      try {
+        const u = new URL(srv.url);
+        const host = u.host || u.pathname;
+        // Map http(s) → ws(s); leave other schemes as-is minus the trailing ":".
+        const scheme = u.protocol.replace(/:$/, "");
+        const protocol =
+          scheme === "https" ? "wss" : scheme === "http" ? "ws" : scheme;
+        out[`server${i + 1}`] = { host, protocol };
+      } catch {
+        /* skip malformed server URLs */
+      }
+    });
+    return Object.keys(out).length > 0 ? out : undefined;
   }
 
   // ---------- registration ----------

@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "AsyncAPI for WebSockets",
   description:
-    "Generate AsyncAPI 3.0 contract documents for your DaloyJS app.ws() surfaces with the built-in, dependency-free generateAsyncAPI() generator, a handler meta block, and the daloy inspect --asyncapi CLI flag.",
+    "Generate AsyncAPI 3.0 contract documents for your DaloyJS app.ws() surfaces with the built-in, dependency-free generateAsyncAPI() generator, plus an auto-mounted interactive AsyncAPI UI (asyncapi: true) that mirrors the Scalar/Swagger OpenAPI docs, a handler meta block, and the daloy inspect --asyncapi CLI flag.",
   path: "/docs/asyncapi",
   keywords: [
     "AsyncAPI",
@@ -79,6 +79,66 @@ const doc = generateAsyncAPI(app, {
 
 writeFileSync("./generated/asyncapi.json", JSON.stringify(doc, null, 2));`}
       />
+
+      <h2>Serving an interactive UI</h2>
+      <p>
+        As of <strong>0.42.0</strong> you don&apos;t have to wire the spec up
+        yourself. Set <code>asyncapi: true</code> on the app and DaloyJS
+        auto-mounts the AsyncAPI surface — the WebSocket counterpart to{" "}
+        <code>docs: true</code> for OpenAPI (Scalar / Swagger / Redoc):
+      </p>
+      <ul>
+        <li>
+          <code>GET /asyncapi</code> — an <strong>interactive UI</strong> that
+          renders the official AsyncAPI React component, loaded from a CDN via a{" "}
+          <code>&lt;script&gt;</code> tag exactly like the OpenAPI viewers (no
+          build step, no extra runtime dependency).
+        </li>
+        <li>
+          <code>GET /asyncapi.json</code> and <code>GET /asyncapi.yaml</code> —
+          the AsyncAPI 3.0 document, generated lazily so{" "}
+          <code>app.ws()</code> routes registered afterwards are included.
+        </li>
+      </ul>
+      <CodeBlock
+        code={`const app = new App({
+  asyncapi: true, // or "auto" (skips production), or an AsyncAPIRouteOptions object
+  openapi: { info: { title: "Realtime API", version: "1.0.0" } },
+});
+
+app.ws("/chat/:room", { /* ... */ });
+
+// GET /asyncapi        → interactive AsyncAPI UI
+// GET /asyncapi.json   → AsyncAPI 3.0 document
+// GET /asyncapi.yaml   → AsyncAPI 3.0 document (YAML)`}
+      />
+      <p>
+        Like the Scalar/Swagger docs link, surface the URL in your startup
+        banner so it shows up in the terminal:
+      </p>
+      <CodeBlock
+        code={`import { printStartupBanner } from "@daloyjs/core/banner";
+
+printStartupBanner({
+  name: "Realtime API",
+  url: \`http://localhost:\${port}\`,
+  runtime: "Node.js",
+  links: [{ label: "AsyncAPI", url: \`http://localhost:\${port}/asyncapi\` }],
+});`}
+      />
+      <p>
+        The UI page ships the same hardened response as the OpenAPI docs: a
+        strict Content-Security-Policy that only allows the CDN asset origin
+        (jsDelivr by default) plus <code>connect-src &apos;self&apos;</code> so
+        the component can fetch the served spec, <code>nosniff</code>, and{" "}
+        <code>no-referrer</code>. Pin Subresource Integrity hashes or point at
+        self-hosted assets via the <code>assets</code> option
+        (<code>asyncapiScriptUrl</code> / <code>asyncapiScriptIntegrity</code> /{" "}
+        <code>asyncapiStyleUrl</code> / <code>asyncapiStyleIntegrity</code>) for
+        supply-chain hardening, exactly as with the OpenAPI docs UIs. Use{" "}
+        <code>asyncapi: &quot;auto&quot;</code> to mount everywhere except
+        production.
+      </p>
 
       <h2>Describing the messages</h2>
       <p>
