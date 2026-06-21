@@ -313,13 +313,18 @@ jobs:
             exit 1
           fi
 
+      # npm refuses to publish a prerelease version (e.g. 1.0.0-beta.0) without
+      # an explicit --tag, even to put it on `latest`. We intentionally ship the
+      # 1.0 beta on `latest` (a plain `npm i` should resolve it during the
+      # pre-GA window), so the dist-tag is `latest`. Stable releases also pass
+      # `--tag latest`, which is a harmless no-op for them.
       - name: Packaging signal (npm publish dry-run)
-        run: npm publish --dry-run --access public --provenance
+        run: npm publish --dry-run --access public --provenance --tag latest
         env:
           NPM_CONFIG_PROVENANCE: "true"
 
       - name: Stage @daloyjs/core on npm with provenance
-        run: npm stage publish . --access public --provenance
+        run: npm stage publish . --access public --provenance --tag latest
         env:
           NPM_CONFIG_PROVENANCE: "true"
 
@@ -423,15 +428,17 @@ jobs:
       - name: Verify no AI-agent / editor config auto-run wiring (Miasma worm config-injection gate)
         run: pnpm verify:no-agent-config-autorun
 
+      # See the @daloyjs/core job: a prerelease needs an explicit --tag, and we
+      # ship the 1.0 beta on `latest` so create-daloy stays in lockstep with core.
       - name: Packaging signal (npm publish dry-run)
         working-directory: packages/create-daloy
-        run: npm publish --dry-run --access public --provenance
+        run: npm publish --dry-run --access public --provenance --tag latest
         env:
           NPM_CONFIG_PROVENANCE: "true"
 
       - name: Stage create-daloy on npm with provenance
         working-directory: packages/create-daloy
-        run: npm stage publish . --access public --provenance
+        run: npm stage publish . --access public --provenance --tag latest
         env:
           NPM_CONFIG_PROVENANCE: "true"
 
@@ -568,10 +575,32 @@ jobs:
             exit 1
           fi
 
+      # JSR versions are immutable: once @daloyjs/daloy@<version> exists, a
+      # re-publish of the same version errors as a duplicate (it cannot be
+      # re-run for the same version). Skip the publish when the version is
+      # already live so a re-tag / backfill run stays green instead of dup-
+      # failing on a version that already shipped. api.jsr.io is in the egress
+      # allowlist above.
+      - name: Check whether this JSR version already exists
+        id: jsr_exists
+        run: |
+          set -eu
+          version="$(node -p "require('./jsr.json').version")"
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            "https://api.jsr.io/scopes/daloyjs/packages/daloy/versions/${version}")"
+          if [ "$code" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@daloyjs/daloy@${version} is already on JSR; skipping publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Packaging signal (jsr publish dry-run)
+        if: steps.jsr_exists.outputs.exists != 'true'
         run: npx --yes jsr publish --dry-run
 
       - name: Publish @daloyjs/daloy to JSR (OIDC)
+        if: steps.jsr_exists.outputs.exists != 'true'
         run: npx --yes jsr publish
 
   # ---------------------------------------------------------------------------
