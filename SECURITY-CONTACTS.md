@@ -33,10 +33,15 @@ move retired contacts to the **Off-boarded** section with the date.
   pgp: null
   added: 2026-05-20
 - handle: devlinduldulao
-   role: maintainer
-   scopes: [approve-npm-publish, coordinate-disclosure]
-   pgp: null
-   added: 2026-05-20
+  role: maintainer
+  scopes: [approve-npm-publish, coordinate-disclosure]
+  pgp: null
+  added: 2026-05-20
+- handle: aurorascharff
+  role: maintainer
+  scopes: [approve-npm-publish, coordinate-disclosure]
+  pgp: null
+  added: 2026-06-21
 <!-- END ACTIVE -->
 
 ### Off-boarded
