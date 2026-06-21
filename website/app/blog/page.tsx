@@ -201,7 +201,7 @@ const POSTS = [
     title:
       "Observability Without Lock-In: Structured Logs and OpenTelemetry-Compatible Tracing",
     description:
-      "How DaloyJS gives you per-request structured logs, correlated request IDs, Server-Timing, and OpenTelemetry-shaped spans \u2014 without taking a hard dependency on @opentelemetry/api. The result is a single observability story that runs identically on Node, Bun, Workers, and Vercel Edge, with any tracer you bring.",
+      "How DaloyJS gives you per-request structured logs, correlated request IDs, Server-Timing, and OpenTelemetry-shaped spans \u2014 without taking a hard dependency on @opentelemetry/api. The result is a single observability story that runs identically on Node, Bun, Workers, and Vercel, with any tracer you bring.",
     date: "2026-06-03",
     readingTime: "13 min read",
     author: "Devlin Duldulao",
@@ -266,7 +266,7 @@ const POSTS = [
     title:
       "Scaffolding a Production-Ready DaloyJS App in 60 Seconds with create-daloy",
     description:
-      "A tour of pnpm create daloy@latest \u2014 the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel Edge), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
+      "A tour of pnpm create daloy@latest \u2014 the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
     date: "2026-05-27",
     readingTime: "11 min read",
     author: "Devlin Duldulao",
@@ -313,7 +313,7 @@ const POSTS = [
   {
     slug: "same-app-five-runtimes-verified",
     title:
-      "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge, Verified",
+      "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel, Verified",
     description:
       "One Bookstore app, five entry files, five deployments, Node serve(), Bun handle.url, Deno onListen, Workers ctx.waitUntil, and Vercel's three handler shapes. With receipts.",
     date: "2026-05-22",
@@ -344,7 +344,7 @@ const POSTS = [
     slug: "introducing-daloyjs",
     title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
     description:
-      "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
+      "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel.",
     date: "2026-05-19",
     readingTime: "11 min read",
     author: "Devlin Duldulao",

@@ -38,18 +38,27 @@ export default function Page() {
         >
           <code>express-oauth2-jwt-bearer</code>
         </a>
-        , which is Express-only. DaloyJS isn&apos;t Express, so we use the
-        same primitive, JWT verification against Auth0&apos;s JWKS, through{" "}
-        <a href="https://github.com/panva/jose" target="_blank" rel="noreferrer">
+        , which is Express-only. DaloyJS isn&apos;t Express, so we use the same
+        primitive, JWT verification against Auth0&apos;s JWKS, through{" "}
+        <a
+          href="https://github.com/panva/jose"
+          target="_blank"
+          rel="noreferrer"
+        >
           <code>jose</code>
         </a>
-        . That keeps the same security guarantees while running on every
-        runtime DaloyJS targets, including the edge.
+        . That keeps the same security guarantees while running on every runtime
+        DaloyJS targets, including the edge.
       </p>
 
       <SequenceDiagram
         title="Auth0 access-token verification"
-        participants={["Client app", "Auth0 tenant", "DaloyJS API", "Auth0 JWKS"]}
+        participants={[
+          "Client app",
+          "Auth0 tenant",
+          "DaloyJS API",
+          "Auth0 JWKS",
+        ]}
         steps={[
           {
             from: "Client app",
@@ -80,7 +89,8 @@ export default function Page() {
           {
             from: "DaloyJS API",
             to: "Client app",
-            label: "jwtVerify checks iss (trailing slash), aud, RS256, then scopes",
+            label:
+              "jwtVerify checks iss (trailing slash), aud, RS256, then scopes",
             detail: "401 on a bad token, 403 on a missing scope",
             kind: "response",
           },
@@ -91,8 +101,9 @@ export default function Page() {
       <h2>1. Configure an Auth0 API</h2>
       <ol>
         <li>
-          In the Auth0 dashboard, go to <strong>Applications → APIs → Create
-          API</strong>. Pick an <strong>identifier</strong> (e.g.{" "}
+          In the Auth0 dashboard, go to{" "}
+          <strong>Applications → APIs → Create API</strong>. Pick an{" "}
+          <strong>identifier</strong> (e.g.{" "}
           <code>https://api.acme.example.com</code>), this becomes the{" "}
           <code>aud</code> claim on issued tokens.
         </li>
@@ -200,9 +211,8 @@ app.route({
       <p>
         If you enabled <em>Add Permissions in the Access Token</em>, the JWT
         carries a <code>permissions</code> array. Tighten the overview&apos;s{" "}
-        <code>requireAuth</code> to check{" "}
-        <code>principal.permissions</code> when you want to enforce role
-        assignments rather than OAuth 2.0 scopes:
+        <code>requireAuth</code> to check <code>principal.permissions</code>{" "}
+        when you want to enforce role assignments rather than OAuth 2.0 scopes:
       </p>
       <CodeBlock
         code={`export function requirePermission(...perms: string[]): Middleware {
@@ -227,16 +237,16 @@ app.route({
         >
           Action on the Login flow
         </a>
-        . Namespace them (e.g. <code>https://acme.example.com/tenant</code>)
-        per Auth0&apos;s rules, that prevents collisions with standard claims
-        and is required for non-reserved claims to be included.
+        . Namespace them (e.g. <code>https://acme.example.com/tenant</code>) per
+        Auth0&apos;s rules, that prevents collisions with standard claims and is
+        required for non-reserved claims to be included.
       </p>
 
       <h2>Runtimes</h2>
       <p>
-        <code>jose</code> uses Web Crypto, so this setup runs on Node 18+,
-        Bun, Deno, Cloudflare Workers, Vercel Edge, and AWS Lambda. No need to
-        swap libraries between environments.
+        <code>jose</code> uses Web Crypto, so this setup runs on Node 18+, Bun,
+        Deno, Cloudflare Workers, Vercel, and AWS Lambda. No need to swap
+        libraries between environments.
       </p>
 
       <h2>Notes</h2>
@@ -247,13 +257,12 @@ app.route({
           slash) is a common cause of validation failures.
         </li>
         <li>
-          Set a non-empty <strong>audience</strong> on the API, without it
-          Auth0 returns an opaque token that you can&apos;t verify locally.
+          Set a non-empty <strong>audience</strong> on the API, without it Auth0
+          returns an opaque token that you can&apos;t verify locally.
         </li>
         <li>
-          For sensitive operations, also check Auth0&apos;s{" "}
-          <code>azp</code> (authorized party) claim against your allowed
-          client IDs.
+          For sensitive operations, also check Auth0&apos;s <code>azp</code>{" "}
+          (authorized party) claim against your allowed client IDs.
         </li>
       </ul>
 

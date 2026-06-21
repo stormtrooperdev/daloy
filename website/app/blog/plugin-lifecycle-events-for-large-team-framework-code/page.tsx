@@ -753,9 +753,9 @@ export default function BlogPostPage() {
             Note carefully: <code>routes/users.ts</code>,{" "}
             <code>routes/orders.ts</code>, <code>routes/admin.ts</code> have{" "}
             <em>zero</em> imports from <code>platform/*</code>. The metrics show
-            up, the registration happens, the policy fires, all without a
-            single line in the route files knowing any of that exists. That is
-            the entire point.
+            up, the registration happens, the policy fires, all without a single
+            line in the route files knowing any of that exists. That is the
+            entire point.
           </p>
 
           <h2>What the logs say</h2>
@@ -817,7 +817,7 @@ export default function BlogPostPage() {
               five-runtimes post
             </Link>{" "}
             for why the platform plugins above run identically on Node, Bun,
-            Workers, Vercel Edge, and Lambda.
+            Workers, Vercel, and Lambda.
           </p>
 
           <p>Devlin</p>

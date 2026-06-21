@@ -29,9 +29,10 @@ export default function Page() {
           PayTabs
         </a>{" "}
         is a MENA-region payment gateway with strong coverage of{" "}
-        <strong>Mada</strong>, <strong>KNET</strong>, <strong>BenefitPay</strong>,{" "}
-        <strong>STC Pay</strong>, <strong>OmanNet</strong>, cards, and Apple Pay. This guide
-        uses the official{" "}
+        <strong>Mada</strong>, <strong>KNET</strong>,{" "}
+        <strong>BenefitPay</strong>, <strong>STC Pay</strong>,{" "}
+        <strong>OmanNet</strong>, cards, and Apple Pay. This guide uses the
+        official{" "}
         <a
           href="https://docs.paytabs.com/manuals/Backend-Web-Packages/NodeJs/"
           target="_blank"
@@ -39,40 +40,48 @@ export default function Page() {
         >
           <code>paytabs_pt2</code>
         </a>{" "}
-        npm package from a DaloyJS server, wrapped to feel like a normal async API.
+        npm package from a DaloyJS server, wrapped to feel like a normal async
+        API.
       </p>
 
       <h2>What you should know up front</h2>
       <ul>
         <li>
-          <strong>The official SDK is callback-based with positional array arguments.</strong>{" "}
+          <strong>
+            The official SDK is callback-based with positional array arguments.
+          </strong>{" "}
           It works, but it&apos;s noisy. We&apos;ll wrap{" "}
-          <code>createPaymentPage</code> once in a Promise-returning function with named
-          object arguments, every route handler stays clean after that.
+          <code>createPaymentPage</code> once in a Promise-returning function
+          with named object arguments, every route handler stays clean after
+          that.
         </li>
         <li>
-          <strong>Regions are not interchangeable.</strong> Your profile lives in one of{" "}
-          <code>ARE</code>, <code>SAU</code>, <code>OMN</code>, <code>JOR</code>,{" "}
-          <code>EGY</code>, <code>IRQ</code>, <code>PSE</code>, or <code>GLOBAL</code>.
-          Passing the wrong region results in <em>&quot;Invalid credentials&quot;</em>{" "}
-          even when the key is right.
+          <strong>Regions are not interchangeable.</strong> Your profile lives
+          in one of <code>ARE</code>, <code>SAU</code>, <code>OMN</code>,{" "}
+          <code>JOR</code>, <code>EGY</code>, <code>IRQ</code>, <code>PSE</code>
+          , or <code>GLOBAL</code>. Passing the wrong region results in{" "}
+          <em>&quot;Invalid credentials&quot;</em> even when the key is right.
         </li>
         <li>
           <strong>It&apos;s a redirect flow.</strong> You call{" "}
-          <code>createPaymentPage</code>, PayTabs returns a <code>redirect_url</code>, the
-          customer pays there and comes back to your <em>return</em> URL. The{" "}
-          <em>callback</em> URL is the server-side IPN, that&apos;s the only signal you
-          should mark an order paid on.
+          <code>createPaymentPage</code>, PayTabs returns a{" "}
+          <code>redirect_url</code>, the customer pays there and comes back to
+          your <em>return</em> URL. The <em>callback</em> URL is the server-side
+          IPN, that&apos;s the only signal you should mark an order paid on.
         </li>
         <li>
-          <strong>IPN signature is HMAC-SHA256.</strong> The raw POST body is signed with
-          your <code>server_key</code> and sent in the <code>signature</code> header. Verify
-          before trusting anything in the payload.
+          <strong>IPN signature is HMAC-SHA256.</strong> The raw POST body is
+          signed with your <code>server_key</code> and sent in the{" "}
+          <code>signature</code> header. Verify before trusting anything in the
+          payload.
         </li>
         <li>
-          <strong>Use <code>tran_type: &quot;sale&quot;</code></strong> for direct
-          capture, <code>&quot;auth&quot;</code> for an authorisation you&apos;ll capture
-          later, and <code>tran_class: &quot;ecom&quot;</code> for normal online checkouts.
+          <strong>
+            Use <code>tran_type: &quot;sale&quot;</code>
+          </strong>{" "}
+          for direct capture, <code>&quot;auth&quot;</code> for an authorisation
+          you&apos;ll capture later, and{" "}
+          <code>tran_class: &quot;ecom&quot;</code> for normal online checkouts.
         </li>
       </ul>
 
@@ -80,7 +89,11 @@ export default function Page() {
       <ol>
         <li>
           Sign in to the{" "}
-          <a href="https://merchant.paytabs.com/" target="_blank" rel="noreferrer">
+          <a
+            href="https://merchant.paytabs.com/"
+            target="_blank"
+            rel="noreferrer"
+          >
             PayTabs merchant dashboard
           </a>
           .
@@ -90,11 +103,12 @@ export default function Page() {
           <strong>Server Key</strong>. Note your <strong>Region</strong>.
         </li>
         <li>
-          Enable the payment methods you need (Mada, KNET, BenefitPay, STC Pay all require
-          explicit activation, some need extra paperwork).
+          Enable the payment methods you need (Mada, KNET, BenefitPay, STC Pay
+          all require explicit activation, some need extra paperwork).
         </li>
         <li>
-          In Developers → IPN, point the IPN URL at your DaloyJS webhook endpoint.
+          In Developers → IPN, point the IPN URL at your DaloyJS webhook
+          endpoint.
         </li>
       </ol>
 
@@ -113,9 +127,9 @@ APP_URL=https://your-app.example.com`}
       <h2>4. Plugin</h2>
       <p>
         We wrap two things here: <code>createPaymentPage</code>&apos;s
-        positional-array+callback shape into a Promise with named args, and the IPN
-        signature check into a one-call helper. <code>setConfig</code> is module-global, so
-        we only call it once at register time.
+        positional-array+callback shape into a Promise with named args, and the
+        IPN signature check into a one-call helper. <code>setConfig</code> is
+        module-global, so we only call it once at register time.
       </p>
       <CodeBlock
         code={`// src/plugins/paytabs.ts
@@ -263,8 +277,9 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        The signature check uses the <em>raw</em> request body, if you JSON.parse and
-        re-stringify, the byte order changes and the HMAC won&apos;t match.
+        The signature check uses the <em>raw</em> request body, if you
+        JSON.parse and re-stringify, the byte order changes and the HMAC
+        won&apos;t match.
       </p>
 
       <h2>5. Create a payment page</h2>
@@ -405,9 +420,9 @@ app.route({
       />
       <p>
         PayTabs POSTs the same payload as a successful{" "}
-        <code>queryTransaction</code> call to your IPN URL on every transaction state
-        change. Always verify the signature, ack 200 fast, and re-query before fulfilment if
-        you don&apos;t fully trust the body:
+        <code>queryTransaction</code> call to your IPN URL on every transaction
+        state change. Always verify the signature, ack 200 fast, and re-query
+        before fulfilment if you don&apos;t fully trust the body:
       </p>
       <CodeBlock
         code={`import { readRawBody } from "@daloyjs/core/raw";
@@ -463,52 +478,56 @@ await state.paytabs.refund({
 
       <h2>Runtimes</h2>
       <p>
-        <code>paytabs_pt2</code> uses Node&apos;s <code>https</code> module and runs on Node
-        18+. It is <em>not</em> edge-runtime compatible. If you&apos;re deploying to
-        Cloudflare Workers or Vercel Edge, call the PayTabs PT2 REST endpoints directly with{" "}
-        <code>fetch</code> (Bearer auth on <code>Authorization</code> using the server key,
-        endpoints like <code>POST /payment/request</code> and{" "}
-        <code>POST /payment/query</code> against your regional base URL).
+        <code>paytabs_pt2</code> uses Node&apos;s <code>https</code> module and
+        runs on Node 18+. It is <em>not</em> edge-runtime compatible. If
+        you&apos;re deploying to Cloudflare Workers or Vercel, call the PayTabs
+        PT2 REST endpoints directly with <code>fetch</code> (Bearer auth on{" "}
+        <code>Authorization</code> using the server key, endpoints like{" "}
+        <code>POST /payment/request</code> and <code>POST /payment/query</code>{" "}
+        against your regional base URL).
       </p>
 
       <h2>Errors</h2>
       <p>
-        On failure, <code>response.payment_result.response_code</code> tells you the gateway
-        outcome (e.g. <code>200</code> success, <code>481</code> 3-D Secure failed,{" "}
-        <code>500</code> generic decline). Surface declines through{" "}
-        <Link href="/docs/errors">problem+json</Link> with the PayTabs{" "}
-        <code>response_message</code> in the <code>detail</code> field, don&apos;t pass it
-        verbatim to end users; declines often include scheme-specific text the customer
-        can&apos;t act on.
+        On failure, <code>response.payment_result.response_code</code> tells you
+        the gateway outcome (e.g. <code>200</code> success, <code>481</code> 3-D
+        Secure failed, <code>500</code> generic decline). Surface declines
+        through <Link href="/docs/errors">problem+json</Link> with the PayTabs{" "}
+        <code>response_message</code> in the <code>detail</code> field,
+        don&apos;t pass it verbatim to end users; declines often include
+        scheme-specific text the customer can&apos;t act on.
       </p>
 
       <h2>Modernisation notes</h2>
       <ul>
         <li>
-          <strong>Wrap the SDK once, then forget it.</strong> The positional-array
-          signatures are easy to typo and harder to grep for than named-object arguments.
-          The plugin above pays that cost in one place.
+          <strong>Wrap the SDK once, then forget it.</strong> The
+          positional-array signatures are easy to typo and harder to grep for
+          than named-object arguments. The plugin above pays that cost in one
+          place.
         </li>
         <li>
-          <strong>Verify the IPN signature, always.</strong> Don&apos;t fall back to
-          &quot;the IP is from PayTabs&quot;, IPs change, and HMAC over the raw body is
-          the only verification PayTabs actually publishes a contract for.
+          <strong>Verify the IPN signature, always.</strong> Don&apos;t fall
+          back to &quot;the IP is from PayTabs&quot;, IPs change, and HMAC over
+          the raw body is the only verification PayTabs actually publishes a
+          contract for.
         </li>
         <li>
-          <strong>Fulfil on IPN, not on return URL.</strong> The customer can close the tab
-          mid-3DS. The IPN is the source of truth; the return URL just renders a
-          confirmation page.
+          <strong>Fulfil on IPN, not on return URL.</strong> The customer can
+          close the tab mid-3DS. The IPN is the source of truth; the return URL
+          just renders a confirmation page.
         </li>
         <li>
-          <strong>Consider the REST API directly if you need edge.</strong> The Node SDK
-          predates the wide adoption of edge runtimes. A 30-line <code>fetch</code> wrapper
-          gives you the same shape and works on Workers/Edge, at the cost of maintaining
-          the request shape yourself.
+          <strong>Consider the REST API directly if you need edge.</strong> The
+          Node SDK predates the wide adoption of edge runtimes. A 30-line{" "}
+          <code>fetch</code> wrapper gives you the same shape and works on
+          Workers/Edge, at the cost of maintaining the request shape yourself.
         </li>
       </ul>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
         <Link href={"/docs/payments/tap" as Route}>Tap Payments guide</Link>,{" "}
         <Link href={"/docs/payments/adyen" as Route}>Adyen guide</Link>, and{" "}
         <Link href="/docs/errors">problem+json errors</Link>.

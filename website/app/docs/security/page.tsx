@@ -112,8 +112,8 @@ export default function Page() {
             <td>Path-traversal rejection</td>
             <td>
               A library check-out desk that refuses any call number containing
-              &quot;..&quot;, you can borrow books, not walk into the
-              staff-only basement.
+              &quot;..&quot;, you can borrow books, not walk into the staff-only
+              basement.
             </td>
           </tr>
           <tr>
@@ -263,8 +263,8 @@ export default function Page() {
             <td>fetchGuard (SSRF defense)</td>
             <td>
               A corporate firewall that won&apos;t let your office laptop dial
-              internal admin servers, even if a phishing email tries to trick
-              it into hitting the cloud metadata endpoint.
+              internal admin servers, even if a phishing email tries to trick it
+              into hitting the cloud metadata endpoint.
             </td>
           </tr>
           <tr>
@@ -495,7 +495,7 @@ app.use(timing());              // Server-Timing header for observability`}
       <p>
         The official starters wire these in for you: Node, Bun, and Deno enable
         <code>secureHeaders()</code>, <code>requestId()</code>, and{" "}
-        <code>rateLimit()</code>; Cloudflare Worker and Vercel Edge enable{" "}
+        <code>rateLimit()</code>; Cloudflare Worker and Vercel enable{" "}
         <code>secureHeaders()</code> and
         <code>requestId()</code> plus tighter edge-friendly body and timeout
         limits.
@@ -533,7 +533,7 @@ app.use(timing());              // Server-Timing header for observability`}
             </td>
           </tr>
           <tr>
-            <td>Vercel Edge</td>
+            <td>Vercel</td>
             <td>
               <code>requestId()</code> and <code>secureHeaders()</code> by
               default; add <code>cors()</code> only when needed, and use a
@@ -753,19 +753,19 @@ app.use(basicAuth({
           <strong>
             <code>verify-store-integrity</code>
           </strong>{" "}
-, corruption-detecting reads.
+          , corruption-detecting reads.
         </li>
         <li>
           <strong>
             <code>strict-peer-dependencies</code>
           </strong>{" "}
-, no silent peer mismatches.
+          , no silent peer mismatches.
         </li>
         <li>
           <strong>
             <code>minimum-release-age=1440</code>
           </strong>{" "}
-, wait 24h before installing fresh releases.
+          , wait 24h before installing fresh releases.
         </li>
         <li>
           <strong>

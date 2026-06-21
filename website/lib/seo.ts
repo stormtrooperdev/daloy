@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata } from "next";
 
 /**
  * Serialize a JSON-LD payload for safe inline injection inside a
@@ -15,7 +15,7 @@ export function serializeJsonLd(value: unknown): string {
     .replace(/>/g, "\\u003e")
     .replace(/&/g, "\\u0026")
     .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029")
+    .replace(/\u2029/g, "\\u2029");
 }
 
 /**
@@ -24,21 +24,21 @@ export function serializeJsonLd(value: unknown): string {
  */
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://daloyjs.dev"
-).replace(/\/$/, "")
+).replace(/\/$/, "");
 
-export const SITE_NAME = "DaloyJS"
+export const SITE_NAME = "DaloyJS";
 
 export const CORE_PACKAGE_VERSION =
-  process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION ?? "1.0.0-beta.1"
+  process.env.NEXT_PUBLIC_CORE_PACKAGE_VERSION ?? "1.0.0-beta.1";
 
 export const HOME_TITLE =
-  "The runtime-portable TypeScript framework with supply-chain-aware defaults"
+  "The runtime-portable TypeScript framework with supply-chain-aware defaults";
 
 export const HOME_DESCRIPTION =
-  "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients. create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, and source-verified lockfiles, with an optional hardened GitHub Actions bundle for teams on GitHub."
+  "DaloyJS is a secure-by-default TypeScript/JavaScript web framework with portable runtime guardrails and package provenance you can verify on any CI host. It combines FastAPI-grade docs, Hono-style portability, Fastify-style ops, Elysia-level typing, and Hey API clients. create-daloy pnpm scaffolds add blocked install scripts, a 24h release-age cooldown, and source-verified lockfiles, with an optional hardened GitHub Actions bundle for teams on GitHub.";
 
 export const SITE_TAGLINE =
-  "The runtime-portable TypeScript framework with secure-by-default runtime guardrails, hardened pnpm installs, source-verified lockfiles, and typed end-to-end APIs. Optional hardened GitHub Actions bundle for teams on GitHub."
+  "The runtime-portable TypeScript framework with secure-by-default runtime guardrails, hardened pnpm installs, source-verified lockfiles, and typed end-to-end APIs. Optional hardened GitHub Actions bundle for teams on GitHub.";
 
 export const DEFAULT_KEYWORDS = [
   "DaloyJS",
@@ -50,40 +50,40 @@ export const DEFAULT_KEYWORDS = [
   "Hey API",
   "Zod validation",
   "Cloudflare Workers",
-  "Vercel Edge",
+  "Vercel",
   "Bun",
   "Deno",
   "edge runtime",
   "serverless TypeScript",
-]
+];
 
 export type PageSeoInput = {
   /** Page title fragment (will be templated as `%s · DaloyJS` by the root layout). */
-  title: string
+  title: string;
   /** 140–160 character meta description. */
-  description: string
+  description: string;
   /** Path beginning with `/` (e.g. `/docs/routing`). Used for canonical + og:url. */
-  path: string
+  path: string;
   /** Additional keywords merged with defaults. */
-  keywords?: string[]
+  keywords?: string[];
   /** Override the og/twitter image. Defaults to `/opengraph-image`. */
-  image?: string
+  image?: string;
   /** Mark the page as documentation/article instead of website. */
-  type?: "website" | "article"
-}
+  type?: "website" | "article";
+};
 
 /**
  * Build a Next.js `Metadata` object with consistent SEO defaults:
  * canonical URL, OpenGraph, Twitter card, robots, and keyword merging.
  */
 export function buildMetadata(input: PageSeoInput): Metadata {
-  const path = input.path.startsWith("/") ? input.path : `/${input.path}`
-  const url = `${SITE_URL}${path}`
-  const fullTitle = `${input.title} · ${SITE_NAME}`
-  const image = input.image ?? "/opengraph-image"
+  const path = input.path.startsWith("/") ? input.path : `/${input.path}`;
+  const url = `${SITE_URL}${path}`;
+  const fullTitle = `${input.title} · ${SITE_NAME}`;
+  const image = input.image ?? "/opengraph-image";
   const keywords = Array.from(
     new Set([...(input.keywords ?? []), ...DEFAULT_KEYWORDS])
-  )
+  );
 
   return {
     title: input.title,
@@ -116,5 +116,5 @@ export function buildMetadata(input: PageSeoInput): Metadata {
         "max-video-preview": -1,
       },
     },
-  }
+  };
 }

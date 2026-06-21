@@ -28,8 +28,8 @@ export default function Page() {
         <a href="https://www.adyen.com/" target="_blank" rel="noreferrer">
           Adyen
         </a>{" "}
-        is a single platform for cards, wallets, and local payment methods across Europe, the
-        US, APAC, and LATAM. This guide uses the official{" "}
+        is a single platform for cards, wallets, and local payment methods
+        across Europe, the US, APAC, and LATAM. This guide uses the official{" "}
         <a
           href="https://github.com/Adyen/adyen-node-api-library"
           target="_blank"
@@ -37,16 +37,19 @@ export default function Page() {
         >
           <code>@adyen/api-library</code>
         </a>{" "}
-        Node SDK (Checkout API <strong>v71</strong> as of v30.x) from a DaloyJS server, leans
-        on the <strong>Sessions</strong> flow for the frontend, and verifies Standard webhook
-        notifications with the bundled <code>hmacValidator</code>.
+        Node SDK (Checkout API <strong>v71</strong> as of v30.x) from a DaloyJS
+        server, leans on the <strong>Sessions</strong> flow for the frontend,
+        and verifies Standard webhook notifications with the bundled{" "}
+        <code>hmacValidator</code>.
       </p>
 
       <h2>What you should know up front</h2>
       <ul>
         <li>
-          <strong>Use Sessions, not <code>/payments</code> directly.</strong> The modern way
-          to integrate Adyen Web Drop-in / Components is the{" "}
+          <strong>
+            Use Sessions, not <code>/payments</code> directly.
+          </strong>{" "}
+          The modern way to integrate Adyen Web Drop-in / Components is the{" "}
           <a
             href="https://docs.adyen.com/online-payments/build-your-integration/sessions-flow/"
             target="_blank"
@@ -54,30 +57,35 @@ export default function Page() {
           >
             Sessions flow
           </a>{" "}
-, your server creates a session, the frontend hands it to Drop-in, and Adyen
-          handles 3-D Secure 2, redirects, and payment-method-specific quirks for you.
-          Direct <code>/payments</code> is still supported for server-to-server use cases.
+          , your server creates a session, the frontend hands it to Drop-in, and
+          Adyen handles 3-D Secure 2, redirects, and payment-method-specific
+          quirks for you. Direct <code>/payments</code> is still supported for
+          server-to-server use cases.
         </li>
         <li>
-          <strong>Live needs a URL prefix.</strong> Production Checkout calls go through a
-          merchant-specific endpoint. Set <code>liveEndpointUrlPrefix</code> on the{" "}
-          <code>Client</code> for any API that requires it (Checkout, BinLookup,
-          BalanceControl, Payout, Recurring). Forgetting this is the #1 cause of &ldquo;works
-          in test, 404 in live&rdquo;.
+          <strong>Live needs a URL prefix.</strong> Production Checkout calls go
+          through a merchant-specific endpoint. Set{" "}
+          <code>liveEndpointUrlPrefix</code> on the <code>Client</code> for any
+          API that requires it (Checkout, BinLookup, BalanceControl, Payout,
+          Recurring). Forgetting this is the #1 cause of &ldquo;works in test,
+          404 in live&rdquo;.
         </li>
         <li>
-          <strong>Webhooks come signed.</strong> Each <em>NotificationRequestItem</em>
+          <strong>Webhooks come signed.</strong> Each{" "}
+          <em>NotificationRequestItem</em>
           carries an HMAC-SHA256 of selected fields in{" "}
           <code>additionalData.hmacSignature</code>. Verify with{" "}
           <code>hmacValidator.validateHMAC</code> and respond{" "}
-          <code>[accepted]</code> within ~10 seconds, or Adyen marks it failed and retries.
+          <code>[accepted]</code> within ~10 seconds, or Adyen marks it failed
+          and retries.
         </li>
         <li>
           <strong>Node 18+.</strong> Older runtimes are unsupported.
         </li>
         <li>
-          <strong>Amounts are minor units.</strong> EUR 10.00 → <code>{`{ currency: "EUR", value: 1000 }`}</code>.
-          JPY 1000 → <code>value: 1000</code>. Get this wrong and you&apos;ll overcharge by
+          <strong>Amounts are minor units.</strong> EUR 10.00 →{" "}
+          <code>{`{ currency: "EUR", value: 1000 }`}</code>. JPY 1000 →{" "}
+          <code>value: 1000</code>. Get this wrong and you&apos;ll overcharge by
           100×.
         </li>
       </ul>
@@ -108,13 +116,13 @@ export default function Page() {
           <em>Checkout webservice</em> role.
         </li>
         <li>
-          Configure a <em>Standard notification</em> webhook in Customer Area → Developers →
-          Webhooks. Point it at your DaloyJS endpoint, choose JSON, generate an{" "}
-          <strong>HMAC key</strong>, and enable Basic Auth.
+          Configure a <em>Standard notification</em> webhook in Customer Area →
+          Developers → Webhooks. Point it at your DaloyJS endpoint, choose JSON,
+          generate an <strong>HMAC key</strong>, and enable Basic Auth.
         </li>
         <li>
-          For production: note your <code>liveEndpointUrlPrefix</code> (Customer Area →
-          Developers → API URLs, looks like{" "}
+          For production: note your <code>liveEndpointUrlPrefix</code> (Customer
+          Area → Developers → API URLs, looks like{" "}
           <code>1797a841fbb37ca7-AdyenDemo</code>).
         </li>
       </ol>
@@ -212,15 +220,15 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        <code>hmacValidator</code> is a class, instantiate it once. The same instance is
-        safe to call concurrently.
+        <code>hmacValidator</code> is a class, instantiate it once. The same
+        instance is safe to call concurrently.
       </p>
 
       <h2>5. Create a session for Drop-in / Components</h2>
       <p>
         The frontend renders Adyen Web with the <code>id</code> and{" "}
-        <code>sessionData</code> from this response. You never touch a PAN, and 3-D Secure 2
-        runs inside the Drop-in.
+        <code>sessionData</code> from this response. You never touch a PAN, and
+        3-D Secure 2 runs inside the Drop-in.
       </p>
       <CodeBlock
         code={`import { z } from "zod";
@@ -313,8 +321,8 @@ app.route({
       />
       <p>
         Adyen posts JSON like{" "}
-        <code>{`{ "live": "false", "notificationItems": [{ "NotificationRequestItem": { ... } }] }`}</code>.
-        Verify HMAC, ack <em>before</em> processing, then enqueue:
+        <code>{`{ "live": "false", "notificationItems": [{ "NotificationRequestItem": { ... } }] }`}</code>
+        . Verify HMAC, ack <em>before</em> processing, then enqueue:
       </p>
       <CodeBlock
         code={`import { z } from "zod";
@@ -369,11 +377,11 @@ app.route({
 });`}
       />
       <p>
-        The event you care about most is{" "}
-        <code>AUTHORISATION</code> with <code>success === &quot;true&quot;</code>: 
-        that&apos;s the canonical &quot;the money is good&quot; signal. The HTTP response from{" "}
-        <code>/payments</code> or the Sessions success callback is only a hint; webhooks are
-        the source of truth.
+        The event you care about most is <code>AUTHORISATION</code> with{" "}
+        <code>success === &quot;true&quot;</code>: that&apos;s the canonical
+        &quot;the money is good&quot; signal. The HTTP response from{" "}
+        <code>/payments</code> or the Sessions success callback is only a hint;
+        webhooks are the source of truth.
       </p>
 
       <h2>7. Modifications (capture, refund, cancel)</h2>
@@ -410,37 +418,47 @@ await checkout.ModificationsApi.refundCapturedPayment(item.pspReference, {
 
       <h2>Runtimes</h2>
       <p>
-        The SDK uses Node&apos;s built-in <code>https</code> module out of the box. It runs on
-        Node 18+ and works on classic Node serverless. For{" "}
-        <Link href={"/docs/adapters" as Route}>edge runtimes</Link> (Cloudflare Workers,
-        Vercel Edge) you either swap in a fetch-based <code>HttpClient</code> via{" "}
-        <code>new Client({"{ httpClient: { request(endpoint, json, config) { ... } } }"})</code>{" "}
+        The SDK uses Node&apos;s built-in <code>https</code> module out of the
+        box. It runs on Node 18+ and works on classic Node serverless. For{" "}
+        <Link href={"/docs/adapters" as Route}>edge runtimes</Link> (Cloudflare
+        Workers, Vercel) you either swap in a fetch-based{" "}
+        <code>HttpClient</code> via{" "}
+        <code>
+          new Client(
+          {"{ httpClient: { request(endpoint, json, config) { ... } } }"})
+        </code>{" "}
         or POST directly to{" "}
         <code>https://checkout-test.adyen.com/v71/sessions</code> with{" "}
-        <code>fetch</code>. The HMAC verification helper is pure JS and works anywhere.
+        <code>fetch</code>. The HMAC verification helper is pure JS and works
+        anywhere.
       </p>
 
       <h2>Errors</h2>
       <p>
         Adyen returns RFC-7807-shaped errors with <code>status</code>,{" "}
-        <code>errorCode</code>, <code>message</code>, and <code>errorType</code>. The SDK
-        throws <code>HttpClientException</code> with those fields on the{" "}
-        <code>.error</code> object; map them through{" "}
+        <code>errorCode</code>, <code>message</code>, and <code>errorType</code>
+        . The SDK throws <code>HttpClientException</code> with those fields on
+        the <code>.error</code> object; map them through{" "}
         <Link href="/docs/errors">problem+json</Link> like other providers.
       </p>
 
       <h2>Modernisation notes</h2>
       <ul>
         <li>
-          <strong>Sessions over <code>/payments</code> + <code>/payments/details</code>.</strong>{" "}
-          The two-step Advanced flow still works, but Sessions is now the default in
-          Adyen&apos;s own examples and removes a class of state-management bugs.
+          <strong>
+            Sessions over <code>/payments</code> +{" "}
+            <code>/payments/details</code>.
+          </strong>{" "}
+          The two-step Advanced flow still works, but Sessions is now the
+          default in Adyen&apos;s own examples and removes a class of
+          state-management bugs.
         </li>
         <li>
-          <strong>Use Web v5+ on the client.</strong> v5 expects a session response shape
-          identical to what <code>PaymentsApi.sessions</code> returns; older Drop-in versions
-          required wiring up <code>onSubmit</code> / <code>onAdditionalDetails</code>{" "}
-          callbacks by hand.
+          <strong>Use Web v5+ on the client.</strong> v5 expects a session
+          response shape identical to what <code>PaymentsApi.sessions</code>{" "}
+          returns; older Drop-in versions required wiring up{" "}
+          <code>onSubmit</code> / <code>onAdditionalDetails</code> callbacks by
+          hand.
         </li>
         <li>
           <strong>Don&apos;t roll your own HMAC.</strong> Adyen signs a specific
@@ -450,16 +468,20 @@ await checkout.ModificationsApi.refundCapturedPayment(item.pspReference, {
         <li>
           <strong>Network tokens by default.</strong> When you tokenise with{" "}
           <code>storePaymentMethod: true</code> and reuse via{" "}
-          <code>shopperInteraction: &quot;ContAuth&quot;</code>, Adyen will route through
-          scheme tokens automatically, no extra code, lower decline rate.
+          <code>shopperInteraction: &quot;ContAuth&quot;</code>, Adyen will
+          route through scheme tokens automatically, no extra code, lower
+          decline rate.
         </li>
       </ul>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
         <Link href={"/docs/payments/braintree" as Route}>Braintree guide</Link>,{" "}
-        <Link href={"/docs/payments/authorize-net" as Route}>Authorize.Net guide</Link>, and{" "}
-        <Link href="/docs/errors">problem+json errors</Link>.
+        <Link href={"/docs/payments/authorize-net" as Route}>
+          Authorize.Net guide
+        </Link>
+        , and <Link href="/docs/errors">problem+json errors</Link>.
       </p>
     </>
   );

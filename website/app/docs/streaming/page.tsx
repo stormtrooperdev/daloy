@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Streaming responses (SSE & NDJSON)",
   description:
-    "Build backpressure-safe Server-Sent Events and newline-delimited JSON streams in DaloyJS. Honor AbortSignal, release iterators on disconnect, and reuse the same handler across Node, Bun, Deno, Cloudflare Workers, and Vercel Edge.",
+    "Build backpressure-safe Server-Sent Events and newline-delimited JSON streams in DaloyJS. Honor AbortSignal, release iterators on disconnect, and reuse the same handler across Node, Bun, Deno, Cloudflare Workers, and Vercel.",
   path: "/docs/streaming",
   keywords: [
     "Server-Sent Events",
@@ -87,7 +87,8 @@ export default function Page() {
         The helpers live in the main barrel and in the <code>/streaming</code>{" "}
         subpath:
       </p>
-      <CodeBlock code={`import {
+      <CodeBlock
+        code={`import {
   sseStream,
   sseResponse,
   ndjsonStream,
@@ -95,7 +96,8 @@ export default function Page() {
 } from "@daloyjs/core";
 
 // Or, if you want a tree-shake-friendly subpath:
-import { sseStream } from "@daloyjs/core/streaming";`} />
+import { sseStream } from "@daloyjs/core/streaming";`}
+      />
 
       <h2>Server-Sent Events (SSE)</h2>
       <p>
@@ -106,7 +108,8 @@ import { sseStream } from "@daloyjs/core/streaming";`} />
         split into one <code>data:</code> line per source line, and CR/LF in
         <code> event</code> / <code>id</code> values are sanitized.
       </p>
-      <CodeBlock code={`import { sseStream } from "@daloyjs/core";
+      <CodeBlock
+        code={`import { sseStream } from "@daloyjs/core";
 
 app.route({
   method: "GET",
@@ -126,20 +129,24 @@ app.route({
       { signal: request.signal, keepAliveMs: 15_000 }
     ),
   }),
-});`} />
+});`}
+      />
 
       <p>
         Use <code>sseResponse(...)</code> when you want a fully-formed{" "}
-        <code>Response</code> with the standard SSE headers
-        (<code>text/event-stream</code>, <code>cache-control: no-cache,
-        no-transform</code>, <code>connection: keep-alive</code>, and{" "}
+        <code>Response</code> with the standard SSE headers (
+        <code>text/event-stream</code>,{" "}
+        <code>cache-control: no-cache, no-transform</code>,{" "}
+        <code>connection: keep-alive</code>, and{" "}
         <code>x-accel-buffering: no</code>) already set:
       </p>
-      <CodeBlock code={`import { sseResponse } from "@daloyjs/core";
+      <CodeBlock
+        code={`import { sseResponse } from "@daloyjs/core";
 
 const res = sseResponse(async function* () {
   yield { event: "ping", data: "hi" };
-});`} />
+});`}
+      />
 
       <h3>Keep-alive comments</h3>
       <p>
@@ -151,11 +158,12 @@ const res = sseResponse(async function* () {
       <h2>Newline-delimited JSON (NDJSON)</h2>
       <p>
         Yield any JSON-serializable value; each value is encoded with{" "}
-        <code>JSON.stringify</code> and terminated with a single <code>\n</code>.
-        Strings are emitted as JSON strings, and values that cannot be
+        <code>JSON.stringify</code> and terminated with a single <code>\n</code>
+        . Strings are emitted as JSON strings, and values that cannot be
         represented as JSON throw instead of emitting invalid NDJSON.
       </p>
-      <CodeBlock code={`import { ndjsonStream } from "@daloyjs/core";
+      <CodeBlock
+        code={`import { ndjsonStream } from "@daloyjs/core";
 
 app.route({
   method: "GET",
@@ -174,7 +182,8 @@ app.route({
       { signal: request.signal }
     ),
   }),
-});`} />
+});`}
+      />
 
       <p>
         <code>ndjsonResponse(...)</code> builds the same stream with{" "}
@@ -191,8 +200,8 @@ app.route({
       </p>
       <p>
         When the request is aborted (client disconnects, request timeout fires,
-        explicit <code>AbortController.abort()</code>), the stream is closed
-        and <code>iterator.return()</code> is invoked so a generator&apos;s{" "}
+        explicit <code>AbortController.abort()</code>), the stream is closed and{" "}
+        <code>iterator.return()</code> is invoked so a generator&apos;s{" "}
         <code>finally</code> block runs and any underlying cursor/socket is
         released.
       </p>
@@ -200,19 +209,19 @@ app.route({
       <h2>Cross-runtime compatibility</h2>
       <p>
         The helpers only depend on web-standard <code>ReadableStream</code> and{" "}
-        <code>TextEncoder</code>, so the same handler works identically on
-        Node, Bun, Deno, Cloudflare Workers, and Vercel Edge. The DaloyJS
-        response serializer recognizes a <code>ReadableStream</code> body when
-        you set an explicit non-JSON <code>content-type</code> and forwards it
-        to the runtime without buffering.
+        <code>TextEncoder</code>, so the same handler works identically on Node,
+        Bun, Deno, Cloudflare Workers, and Vercel. The DaloyJS response
+        serializer recognizes a <code>ReadableStream</code> body when you set an
+        explicit non-JSON <code>content-type</code> and forwards it to the
+        runtime without buffering.
       </p>
 
       <h2>OpenAPI</h2>
       <p>
         OpenAPI 3.1 has no rich schema for streamed event payloads. Document
         streaming routes with a free-form <code>200</code> response (just{" "}
-        <code>{`{ description }`}</code>) and describe the event shape in
-        prose, or attach an example string showing one or two frames.
+        <code>{`{ description }`}</code>) and describe the event shape in prose,
+        or attach an example string showing one or two frames.
       </p>
     </>
   );

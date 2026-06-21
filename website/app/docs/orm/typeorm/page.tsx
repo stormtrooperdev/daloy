@@ -37,10 +37,28 @@ export default function Page() {
         title="One request through TypeORM"
         caption="Zod validates the request, the handler gets a repository off the DataSource on state.db, runs the entity query, then the response schema checks the body on the way out."
         steps={[
-          { eyebrow: "client", label: "HTTP request", detail: "GET /users/:id" },
-          { eyebrow: "zod", label: "Validated input", detail: "params.id is a uuid", tone: "accent" },
-          { eyebrow: "typeorm", label: "Repository query", detail: "getRepository(User).findOneBy(...)" },
-          { eyebrow: "response", label: "Typed body", detail: "200 UserSchema | 404", tone: "success" },
+          {
+            eyebrow: "client",
+            label: "HTTP request",
+            detail: "GET /users/:id",
+          },
+          {
+            eyebrow: "zod",
+            label: "Validated input",
+            detail: "params.id is a uuid",
+            tone: "accent",
+          },
+          {
+            eyebrow: "typeorm",
+            label: "Repository query",
+            detail: "getRepository(User).findOneBy(...)",
+          },
+          {
+            eyebrow: "response",
+            label: "Typed body",
+            detail: "200 UserSchema | 404",
+            tone: "success",
+          },
         ]}
       />
 
@@ -209,7 +227,7 @@ pnpm typeorm migration:run -d src/db/data-source.ts`}
       <ul>
         <li>
           TypeORM uses Node-only APIs (filesystem, native drivers). It does{" "}
-          <strong>not</strong> run on Cloudflare Workers or Vercel Edge, use{" "}
+          <strong>not</strong> run on Cloudflare Workers or Vercel, use{" "}
           <Link href="/docs/orm/drizzle">Drizzle</Link> or{" "}
           <Link href="/docs/orm/supabase">Supabase</Link> there.
         </li>

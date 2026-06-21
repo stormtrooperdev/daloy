@@ -73,8 +73,8 @@ export default function Page() {
       <h2>Netlify Edge Functions (Deno)</h2>
       <p>
         Edge Functions run on a Deno-based runtime. Use{" "}
-        <code>toWebHandler</code> &mdash; the same helper as the Vercel Edge
-        adapter, because the input/output shape is identical.
+        <code>toWebHandler</code> &mdash; the same helper as the Vercel adapter,
+        because the input/output shape is identical.
       </p>
       <CodeBlock
         language="ts"
@@ -156,7 +156,7 @@ pnpm netlify deploy --build --prod`}
       <ul>
         <li>
           Edge Functions don&apos;t expose <code>node:*</code> &mdash; same
-          caveat as Vercel Edge and Cloudflare Workers.
+          caveat as Vercel and Cloudflare Workers.
         </li>
         <li>
           Functions v2 returns a <code>Response</code> directly. Don&apos;t use

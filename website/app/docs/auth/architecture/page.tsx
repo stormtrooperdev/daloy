@@ -198,7 +198,7 @@ export default function Page() {
           <tr>
             <td>Language &amp; runtime</td>
             <td>C# / F# on the CLR</td>
-            <td>TypeScript on Node, Bun, Deno, Workers, Vercel Edge</td>
+            <td>TypeScript on Node, Bun, Deno, Workers, Vercel</td>
           </tr>
           <tr>
             <td>Standard library</td>
@@ -388,7 +388,12 @@ app.use(csrf());
       />
       <SequenceDiagram
         title="BFF pattern: tokens never reach the browser"
-        participants={["Browser", "BFF (DaloyJS)", "Authorization Server (IdP)", "Upstream API"]}
+        participants={[
+          "Browser",
+          "BFF (DaloyJS)",
+          "Authorization Server (IdP)",
+          "Upstream API",
+        ]}
         steps={[
           {
             from: "Browser",

@@ -28,7 +28,8 @@ export default function Page() {
         <a href="https://www.shopify.com/" target="_blank" rel="noreferrer">
           Shopify
         </a>{" "}
-        is the commerce platform behind millions of stores. This guide uses the community{" "}
+        is the commerce platform behind millions of stores. This guide uses the
+        community{" "}
         <a
           href="https://github.com/MONEI/Shopify-api-node"
           target="_blank"
@@ -36,44 +37,58 @@ export default function Page() {
         >
           <code>shopify-api-node</code>
         </a>{" "}
-        SDK (maintained by MONEI) to call the Shopify Admin API from a DaloyJS plugin, and shows
-        how to verify Shopify webhooks against the raw request body.
+        SDK (maintained by MONEI) to call the Shopify Admin API from a DaloyJS
+        plugin, and shows how to verify Shopify webhooks against the raw request
+        body.
       </p>
 
       <h2>REST is deprecated: prefer GraphQL</h2>
       <p>
-        Shopify <a
+        Shopify{" "}
+        <a
           href="https://shopify.dev/docs/api/admin-rest"
           target="_blank"
           rel="noreferrer"
-        >froze the REST Admin API at version 2024-04</a> and requires new public apps to use the{" "}
+        >
+          froze the REST Admin API at version 2024-04
+        </a>{" "}
+        and requires new public apps to use the{" "}
         <a
           href="https://shopify.dev/docs/api/admin-graphql"
           target="_blank"
           rel="noreferrer"
-        >GraphQL Admin API</a>. The REST resources on <code>shopify-api-node</code> (
-        <code>shopify.product.list</code>, <code>shopify.order.create</code>, &hellip;) still
-        work against older API versions, but you should write new code against the SDK&apos;s{" "}
-        <code>shopify.graphql()</code> method. Every example below uses GraphQL.
+        >
+          GraphQL Admin API
+        </a>
+        . The REST resources on <code>shopify-api-node</code> (
+        <code>shopify.product.list</code>, <code>shopify.order.create</code>,
+        &hellip;) still work against older API versions, but you should write
+        new code against the SDK&apos;s <code>shopify.graphql()</code> method.
+        Every example below uses GraphQL.
       </p>
       <p>
-        Pin your <code>apiVersion</code> to a current stable release (Shopify ships a new
-        version every quarter, supports each for 12 months, and lists them on the{" "}
+        Pin your <code>apiVersion</code> to a current stable release (Shopify
+        ships a new version every quarter, supports each for 12 months, and
+        lists them on the{" "}
         <a
           href="https://shopify.dev/docs/api/usage/versioning"
           target="_blank"
           rel="noreferrer"
-        >versioning page</a>). The default in <code>shopify-api-node</code> is the <em>oldest</em>{" "}
+        >
+          versioning page
+        </a>
+        ). The default in <code>shopify-api-node</code> is the <em>oldest</em>{" "}
         supported stable version, which is usually not what you want.
       </p>
 
       <h2>1. Provision a custom app</h2>
       <ol>
         <li>
-          In the Shopify admin, open <strong>Settings → Apps and sales channels → Develop
-          apps</strong>, then create a custom app. The legacy &ldquo;private apps&rdquo; flow
-          (API key + password) was removed back in January 2022, don&apos;t use the{" "}
-          <code>apiKey</code> / <code>password</code> options on the SDK.
+          In the Shopify admin, open{" "}
+          <strong>Settings → Apps and sales channels → Develop apps</strong>,
+          then create a custom app. The legacy &ldquo;private apps&rdquo; flow
+          (API key + password) was removed back in January 2022, don&apos;t use
+          the <code>apiKey</code> / <code>password</code> options on the SDK.
         </li>
         <li>
           Pick the{" "}
@@ -84,20 +99,23 @@ export default function Page() {
           >
             Admin API access scopes
           </a>{" "}
-          your integration actually needs (for example <code>read_products</code>,{" "}
-          <code>write_orders</code>). Stay minimal, you can always grant more later.
+          your integration actually needs (for example{" "}
+          <code>read_products</code>, <code>write_orders</code>). Stay minimal,
+          you can always grant more later.
         </li>
         <li>
-          Install the app on the store. Copy the <strong>Admin API access token</strong> (starts
-          with <code>shpat_</code>). This is the only credential the SDK needs.
+          Install the app on the store. Copy the{" "}
+          <strong>Admin API access token</strong> (starts with{" "}
+          <code>shpat_</code>). This is the only credential the SDK needs.
         </li>
       </ol>
 
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add shopify-api-node`} />
       <p>
-        TypeScript users: the package ships its own typings (under <code>types/</code> in the
-        repo). No <code>@types/shopify-api-node</code> install needed.
+        TypeScript users: the package ships its own typings (under{" "}
+        <code>types/</code> in the repo). No{" "}
+        <code>@types/shopify-api-node</code> install needed.
       </p>
 
       <h2>3. Environment variables</h2>
@@ -109,9 +127,11 @@ SHOPIFY_API_VERSION=2026-01
 SHOPIFY_WEBHOOK_SECRET=shpss_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`}
       />
       <p>
-        The webhook secret is shown when you create a webhook subscription (either in the
-        admin or via GraphQL <code>webhookSubscriptionCreate</code>). Update{" "}
-        <code>SHOPIFY_API_VERSION</code> to the latest stable on each Shopify release.
+        The webhook secret is shown when you create a webhook subscription
+        (either in the admin or via GraphQL{" "}
+        <code>webhookSubscriptionCreate</code>). Update{" "}
+        <code>SHOPIFY_API_VERSION</code> to the latest stable on each Shopify
+        release.
       </p>
 
       <h2>4. Plugin</h2>
@@ -272,9 +292,10 @@ app.route({
 });`}
       />
       <p>
-        GraphQL pagination uses opaque cursors (<code>endCursor</code>) rather than the REST
-        <code>nextPageParameters</code> helper. Forward the cursor as a query string to your
-        client.
+        GraphQL pagination uses opaque cursors (<code>endCursor</code>) rather
+        than the REST
+        <code>nextPageParameters</code> helper. Forward the cursor as a query
+        string to your client.
       </p>
 
       <h2>6. Receive and verify webhooks</h2>
@@ -314,9 +335,10 @@ app.route({
         caption="Hash the raw bytes before JSON.parse, reject bad signatures with 401, dedupe on the webhook id, then ack fast and do the heavy work in a background job."
       />
       <p>
-        Shopify signs every webhook with <code>X-Shopify-Hmac-Sha256</code> over the{" "}
-        <em>raw</em> body. Skip JSON parsing until the signature matches, and dedupe on{" "}
-        <code>X-Shopify-Webhook-Id</code> so retries don&apos;t double-process. Use the{" "}
+        Shopify signs every webhook with <code>X-Shopify-Hmac-Sha256</code> over
+        the <em>raw</em> body. Skip JSON parsing until the signature matches,
+        and dedupe on <code>X-Shopify-Webhook-Id</code> so retries don&apos;t
+        double-process. Use the{" "}
         <Link href="/docs/multipart">raw-body helper</Link> to get the bytes:
       </p>
       <CodeBlock
@@ -362,9 +384,10 @@ app.route({
 });`}
       />
       <p>
-        Shopify expects a 2xx within ~5 seconds, retries with exponential back-off for up to 48
-        hours, and disables the subscription after 19 consecutive failures. Do the heavy work in
-        a background job and ack fast.
+        Shopify expects a 2xx within ~5 seconds, retries with exponential
+        back-off for up to 48 hours, and disables the subscription after 19
+        consecutive failures. Do the heavy work in a background job and ack
+        fast.
       </p>
 
       <h2>Rate limits</h2>
@@ -377,23 +400,29 @@ app.route({
         >
           calculated cost &amp; leaky-bucket model
         </a>
-        . Use the <code>maxRetries</code> option (above) so the SDK respects the throttled-cost
-        information that comes back on 429 responses. <code>autoLimit</code> only works for the
-        REST API and only inside a single Node process, skip it for GraphQL or multi-instance
-        deployments and rely on retries instead.
+        . Use the <code>maxRetries</code> option (above) so the SDK respects the
+        throttled-cost information that comes back on 429 responses.{" "}
+        <code>autoLimit</code> only works for the REST API and only inside a
+        single Node process, skip it for GraphQL or multi-instance deployments
+        and rely on retries instead.
       </p>
 
       <h2>Runtimes</h2>
       <p>
         <code>shopify-api-node</code> is built on{" "}
-        <a href="https://github.com/sindresorhus/got" target="_blank" rel="noreferrer">
+        <a
+          href="https://github.com/sindresorhus/got"
+          target="_blank"
+          rel="noreferrer"
+        >
           got v11
         </a>
-        , which depends on Node&apos;s HTTPS module. It runs fine on Node, Bun, AWS Lambda, and
-        any long-running container, but it is <strong>not</strong> drop-in compatible with{" "}
+        , which depends on Node&apos;s HTTPS module. It runs fine on Node, Bun,
+        AWS Lambda, and any long-running container, but it is{" "}
+        <strong>not</strong> drop-in compatible with{" "}
         <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
-        <Link href="/docs/adapters">Vercel Edge</Link>. On those runtimes, call the Admin
-        GraphQL endpoint directly with <code>fetch</code>:
+        <Link href="/docs/adapters">Vercel</Link>. On those runtimes, call the
+        Admin GraphQL endpoint directly with <code>fetch</code>:
       </p>
       <CodeBlock
         code={`// edge-friendly fallback
@@ -420,16 +449,21 @@ const res = await fetch(
         >
           <code>@shopify/shopify-api</code>
         </a>{" "}
-        library, which adds OAuth for public/embedded apps and a built-in webhook registry.
-        Reach for it when you&apos;re building a Shopify App Store listing; reach for{" "}
-        <code>shopify-api-node</code> when you&apos;re building a server-side integration for a
-        single store and want a smaller surface.
+        library, which adds OAuth for public/embedded apps and a built-in
+        webhook registry. Reach for it when you&apos;re building a Shopify App
+        Store listing; reach for <code>shopify-api-node</code> when you&apos;re
+        building a server-side integration for a single store and want a smaller
+        surface.
       </p>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
         <Link href="/docs/errors">problem+json errors</Link>, and{" "}
-        <Link href="/docs/security/rate-limit-redis">distributed rate-limit store</Link>.
+        <Link href="/docs/security/rate-limit-redis">
+          distributed rate-limit store
+        </Link>
+        .
       </p>
     </>
   );

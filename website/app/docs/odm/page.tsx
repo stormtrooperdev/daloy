@@ -26,27 +26,29 @@ export default function Page() {
     <>
       <h1>Using ODMs with DaloyJS</h1>
       <p>
-        DaloyJS works just as well with document databases as it does with SQL databases, but the abstractions
-        are different. Use an ODM when your persistence layer is document-shaped and you want schemas,
-        validation, middleware, and query helpers around collections or buckets.
+        DaloyJS works just as well with document databases as it does with SQL
+        databases, but the abstractions are different. Use an ODM when your
+        persistence layer is document-shaped and you want schemas, validation,
+        middleware, and query helpers around collections or buckets.
       </p>
 
       <h2>ORM vs ODM</h2>
       <ul>
         <li>
-          <strong>ORM</strong> maps relational tables and joins into TypeScript objects. Use it for PostgreSQL,
-          MySQL, SQLite, MariaDB, or MSSQL.
+          <strong>ORM</strong> maps relational tables and joins into TypeScript
+          objects. Use it for PostgreSQL, MySQL, SQLite, MariaDB, or MSSQL.
         </li>
         <li>
-          <strong>ODM</strong> maps JSON-like documents and collection workflows into TypeScript objects. Use it
-          for document databases such as MongoDB or Couchbase.
+          <strong>ODM</strong> maps JSON-like documents and collection workflows
+          into TypeScript objects. Use it for document databases such as MongoDB
+          or Couchbase.
         </li>
       </ul>
 
       <h2>The recommended pattern</h2>
       <p>
-        Just like SQL clients, ODM connections belong in a plugin. Decorate your app with a small database
-        surface and close the connection on shutdown.
+        Just like SQL clients, ODM connections belong in a plugin. Decorate your
+        app with a small database surface and close the connection on shutdown.
       </p>
 
       <LayerStack
@@ -100,10 +102,12 @@ export function databasePlugin(db: Database) {
       <h2>Pick your ODM</h2>
       <ul>
         <li>
-          <Link href="/docs/odm/mongoose">Mongoose</Link>: mature schemas, middleware, validation, and session support for MongoDB.
+          <Link href="/docs/odm/mongoose">Mongoose</Link>: mature schemas,
+          middleware, validation, and session support for MongoDB.
         </li>
         <li>
-          <Link href="/docs/odm/ottoman">Ottoman</Link>: schema and model layer for Couchbase buckets, scopes, and collections.
+          <Link href="/docs/odm/ottoman">Ottoman</Link>: schema and model layer
+          for Couchbase buckets, scopes, and collections.
         </li>
       </ul>
 
@@ -116,7 +120,7 @@ export function databasePlugin(db: Database) {
             <th>Bun</th>
             <th>Deno</th>
             <th>Cloudflare Workers</th>
-            <th>Vercel Edge</th>
+            <th>Vercel</th>
           </tr>
         </thead>
         <tbody>
@@ -139,9 +143,11 @@ export function databasePlugin(db: Database) {
         </tbody>
       </table>
       <p>
-        Mongoose and Ottoman both depend on Node.js database drivers, so they are primarily Node.js choices.
-        If you need a portable edge-friendly database layer, stay in the SQL-oriented{" "}
-        <Link href="/docs/orm">ORM section</Link> and choose a compatible client there.
+        Mongoose and Ottoman both depend on Node.js database drivers, so they
+        are primarily Node.js choices. If you need a portable edge-friendly
+        database layer, stay in the SQL-oriented{" "}
+        <Link href="/docs/orm">ORM section</Link> and choose a compatible client
+        there.
       </p>
 
       <h2>Typing the decorated client</h2>
@@ -158,8 +164,9 @@ declare module "@daloyjs/core" {
 
       <h2>Sessions and transactions</h2>
       <p>
-        MongoDB transactions require a replica set and a session. Start the session inside the handler that owns
-        the unit of work, then pass it through each model operation.
+        MongoDB transactions require a replica set and a session. Start the
+        session inside the handler that owns the unit of work, then pass it
+        through each model operation.
       </p>
       <CodeBlock
         code={`handler: async ({ body, state }) => {

@@ -45,7 +45,7 @@ export default function Page() {
           DaloyJS is excellent at the &quot;your code answers an HTTP
           request&quot; role
         </strong>{" "}
-, API server, microservice, BFF, webhook receiver, WebSocket server, MCP
+        , API server, microservice, BFF, webhook receiver, WebSocket server, MCP
         server. It is <strong>not</strong>a router that proxies traffic to other
         services, a load balancer, or a page-rendering UI framework. For those,
         pair it with something purpose-built and let DaloyJS be the smart
@@ -238,8 +238,8 @@ export default function Page() {
           stdio or HTTP+SSE.
         </li>
         <li>
-          <strong>gRPC</strong>: a binary RPC protocol from Google, defined
-          with <code>.proto</code> files and running over HTTP/2 with Protobuf
+          <strong>gRPC</strong>: a binary RPC protocol from Google, defined with{" "}
+          <code>.proto</code> files and running over HTTP/2 with Protobuf
           encoding. Great for fast, typed S2S inside a cluster.
         </li>
         <li>
@@ -341,7 +341,7 @@ const app = new App({
           <Link href="/docs/security/fetch-guard">
             <code>fetchGuard()</code>
           </Link>{" "}
-, blocks SSRF, private CIDRs, and cloud-metadata IPs by default.
+          , blocks SSRF, private CIDRs, and cloud-metadata IPs by default.
         </li>
         <li>
           <strong>Session edge</strong> via{" "}
@@ -359,8 +359,8 @@ const app = new App({
           plus <code>compression()</code> with BREACH-aware guards.
         </li>
         <li>
-          <strong>Edge runtimes</strong>: deploy on Cloudflare, Vercel Edge,
-          Fastly Compute, or Lambda.
+          <strong>Edge runtimes</strong>: deploy on Cloudflare, Vercel, Fastly
+          Compute, or Lambda.
         </li>
       </ul>
       <p>
@@ -444,7 +444,7 @@ const app = new App({
       <ul>
         <li>
           <code>verifyWebhookSignature</code> / <code>signWebhookPayload</code>{" "}
-, zero-knob HMAC helpers
+          , zero-knob HMAC helpers
         </li>
         <li>
           <code>timingSafeEqual</code> for signature comparison
@@ -498,8 +498,8 @@ const app = new App({
       <p>
         You bring the MCP framing (initialize, tools/list, tools/call) on top.
         DaloyJS won&apos;t generate it for you, there&apos;s no{" "}
-        <code>defineTool()</code> primitive yet, but the HTTP, validation,
-        auth, and SSE pieces are in-box.
+        <code>defineTool()</code> primitive yet, but the HTTP, validation, auth,
+        and SSE pieces are in-box.
       </p>
 
       <h3>11. gRPC server: no</h3>
@@ -672,7 +672,14 @@ const app = new App({
           {
             title: "DaloyJS services",
             detail: "same framework, configured per role",
-            items: ["BFF", "Catalog API", "Orders API", "Webhooks", "WebSocket", "MCP"],
+            items: [
+              "BFF",
+              "Catalog API",
+              "Orders API",
+              "Webhooks",
+              "WebSocket",
+              "MCP",
+            ],
             tone: "accent",
           },
         ]}

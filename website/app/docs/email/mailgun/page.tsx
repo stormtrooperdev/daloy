@@ -27,8 +27,8 @@ export default function Page() {
         <a href="https://www.mailgun.com" target="_blank" rel="noreferrer">
           Mailgun
         </a>{" "}
-        (now Sinch Mailgun) offers high-volume transactional and bulk email, address validation,
-        and routing. This guide uses the official{" "}
+        (now Sinch Mailgun) offers high-volume transactional and bulk email,
+        address validation, and routing. This guide uses the official{" "}
         <a
           href="https://github.com/mailgun/mailgun.js"
           target="_blank"
@@ -54,7 +54,8 @@ export default function Page() {
             from: "mg client",
             to: "Mailgun API",
             label: "POST /v3/{domain}/messages",
-            detail: "US api.mailgun.net or EU api.eu.mailgun.net (fixed per domain)",
+            detail:
+              "US api.mailgun.net or EU api.eu.mailgun.net (fixed per domain)",
             kind: "request",
           },
           {
@@ -79,23 +80,27 @@ export default function Page() {
       <ol>
         <li>
           Add and verify your sending domain under{" "}
-          <strong>Sending → Domains → Add new domain</strong>. Add the SPF/DKIM TXT records and
-          the MX records Mailgun lists.
+          <strong>Sending → Domains → Add new domain</strong>. Add the SPF/DKIM
+          TXT records and the MX records Mailgun lists.
         </li>
         <li>
-          Choose your <strong>region</strong>: <code>https://api.mailgun.net</code> (US, default)
-          or <code>https://api.eu.mailgun.net</code> (EU). The region is fixed per domain.
+          Choose your <strong>region</strong>:{" "}
+          <code>https://api.mailgun.net</code> (US, default) or{" "}
+          <code>https://api.eu.mailgun.net</code> (EU). The region is fixed per
+          domain.
         </li>
         <li>
-          Create a <strong>Sending API key</strong> from <strong>API Security</strong> and store
-          it as <code>MAILGUN_API_KEY</code>.
+          Create a <strong>Sending API key</strong> from{" "}
+          <strong>API Security</strong> and store it as{" "}
+          <code>MAILGUN_API_KEY</code>.
         </li>
       </ol>
 
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add mailgun.js form-data`} />
       <p>
-        <code>form-data</code> is the multipart implementation Mailgun expects on Node.
+        <code>form-data</code> is the multipart implementation Mailgun expects
+        on Node.
       </p>
 
       <h2>3. Environment variables</h2>
@@ -212,12 +217,14 @@ app.route({
       <h2>Runtimes</h2>
       <ul>
         <li>
-          <strong>Node / Bun / AWS Lambda</strong>: works with the configuration above.
+          <strong>Node / Bun / AWS Lambda</strong>: works with the configuration
+          above.
         </li>
         <li>
-          <strong>Cloudflare Workers / Vercel Edge</strong>: pass <code>useFetch: true</code> so
-          the SDK uses the platform&apos;s native <code>fetch</code> instead of <code>request</code>{" "}
-          (which depends on Node&apos;s HTTP module):
+          <strong>Cloudflare Workers / Vercel</strong>: pass{" "}
+          <code>useFetch: true</code> so the SDK uses the platform&apos;s native{" "}
+          <code>fetch</code> instead of <code>request</code> (which depends on
+          Node&apos;s HTTP module):
           <CodeBlock
             code={`const mg = mailgun.client({
   username: "api",
@@ -226,16 +233,18 @@ app.route({
   useFetch: true,
 });`}
           />
-          When <code>useFetch</code> is enabled, you can also drop the <code>form-data</code>{" "}
-          dependency in favour of the global <code>FormData</code>.
+          When <code>useFetch</code> is enabled, you can also drop the{" "}
+          <code>form-data</code> dependency in favour of the global{" "}
+          <code>FormData</code>.
         </li>
       </ul>
 
       <h2>Webhooks</h2>
       <p>
-        Mailgun signs webhook payloads with HMAC-SHA256. When you accept delivery, bounce, or
-        complaint events, verify <code>signature.signature</code> against{" "}
-        <code>timestamp + token</code> using your webhook signing key before trusting the body.
+        Mailgun signs webhook payloads with HMAC-SHA256. When you accept
+        delivery, bounce, or complaint events, verify{" "}
+        <code>signature.signature</code> against <code>timestamp + token</code>{" "}
+        using your webhook signing key before trusting the body.
       </p>
 
       <p>

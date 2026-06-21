@@ -47,7 +47,7 @@ export default function Page() {
       <p>
         It is <strong>built-in and dependency-free</strong> — built on the
         Web-standard <code>Request</code>/<code>Response</code> — so it runs
-        unchanged on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge.
+        unchanged on Node, Bun, Deno, Cloudflare Workers, and Vercel.
       </p>
 
       <h2>Quick start</h2>

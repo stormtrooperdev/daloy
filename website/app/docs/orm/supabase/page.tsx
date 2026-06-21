@@ -28,15 +28,20 @@ export default function Page() {
           Supabase
         </a>{" "}
         is a hosted Postgres + auth + storage platform. The official{" "}
-        <a href="https://supabase.com/docs/reference/javascript" target="_blank" rel="noreferrer">
+        <a
+          href="https://supabase.com/docs/reference/javascript"
+          target="_blank"
+          rel="noreferrer"
+        >
           <code>@supabase/supabase-js</code>
         </a>{" "}
-        client is fetch-based, so it runs on every runtime DaloyJS supports, Node.js, Bun, Deno, Cloudflare
-        Workers, and Vercel Edge.
+        client is fetch-based, so it runs on every runtime DaloyJS supports,
+        Node.js, Bun, Deno, Cloudflare Workers, and Vercel.
       </p>
       <p>
-        Treat Supabase as a platform client, not a traditional ORM: you are composing PostgREST, auth,
-        storage, and realtime APIs rather than mapping tables through model classes.
+        Treat Supabase as a platform client, not a traditional ORM: you are
+        composing PostgREST, auth, storage, and realtime APIs rather than
+        mapping tables through model classes.
       </p>
 
       <FlowDiagram
@@ -44,10 +49,28 @@ export default function Page() {
         title="One request through Supabase"
         caption="Zod validates the request, the handler calls the fetch-based PostgREST client off state.supabase, the destructured error is mapped to problem+json, then the response schema checks the body. The same client runs on Node.js and every edge runtime."
         steps={[
-          { eyebrow: "client", label: "HTTP request", detail: "GET /users/:id" },
-          { eyebrow: "zod", label: "Validated input", detail: "params.id is a uuid", tone: "accent" },
-          { eyebrow: "supabase", label: "PostgREST query", detail: 'from("users").select(...).eq(...)' },
-          { eyebrow: "response", label: "Typed body", detail: "200 UserSchema | 404", tone: "success" },
+          {
+            eyebrow: "client",
+            label: "HTTP request",
+            detail: "GET /users/:id",
+          },
+          {
+            eyebrow: "zod",
+            label: "Validated input",
+            detail: "params.id is a uuid",
+            tone: "accent",
+          },
+          {
+            eyebrow: "supabase",
+            label: "PostgREST query",
+            detail: 'from("users").select(...).eq(...)',
+          },
+          {
+            eyebrow: "response",
+            label: "Typed body",
+            detail: "200 UserSchema | 404",
+            tone: "success",
+          },
         ]}
       />
 
@@ -63,8 +86,9 @@ pnpm dlx supabase gen types typescript --project-id <your-ref> --schema public >
 
       <h2>3. Create a Supabase plugin</h2>
       <p>
-        Create a long-lived service-role client for server-to-server calls. For per-request, user-scoped clients
-        (RLS), instantiate inside the handler with the caller&apos;s JWT.
+        Create a long-lived service-role client for server-to-server calls. For
+        per-request, user-scoped clients (RLS), instantiate inside the handler
+        with the caller&apos;s JWT.
       </p>
       <CodeBlock
         code={`// src/db/supabase.ts
@@ -164,8 +188,9 @@ serve(app, { port: 3000 });`}
 
       <h2>Per-request, RLS-aware clients</h2>
       <p>
-        For row-level security, derive a client from the caller&apos;s bearer token in a hook so each handler
-        gets a Supabase client scoped to that user.
+        For row-level security, derive a client from the caller&apos;s bearer
+        token in a hook so each handler gets a Supabase client scoped to that
+        user.
       </p>
       <CodeBlock
         code={`import { createClient } from "@supabase/supabase-js";
@@ -200,14 +225,15 @@ app.use({
 
       <h2>Realtime, storage, and edge functions</h2>
       <p>
-        The same <code>supabase</code> client exposes <code>storage</code>, <code>functions</code>, and{" "}
-        <code>realtime</code>. Use them inside handlers exactly the same way, DaloyJS doesn&apos;t care.
+        The same <code>supabase</code> client exposes <code>storage</code>,{" "}
+        <code>functions</code>, and <code>realtime</code>. Use them inside
+        handlers exactly the same way, DaloyJS doesn&apos;t care.
       </p>
 
       <h2>Mapping Supabase errors</h2>
       <p>
-        Translate <code>PostgrestError</code> codes into typed framework errors so they serialize as{" "}
-        <Link href="/docs/errors">problem+json</Link>:
+        Translate <code>PostgrestError</code> codes into typed framework errors
+        so they serialize as <Link href="/docs/errors">problem+json</Link>:
       </p>
       <CodeBlock
         code={`import { HttpError } from "@daloyjs/core";
@@ -220,10 +246,13 @@ if (error) throw new HttpError(500, { title: error.message });`}
 
       <p>
         Compare with <Link href="/docs/orm/prisma">Prisma</Link>,{" "}
-        <Link href="/docs/orm/drizzle">Drizzle</Link>, <Link href="/docs/orm/sequelize">Sequelize</Link>, or the <Link href="/docs/odm">ODM overview</Link> if you are on a document database.
+        <Link href="/docs/orm/drizzle">Drizzle</Link>,{" "}
+        <Link href="/docs/orm/sequelize">Sequelize</Link>, or the{" "}
+        <Link href="/docs/odm">ODM overview</Link> if you are on a document
+        database.
       </p>
       <p>
-        For other managed Postgres / MySQL hosts, {" "}
+        For other managed Postgres / MySQL hosts,{" "}
         <Link href="/docs/databases/neon">Neon</Link>,{" "}
         <Link href="/docs/databases/planetscale">PlanetScale</Link>,{" "}
         <Link href="/docs/databases/turso">Turso</Link>,{" "}

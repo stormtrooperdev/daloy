@@ -28,8 +28,8 @@ export default function Page() {
         <a href="https://www.authorize.net/" target="_blank" rel="noreferrer">
           Authorize.Net
         </a>{" "}
-        (a Visa / Cybersource brand) is one of the original US card gateways. This guide uses
-        the official{" "}
+        (a Visa / Cybersource brand) is one of the original US card gateways.
+        This guide uses the official{" "}
         <a
           href="https://github.com/AuthorizeNet/sdk-node"
           target="_blank"
@@ -45,16 +45,18 @@ export default function Page() {
         >
           Authorize.Net API
         </a>
-        , and the separate JSON Webhooks REST API to receive event notifications.
+        , and the separate JSON Webhooks REST API to receive event
+        notifications.
       </p>
 
       <h2>What you should know up front</h2>
       <ul>
         <li>
           <strong>It&apos;s a thin XML wrapper.</strong> Requests are built with{" "}
-          <code>ApiContracts.*</code> classes and sent with <code>ApiControllers.*</code>{" "}
-          controllers. There&apos;s no fluent client and no Promises by default, every
-          controller exposes <code>.execute(callback)</code>. Wrap it with{" "}
+          <code>ApiContracts.*</code> classes and sent with{" "}
+          <code>ApiControllers.*</code> controllers. There&apos;s no fluent
+          client and no Promises by default, every controller exposes{" "}
+          <code>.execute(callback)</code>. Wrap it with{" "}
           <code>util.promisify</code> for a sane async API.
         </li>
         <li>
@@ -74,19 +76,20 @@ export default function Page() {
           >
             Accept Hosted
           </a>{" "}
-          on the client to tokenise the card into an <code>opaqueData</code> nonce. Sending raw
-          PANs through your server puts you in full PCI-DSS SAQ-D scope.
+          on the client to tokenise the card into an <code>opaqueData</code>{" "}
+          nonce. Sending raw PANs through your server puts you in full PCI-DSS
+          SAQ-D scope.
         </li>
         <li>
-          <strong>Webhooks are a separate API.</strong> Subscribe and verify against{" "}
-          <code>https://api.authorize.net/rest/v1/webhooks</code> (or the <code>apitest</code>{" "}
-          host), the XML transactions SDK doesn&apos;t handle them. Signatures use
-          HMAC-SHA512 with a dedicated <em>Signature Key</em>, <strong>not</strong> the
-          Transaction Key.
+          <strong>Webhooks are a separate API.</strong> Subscribe and verify
+          against <code>https://api.authorize.net/rest/v1/webhooks</code> (or
+          the <code>apitest</code> host), the XML transactions SDK doesn&apos;t
+          handle them. Signatures use HMAC-SHA512 with a dedicated{" "}
+          <em>Signature Key</em>, <strong>not</strong> the Transaction Key.
         </li>
         <li>
-          <strong>Node 14+ &amp; TLS 1.2.</strong> Anything older is rejected at the
-          connection layer.
+          <strong>Node 14+ &amp; TLS 1.2.</strong> Anything older is rejected at
+          the connection layer.
         </li>
       </ul>
 
@@ -103,24 +106,28 @@ export default function Page() {
           </a>{" "}
           and copy your <strong>API Login ID</strong> and{" "}
           <strong>Transaction Key</strong> from{" "}
-          <em>Account → Settings → Security Settings → API Credentials and Keys</em>.
+          <em>
+            Account → Settings → Security Settings → API Credentials and Keys
+          </em>
+          .
         </li>
         <li>
-          On the same screen, generate a <strong>Signature Key</strong>. You&apos;ll need this
-          to verify webhook signatures.
+          On the same screen, generate a <strong>Signature Key</strong>.
+          You&apos;ll need this to verify webhook signatures.
         </li>
         <li>
-          When you&apos;re ready for production, repeat with a live account and swap{" "}
-          <code>endpoint.sandbox</code> for <code>endpoint.production</code>.
+          When you&apos;re ready for production, repeat with a live account and
+          swap <code>endpoint.sandbox</code> for{" "}
+          <code>endpoint.production</code>.
         </li>
       </ol>
 
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add authorizenet`} />
       <p>
-        The package ships its own TypeScript declarations, but they&apos;re hand-written and
-        not exhaustive, expect to <code>as any</code> in a few spots when you reach for newer
-        fields.
+        The package ships its own TypeScript declarations, but they&apos;re
+        hand-written and not exhaustive, expect to <code>as any</code> in a few
+        spots when you reach for newer fields.
       </p>
 
       <h2>3. Environment variables</h2>
@@ -271,17 +278,19 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        Why <code>req.getJSON()</code>? The SDK builds an XML envelope internally, but the
-        controllers want a serialised JSON snapshot of the request graph. It&apos;s an
-        awkward shape, that&apos;s the SDK, not a typo.
+        Why <code>req.getJSON()</code>? The SDK builds an XML envelope
+        internally, but the controllers want a serialised JSON snapshot of the
+        request graph. It&apos;s an awkward shape, that&apos;s the SDK, not a
+        typo.
       </p>
 
       <h2>5. Charge an Accept.js nonce</h2>
       <p>
-        Your frontend obtains an <code>opaqueData</code> nonce with Accept.js
-        (<code>dataDescriptor: &quot;COMMON.ACCEPT.INAPP.PAYMENT&quot;</code> for browser-side
-        Accept, or <code>COMMON.APPLE.INAPP.PAYMENT</code> / <code>COMMON.GOOGLE.INAPP.PAYMENT</code> for
-        wallets). Your server only ever sees the nonce, never the card number.
+        Your frontend obtains an <code>opaqueData</code> nonce with Accept.js (
+        <code>dataDescriptor: &quot;COMMON.ACCEPT.INAPP.PAYMENT&quot;</code> for
+        browser-side Accept, or <code>COMMON.APPLE.INAPP.PAYMENT</code> /{" "}
+        <code>COMMON.GOOGLE.INAPP.PAYMENT</code> for wallets). Your server only
+        ever sees the nonce, never the card number.
       </p>
       <CodeBlock
         code={`import { z } from "zod";
@@ -340,16 +349,16 @@ app.route({
         Refunds, voids, and prior-auth captures all go through the same{" "}
         <code>CreateTransactionController</code> with a different{" "}
         <code>transactionType</code> (<code>refundTransaction</code>,{" "}
-        <code>voidTransaction</code>, <code>priorAuthCaptureTransaction</code>) plus a{" "}
-        <code>refTransId</code>. Reuse <code>runController</code> from the plugin and follow
-        the same response shape.
+        <code>voidTransaction</code>, <code>priorAuthCaptureTransaction</code>)
+        plus a <code>refTransId</code>. Reuse <code>runController</code> from
+        the plugin and follow the same response shape.
       </p>
 
       <h2>6. Subscribe to webhooks</h2>
       <p>
-        Webhooks aren&apos;t in the XML SDK. Use the REST API with HTTP Basic auth (API Login
-        ID + Transaction Key), once per environment, usually as a script or admin endpoint,
-        not on every boot:
+        Webhooks aren&apos;t in the XML SDK. Use the REST API with HTTP Basic
+        auth (API Login ID + Transaction Key), once per environment, usually as
+        a script or admin endpoint, not on every boot:
       </p>
       <CodeBlock
         code={`const host =
@@ -418,9 +427,10 @@ await fetch(\`\${host}/rest/v1/webhooks\`, {
         caption="Hash the raw bytes with the dedicated Signature Key before JSON.parse, reject mismatches with 401, dedupe on notificationId, then ack and fetch the full record in the background."
       />
       <p>
-        Authorize.Net signs each notification with HMAC-SHA512 over the raw body using the
-        Signature Key, and sends the hex digest in the <code>X-ANET-Signature</code> header
-        (often prefixed with <code>sha512=</code>). Hash bytes <em>before</em> JSON.parse:
+        Authorize.Net signs each notification with HMAC-SHA512 over the raw body
+        using the Signature Key, and sends the hex digest in the{" "}
+        <code>X-ANET-Signature</code> header (often prefixed with{" "}
+        <code>sha512=</code>). Hash bytes <em>before</em> JSON.parse:
       </p>
       <CodeBlock
         code={`import { z } from "zod";
@@ -460,55 +470,64 @@ app.route({
 });`}
       />
       <p>
-        Ack fast. Authorize.Net retries failed deliveries 10 times, 3× at 3-minute intervals,
-        3× at 8-hour intervals, 4× at 48-hour intervals, and then marks the webhook inactive.
-        Do the heavy work in a queue.
+        Ack fast. Authorize.Net retries failed deliveries 10 times, 3× at
+        3-minute intervals, 3× at 8-hour intervals, 4× at 48-hour intervals, and
+        then marks the webhook inactive. Do the heavy work in a queue.
       </p>
 
       <h2>Errors &amp; result objects</h2>
       <p>
-        There are two layers of failure. The outer <code>messages</code> block reports
-        request-level errors (auth, schema, throttling). When that&apos;s OK, the inner{" "}
-        <code>transactionResponse</code> still has a <code>responseCode</code> of{" "}
-        <code>2</code> (decline), <code>3</code> (error), or <code>4</code> (held for review).
-        The plugin above collapses both into thrown errors; route them through{" "}
+        There are two layers of failure. The outer <code>messages</code> block
+        reports request-level errors (auth, schema, throttling). When
+        that&apos;s OK, the inner <code>transactionResponse</code> still has a{" "}
+        <code>responseCode</code> of <code>2</code> (decline), <code>3</code>{" "}
+        (error), or <code>4</code> (held for review). The plugin above collapses
+        both into thrown errors; route them through{" "}
         <Link href="/docs/errors">problem+json</Link>.
       </p>
 
       <h2>Runtimes</h2>
       <p>
-        The SDK uses <code>axios</code> over Node&apos;s <code>https</code>, requires Node 14+
-        and TLS 1.2, and isn&apos;t designed for{" "}
-        <Link href={"/docs/adapters" as Route}>Cloudflare Workers</Link> or Vercel Edge. On an
-        edge runtime, POST JSON straight to{" "}
-        <code>https://api.authorize.net/xml/v1/request.api</code> with <code>fetch</code>{" "}
-        instead, the gateway accepts the same JSON envelope that the SDK builds.
+        The SDK uses <code>axios</code> over Node&apos;s <code>https</code>,
+        requires Node 14+ and TLS 1.2, and isn&apos;t designed for{" "}
+        <Link href={"/docs/adapters" as Route}>Cloudflare Workers</Link> or
+        Vercel. On an edge runtime, POST JSON straight to{" "}
+        <code>https://api.authorize.net/xml/v1/request.api</code> with{" "}
+        <code>fetch</code> instead, the gateway accepts the same JSON envelope
+        that the SDK builds.
       </p>
 
       <h2>Modernisation notes</h2>
       <ul>
         <li>
-          <strong>Use <code>transHashSha2</code>, not <code>transHash</code>.</strong> The
-          MD5-based <code>transHash</code> field is being phased out. Compare against{" "}
-          <code>transHashSha2</code> if you echo a hash back for receipt-style verification.
+          <strong>
+            Use <code>transHashSha2</code>, not <code>transHash</code>.
+          </strong>{" "}
+          The MD5-based <code>transHash</code> field is being phased out.
+          Compare against <code>transHashSha2</code> if you echo a hash back for
+          receipt-style verification.
         </li>
         <li>
-          <strong>Skip the <code>shopify-style</code> auto-retry config.</strong> The SDK has
-          no built-in retry; if you need it, wrap <code>runController</code> with your own
-          back-off on transient network errors only, never on declines.
+          <strong>
+            Skip the <code>shopify-style</code> auto-retry config.
+          </strong>{" "}
+          The SDK has no built-in retry; if you need it, wrap{" "}
+          <code>runController</code> with your own back-off on transient network
+          errors only, never on declines.
         </li>
         <li>
-          <strong>Prefer Customer Profiles for repeat business.</strong> Vault the card into a
-          customer payment profile on first charge, then bill subsequent transactions by{" "}
-          <code>profile.customerProfileId</code> / <code>paymentProfileId</code> so you never
-          touch the nonce twice.
+          <strong>Prefer Customer Profiles for repeat business.</strong> Vault
+          the card into a customer payment profile on first charge, then bill
+          subsequent transactions by <code>profile.customerProfileId</code> /{" "}
+          <code>paymentProfileId</code> so you never touch the nonce twice.
         </li>
       </ul>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
-        <Link href={"/docs/payments/braintree" as Route}>Braintree guide</Link>, and{" "}
-        <Link href="/docs/errors">problem+json errors</Link>.
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        <Link href={"/docs/payments/braintree" as Route}>Braintree guide</Link>,
+        and <Link href="/docs/errors">problem+json errors</Link>.
       </p>
     </>
   );

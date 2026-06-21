@@ -29,8 +29,9 @@ export default function Page() {
         <a href="https://razorpay.com/" target="_blank" rel="noreferrer">
           Razorpay
         </a>{" "}
-        is the default payment stack for India, <strong>UPI</strong>, cards, netbanking,
-        wallets, EMI, and BNPL through one API. This guide uses the official{" "}
+        is the default payment stack for India, <strong>UPI</strong>, cards,
+        netbanking, wallets, EMI, and BNPL through one API. This guide uses the
+        official{" "}
         <a
           href="https://github.com/razorpay/razorpay-node"
           target="_blank"
@@ -39,40 +40,43 @@ export default function Page() {
           <code>razorpay</code>
         </a>{" "}
         Node SDK with the Orders flow, the SDK&apos;s built-in{" "}
-        <code>validatePaymentVerification</code> for the post-checkout callback, and{" "}
-        <code>validateWebhookSignature</code> for IPN.
+        <code>validatePaymentVerification</code> for the post-checkout callback,
+        and <code>validateWebhookSignature</code> for IPN.
       </p>
 
       <h2>What you should know up front</h2>
       <ul>
         <li>
-          <strong>Two signatures, not one.</strong> Razorpay signs two different things:
-          (1) the client-side checkout result, verify with{" "}
-          <code>validatePaymentVerification</code> using your <em>key secret</em>; (2) the
-          server-side webhook, verify with <code>validateWebhookSignature</code> using
-          your <em>webhook secret</em>. They&apos;re different secrets and different
+          <strong>Two signatures, not one.</strong> Razorpay signs two different
+          things: (1) the client-side checkout result, verify with{" "}
+          <code>validatePaymentVerification</code> using your{" "}
+          <em>key secret</em>; (2) the server-side webhook, verify with{" "}
+          <code>validateWebhookSignature</code> using your{" "}
+          <em>webhook secret</em>. They&apos;re different secrets and different
           payloads.
         </li>
         <li>
-          <strong>Orders are the source of truth, not raw payments.</strong> Create an
-          Order on your server, hand <code>order_id</code> to Checkout, then verify the
-          callback. Skipping the Order step is technically allowed but loses you idempotency,
-          reconciliation, and the &quot;late authorisation&quot; protection.
+          <strong>Orders are the source of truth, not raw payments.</strong>{" "}
+          Create an Order on your server, hand <code>order_id</code> to
+          Checkout, then verify the callback. Skipping the Order step is
+          technically allowed but loses you idempotency, reconciliation, and the
+          &quot;late authorisation&quot; protection.
         </li>
         <li>
           <strong>Amounts are paise.</strong> ₹500.00 →{" "}
-          <code>{`{ amount: 50000, currency: "INR" }`}</code>. Don&apos;t pass floats, the
-          API rejects them.
+          <code>{`{ amount: 50000, currency: "INR" }`}</code>. Don&apos;t pass
+          floats, the API rejects them.
         </li>
         <li>
           <strong>Webhook verification needs the raw body.</strong>{" "}
-          <code>JSON.parse</code> + <code>JSON.stringify</code> changes byte order, which
-          breaks the HMAC. Read the request body as a string before parsing it.
+          <code>JSON.parse</code> + <code>JSON.stringify</code> changes byte
+          order, which breaks the HMAC. Read the request body as a string before
+          parsing it.
         </li>
         <li>
-          <strong>Don&apos;t roll your own HMAC.</strong> The SDK exposes both verifiers as
-          plain helpers; using them keeps you aligned when Razorpay tweaks the algorithm or
-          adds new fields.
+          <strong>Don&apos;t roll your own HMAC.</strong> The SDK exposes both
+          verifiers as plain helpers; using them keeps you aligned when Razorpay
+          tweaks the algorithm or adds new fields.
         </li>
       </ul>
 
@@ -80,24 +84,29 @@ export default function Page() {
       <ol>
         <li>
           Sign in to the{" "}
-          <a href="https://dashboard.razorpay.com/" target="_blank" rel="noreferrer">
+          <a
+            href="https://dashboard.razorpay.com/"
+            target="_blank"
+            rel="noreferrer"
+          >
             Razorpay dashboard
           </a>
           .
         </li>
         <li>
           Account &amp; Settings → API Keys → Generate Test Key. Save the{" "}
-          <code>key_id</code> and <code>key_secret</code>: the secret is shown once.
+          <code>key_id</code> and <code>key_secret</code>: the secret is shown
+          once.
         </li>
         <li>
-          Account &amp; Settings → Webhooks → Add new. Point it at your DaloyJS endpoint and
-          set a <strong>webhook secret</strong>. Subscribe to at least{" "}
-          <code>payment.captured</code>, <code>payment.failed</code>,{" "}
+          Account &amp; Settings → Webhooks → Add new. Point it at your DaloyJS
+          endpoint and set a <strong>webhook secret</strong>. Subscribe to at
+          least <code>payment.captured</code>, <code>payment.failed</code>,{" "}
           <code>order.paid</code>, and <code>refund.processed</code>.
         </li>
         <li>
-          Activate the methods you need (UPI/cards are on by default; netbanking and
-          wallets typically need explicit enabling).
+          Activate the methods you need (UPI/cards are on by default; netbanking
+          and wallets typically need explicit enabling).
         </li>
       </ol>
 
@@ -223,9 +232,10 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        The verifier helpers live at <code>razorpay/dist/utils/razorpay-utils</code> in the
-        published bundle, Razorpay&apos;s own README points there. They&apos;re plain
-        functions over <code>node:crypto</code>; no SDK instance needed.
+        The verifier helpers live at{" "}
+        <code>razorpay/dist/utils/razorpay-utils</code> in the published bundle,
+        Razorpay&apos;s own README points there. They&apos;re plain functions
+        over <code>node:crypto</code>; no SDK instance needed.
       </p>
 
       <h2>5. Create an order</h2>
@@ -339,8 +349,9 @@ app.route({
       />
       <p>
         After a successful payment, Checkout JS posts{" "}
-        <code>{`{ razorpay_order_id, razorpay_payment_id, razorpay_signature }`}</code> back
-        to your client. Forward to the server and verify before doing anything:
+        <code>{`{ razorpay_order_id, razorpay_payment_id, razorpay_signature }`}</code>{" "}
+        back to your client. Forward to the server and verify before doing
+        anything:
       </p>
       <CodeBlock
         code={`app.route({
@@ -461,9 +472,9 @@ app.route({
 });`}
       />
       <p>
-        Always return 200 once the signature checks out, even for events you don&apos;t
-        handle. Razorpay retries non-2xx responses with exponential backoff for up to 24
-        hours.
+        Always return 200 once the signature checks out, even for events you
+        don&apos;t handle. Razorpay retries non-2xx responses with exponential
+        backoff for up to 24 hours.
       </p>
 
       <h2>8. Refunds</h2>
@@ -483,51 +494,56 @@ await state.razorpay.refund({
       <h2>Runtimes</h2>
       <p>
         The <code>razorpay</code> SDK ships CJS and depends on Node&apos;s{" "}
-        <code>https</code> module, it runs on Node 18+ but is not edge-runtime compatible.
-        For Cloudflare Workers or Vercel Edge, hit{" "}
-        <code>https://api.razorpay.com/v1</code> directly with <code>fetch</code> and Basic
-        auth (<code>Authorization: Basic base64(key_id:key_secret)</code>). The two
+        <code>https</code> module, it runs on Node 18+ but is not edge-runtime
+        compatible. For Cloudflare Workers or Vercel, hit{" "}
+        <code>https://api.razorpay.com/v1</code> directly with{" "}
+        <code>fetch</code> and Basic auth (
+        <code>Authorization: Basic base64(key_id:key_secret)</code>). The two
         signature helpers are pure HMAC and easy to reimplement with{" "}
         <code>crypto.subtle</code> if you don&apos;t want the bundled ones.
       </p>
 
       <h2>Errors</h2>
       <p>
-        Razorpay throws errors with a structured <code>error.error</code> object containing{" "}
-        <code>code</code>, <code>description</code>, <code>field</code>, and{" "}
-        <code>reason</code>. Map them through{" "}
-        <Link href="/docs/errors">problem+json</Link> with the Razorpay <code>code</code> on
-        the <code>type</code> field so reconciliation tools can match them later.
+        Razorpay throws errors with a structured <code>error.error</code> object
+        containing <code>code</code>, <code>description</code>,{" "}
+        <code>field</code>, and <code>reason</code>. Map them through{" "}
+        <Link href="/docs/errors">problem+json</Link> with the Razorpay{" "}
+        <code>code</code> on the <code>type</code> field so reconciliation tools
+        can match them later.
       </p>
 
       <h2>Modernisation notes</h2>
       <ul>
         <li>
-          <strong>Use Orders, not bare payment links.</strong> The Orders flow gives you a
-          server-side anchor for idempotency, lets Checkout JS show the right amount, and
-          unlocks <code>order.paid</code> webhooks that fire even when the customer closes
-          the tab before the success callback.
+          <strong>Use Orders, not bare payment links.</strong> The Orders flow
+          gives you a server-side anchor for idempotency, lets Checkout JS show
+          the right amount, and unlocks <code>order.paid</code> webhooks that
+          fire even when the customer closes the tab before the success
+          callback.
         </li>
         <li>
-          <strong>Verify both signatures.</strong> The client callback signature stops
-          forged success posts from the browser; the webhook signature stops spoofed IPNs.
-          Skipping either is a foot-gun.
+          <strong>Verify both signatures.</strong> The client callback signature
+          stops forged success posts from the browser; the webhook signature
+          stops spoofed IPNs. Skipping either is a foot-gun.
         </li>
         <li>
-          <strong>Don&apos;t fulfil on the client callback alone.</strong> The signature
-          proves the call came from Razorpay, but <code>status: created</code> isn&apos;t{" "}
-          <code>captured</code>. Always re-fetch the payment (or wait for the webhook)
-          before flipping an order to paid.
+          <strong>Don&apos;t fulfil on the client callback alone.</strong> The
+          signature proves the call came from Razorpay, but{" "}
+          <code>status: created</code> isn&apos;t <code>captured</code>. Always
+          re-fetch the payment (or wait for the webhook) before flipping an
+          order to paid.
         </li>
         <li>
-          <strong>Use Promises, ignore the callback API.</strong> Every method on the SDK
-          returns a Promise. The error-first callback parameter still works but exists for
-          legacy code only.
+          <strong>Use Promises, ignore the callback API.</strong> Every method
+          on the SDK returns a Promise. The error-first callback parameter still
+          works but exists for legacy code only.
         </li>
       </ul>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
         <Link href={"/docs/payments/tap" as Route}>Tap Payments guide</Link>,{" "}
         <Link href={"/docs/payments/paytabs" as Route}>PayTabs guide</Link>, and{" "}
         <Link href="/docs/errors">problem+json errors</Link>.

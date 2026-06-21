@@ -91,8 +91,8 @@ UserSchema.setClass(User);`}
 
       <h2>3. Configure the ORM</h2>
       <p>
-        Import <code>defineConfig</code> from your driver package, it infers
-        the driver and gives you IntelliSense without extra type hints.
+        Import <code>defineConfig</code> from your driver package, it infers the
+        driver and gives you IntelliSense without extra type hints.
       </p>
       <CodeBlock
         code={`// src/mikro-orm.config.ts
@@ -150,10 +150,29 @@ export const mikroOrmPlugin = {
         title="A forked EntityManager per request"
         caption="The plugin decorates one root ORM at startup. A beforeHandle hook forks a fresh EntityManager for each request onto state.em, so the identity map and unit-of-work state stay isolated, then a single flush() (or transactional()) persists the changes."
         steps={[
-          { eyebrow: "startup", label: "Root ORM", detail: "state.orm = await MikroORM.init(...)", tone: "muted" },
-          { eyebrow: "beforeHandle", label: "Fork per request", detail: "state.em = state.orm.em.fork()", tone: "accent" },
-          { eyebrow: "handler", label: "Scoped queries", detail: "state.em.create / findOne" },
-          { eyebrow: "unit of work", label: "Persist on flush", detail: "await state.em.flush()", tone: "success" },
+          {
+            eyebrow: "startup",
+            label: "Root ORM",
+            detail: "state.orm = await MikroORM.init(...)",
+            tone: "muted",
+          },
+          {
+            eyebrow: "beforeHandle",
+            label: "Fork per request",
+            detail: "state.em = state.orm.em.fork()",
+            tone: "accent",
+          },
+          {
+            eyebrow: "handler",
+            label: "Scoped queries",
+            detail: "state.em.create / findOne",
+          },
+          {
+            eyebrow: "unit of work",
+            label: "Persist on flush",
+            detail: "await state.em.flush()",
+            tone: "success",
+          },
         ]}
       />
       <CodeBlock
@@ -321,7 +340,7 @@ try {
         <li>
           MikroORM is a Node.js adapter default for Daloy apps. Edge runtimes
           require precompiled MikroORM functions plus a compatible driver, so
-          most Cloudflare Workers and Vercel Edge apps should start with{" "}
+          most Cloudflare Workers and Vercel apps should start with{" "}
           <Link href="/docs/orm/drizzle">Drizzle</Link> or{" "}
           <Link href="/docs/orm/supabase">Supabase</Link> instead.
         </li>

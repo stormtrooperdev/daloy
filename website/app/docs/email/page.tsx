@@ -43,7 +43,11 @@ export default function Page() {
           detail: "send(msg): Promise<{ id }>",
         }}
         branches={[
-          { eyebrow: "AWS", label: "AWS SES (SESv2)", detail: "@aws-sdk/client-sesv2" },
+          {
+            eyebrow: "AWS",
+            label: "AWS SES (SESv2)",
+            detail: "@aws-sdk/client-sesv2",
+          },
           { eyebrow: "Twilio", label: "SendGrid", detail: "@sendgrid/mail" },
           { eyebrow: "edge-ready", label: "Resend", detail: "resend" },
           { eyebrow: "inbox-first", label: "Postmark", detail: "postmark" },
@@ -56,10 +60,10 @@ export default function Page() {
       <h2>Supported providers</h2>
       <ul>
         <li>
-          <Link href="/docs/email/aws-ses">AWS SES (SESv2)</Link>: 
-          pay-as-you-go SMTP/HTTP at AWS scale via{" "}
-          <code>@aws-sdk/client-sesv2</code>. Best fit when you already run on
-          AWS or need the cheapest per-message price.
+          <Link href="/docs/email/aws-ses">AWS SES (SESv2)</Link>: pay-as-you-go
+          SMTP/HTTP at AWS scale via <code>@aws-sdk/client-sesv2</code>. Best
+          fit when you already run on AWS or need the cheapest per-message
+          price.
         </li>
         <li>
           <Link href="/docs/email/sendgrid">SendGrid</Link>: Twilio&apos;s
@@ -67,14 +71,14 @@ export default function Page() {
           high-volume marketing plus transactional.
         </li>
         <li>
-          <Link href="/docs/email/resend">Resend</Link>: modern,
-          developer-first API via the <code>resend</code> SDK. Great DX, React
-          Email templating, edge-friendly.
+          <Link href="/docs/email/resend">Resend</Link>: modern, developer-first
+          API via the <code>resend</code> SDK. Great DX, React Email templating,
+          edge-friendly.
         </li>
         <li>
-          <Link href="/docs/email/postmark">Postmark</Link>: 
-          transactional-first delivery via the <code>postmark</code> SDK. Known
-          for very high inbox placement.
+          <Link href="/docs/email/postmark">Postmark</Link>: transactional-first
+          delivery via the <code>postmark</code> SDK. Known for very high inbox
+          placement.
         </li>
         <li>
           <Link href="/docs/email/mailgun">Mailgun</Link>: Sinch-backed sender
@@ -93,7 +97,7 @@ export default function Page() {
         Most provider SDKs are HTTPS-based and work on every runtime DaloyJS
         targets, but a few depend on Node-only APIs (filesystem, TCP, AWS
         Signature V4 with NodeHttpHandler) and won&apos;t run on Cloudflare
-        Workers or Vercel Edge without adjustments.
+        Workers or Vercel without adjustments.
       </p>
       <table>
         <thead>
@@ -101,7 +105,7 @@ export default function Page() {
             <th>Provider</th>
             <th>Node / Bun / Deno</th>
             <th>Cloudflare Workers</th>
-            <th>Vercel Edge</th>
+            <th>Vercel</th>
             <th>AWS Lambda</th>
           </tr>
         </thead>
@@ -180,7 +184,7 @@ export default function Page() {
           {
             eyebrow: "step 2",
             label: "Register the plugin",
-            detail: "app.decorate(\"email\", sender)",
+            detail: 'app.decorate("email", sender)',
             tone: "accent",
           },
           {

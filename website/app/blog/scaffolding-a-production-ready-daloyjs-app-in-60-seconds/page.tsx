@@ -11,7 +11,7 @@ const POST = {
   title:
     "Scaffolding a Production-Ready DaloyJS App in 60 Seconds with create-daloy",
   description:
-    "A tour of pnpm create daloy@latest, the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel Edge), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
+    "A tour of pnpm create daloy@latest, the interactive template + package-manager pickers, --minimal, --with-ci, the five runtime templates (Node, Bun, Deno, Workers, Vercel), the AGENTS.md + .agents/skills/daloyjs-best-practices/SKILL.md drop-in for coding agents, and the printStartupBanner() polish that ships with every scaffold.",
   date: "2026-05-27",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -32,7 +32,7 @@ export const metadata = buildMetadata({
     "bun-basic template",
     "deno-basic template",
     "cloudflare-worker template",
-    "vercel-edge template",
+    "vercel template",
     "AGENTS.md coding agents",
     "printStartupBanner",
   ],
@@ -58,7 +58,7 @@ const FULL_FLAGS = `# Every flag, when you want them.
 
 pnpm create daloy@latest [project-name] [options]
 
-  --template <name>          node-basic | vercel-edge | cloudflare-worker | bun-basic | deno-basic
+  --template <name>          node-basic | vercel | cloudflare-worker | bun-basic | deno-basic
                              (default: node-basic)
   --package-manager <pm>     pnpm | npm | yarn | bun       (default: pnpm)
   --list-templates           Print available templates and exit.
@@ -81,7 +81,7 @@ const INTERACTIVE_FLOW = `$ pnpm create daloy@latest
   ?  Project name › my-api
   ?  Template
      ▸ node-basic         Traditional REST API with secure defaults and Hey API codegen
-       vercel-edge        Catch-all Vercel Edge route with Node.js migration notes
+       vercel        Catch-all Vercel route with Node.js migration notes
        cloudflare-worker  Worker entrypoint with wrangler dev/deploy scripts
        bun-basic          Bun-native server with \`bun --hot\`, \`bun test\`, and Hey API codegen
        deno-basic         Deno-native server with \`deno task dev\`, \`deno test\`, and \`npm:\` imports
@@ -139,7 +139,7 @@ node-basic/src/index.ts          → \`serve()\` from @daloyjs/core/node
 bun-basic/src/index.ts           → Bun.serve(handle.url) with \`bun --hot\`
 deno-basic/main.ts               → Deno.serve(handle.url) with deno.json tasks
 cloudflare-worker/src/index.ts   → export default { fetch: handle.fetch }
-vercel-edge/api/[...path].ts     → export const config = { runtime: "edge" }
+vercel/api/[...path].ts     → export const config = { runtime: "edge" }
 
 The buildApp() in src/app.ts is byte-identical across all five templates.
 That is on purpose - and it's the same property the "Same App on Five
@@ -479,13 +479,12 @@ export default function BlogPostPage() {
           <h2>--minimal vs the bookstore demo</h2>
 
           <p>
-            By default the scaffold drops in a small <em>bookstore</em> API, 
-            books, authors, reviews, that exercises every contract-first
-            pattern we want you to copy: nested resources, JSON Schema
-            validation, pagination, typed errors, integration tests. Read it
-            twice, then either delete the routes by hand or pass{" "}
-            <code>--minimal</code> and start from a single <code>/healthz</code>{" "}
-            route.
+            By default the scaffold drops in a small <em>bookstore</em> API,
+            books, authors, reviews, that exercises every contract-first pattern
+            we want you to copy: nested resources, JSON Schema validation,
+            pagination, typed errors, integration tests. Read it twice, then
+            either delete the routes by hand or pass <code>--minimal</code> and
+            start from a single <code>/healthz</code> route.
           </p>
 
           <EditorFrame
@@ -502,8 +501,8 @@ export default function BlogPostPage() {
             DaloyJS is runtime-portable, and the scaffolder is where that
             promise becomes a directory you can <code>cd</code> into. The{" "}
             <code>buildApp()</code> in <code>src/app.ts</code> is byte-identical
-            across every template, the only thing that changes is the
-            entrypoint file that hands a <code>Request</code> to that app:
+            across every template, the only thing that changes is the entrypoint
+            file that hands a <code>Request</code> to that app:
           </p>
 
           <EditorFrame
@@ -539,8 +538,8 @@ export default function BlogPostPage() {
             entrypoint="export default { fetch: handle.fetch }"
           />
           <TemplateCard
-            name="vercel-edge"
-            tag="--template vercel-edge"
+            name="vercel"
+            tag="--template vercel"
             blurb="Catch-all api/[...path].ts that delegates to a single buildApp(). Comes with a short migration note covering Vercel's three handler shapes."
             entrypoint='export const config = { runtime: "edge" }'
           />
@@ -654,7 +653,7 @@ export default function BlogPostPage() {
 
           <p>
             You now have a running server, a contract, security middleware, and
-            a CI pipeline. The next sixty seconds is the typed-client handoff, 
+            a CI pipeline. The next sixty seconds is the typed-client handoff,
             running <code>pnpm gen</code>, importing the SDK in your frontend,
             getting compile-time errors when your route changes shape.
             That&apos;s the entire subject of{" "}

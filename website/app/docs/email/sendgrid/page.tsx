@@ -27,8 +27,8 @@ export default function Page() {
         <a href="https://sendgrid.com/" target="_blank" rel="noreferrer">
           Twilio SendGrid
         </a>{" "}
-        is a long-standing email delivery service that combines transactional and marketing
-        sending. This guide uses the official{" "}
+        is a long-standing email delivery service that combines transactional
+        and marketing sending. This guide uses the official{" "}
         <a
           href="https://github.com/sendgrid/sendgrid-nodejs/tree/main/packages/mail"
           target="_blank"
@@ -41,7 +41,12 @@ export default function Page() {
 
       <SequenceDiagram
         title="Send through @sendgrid/mail"
-        participants={["Route handler", "sgMail", "SendGrid v3 API", "Event Webhook"]}
+        participants={[
+          "Route handler",
+          "sgMail",
+          "SendGrid v3 API",
+          "Event Webhook",
+        ]}
         steps={[
           {
             from: "Route handler",
@@ -79,8 +84,9 @@ export default function Page() {
       <ol>
         <li>
           Create a SendGrid account, enable 2FA, then go to{" "}
-          <strong>Settings → API Keys</strong> and generate a <em>Restricted Access</em> key with
-          only <strong>Mail Send → Full Access</strong> enabled.
+          <strong>Settings → API Keys</strong> and generate a{" "}
+          <em>Restricted Access</em> key with only{" "}
+          <strong>Mail Send → Full Access</strong> enabled.
         </li>
         <li>
           Complete{" "}
@@ -91,8 +97,8 @@ export default function Page() {
           >
             Domain Authentication
           </a>{" "}
-          (SPF/DKIM CNAMEs) for your sending domain, or use Single Sender Verification for quick
-          tests only.
+          (SPF/DKIM CNAMEs) for your sending domain, or use Single Sender
+          Verification for quick tests only.
         </li>
       </ol>
 
@@ -210,9 +216,11 @@ app.route({
 
       <h2>Error handling</h2>
       <p>
-        On non-2xx responses the SDK throws an error with <code>response.body.errors</code>{" "}
-        describing each failure. Surface those to your client through the standard{" "}
-        <Link href="/docs/errors">problem+json</Link> helper rather than echoing raw text.
+        On non-2xx responses the SDK throws an error with{" "}
+        <code>response.body.errors</code> describing each failure. Surface those
+        to your client through the standard{" "}
+        <Link href="/docs/errors">problem+json</Link> helper rather than echoing
+        raw text.
       </p>
 
       <h2>Runtimes</h2>
@@ -220,9 +228,10 @@ app.route({
         The <code>@sendgrid/mail</code> package is Node-oriented (it uses{" "}
         <code>@sendgrid/client</code> with Node&apos;s HTTPS module). For{" "}
         <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
-        <Link href="/docs/adapters">Vercel Edge</Link>, call the v3 REST API directly with{" "}
-        <code>fetch</code> against <code>https://api.sendgrid.com/v3/mail/send</code> using the
-        same JSON body and a <code>Bearer</code> token.
+        <Link href="/docs/adapters">Vercel</Link>, call the v3 REST API directly
+        with <code>fetch</code> against{" "}
+        <code>https://api.sendgrid.com/v3/mail/send</code> using the same JSON
+        body and a <code>Bearer</code> token.
       </p>
 
       <p>

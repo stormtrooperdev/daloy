@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Use Turso (libSQL) with DaloyJS",
   description:
-    "Connect a DaloyJS API to Turso, a distributed SQLite-compatible database, using @libsql/client. Works on Node.js, Bun, Deno, Cloudflare Workers, and Vercel Edge over HTTP.",
+    "Connect a DaloyJS API to Turso, a distributed SQLite-compatible database, using @libsql/client. Works on Node.js, Bun, Deno, Cloudflare Workers, and Vercel over HTTP.",
   path: "/docs/databases/turso",
   keywords: [
     "Turso DaloyJS",
@@ -29,11 +29,16 @@ export default function Page() {
           Turso
         </a>{" "}
         is a distributed database built on{" "}
-        <a href="https://github.com/tursodatabase/libsql" target="_blank" rel="noreferrer">
+        <a
+          href="https://github.com/tursodatabase/libsql"
+          target="_blank"
+          rel="noreferrer"
+        >
           libSQL
         </a>{" "}
-        (a fork of SQLite). The <code>@libsql/client</code> driver speaks HTTP and WebSocket, so the same
-        DaloyJS app works on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge.
+        (a fork of SQLite). The <code>@libsql/client</code> driver speaks HTTP
+        and WebSocket, so the same DaloyJS app works on Node, Bun, Deno,
+        Cloudflare Workers, and Vercel.
       </p>
 
       <BranchDiagram
@@ -47,7 +52,8 @@ export default function Page() {
           {
             eyebrow: "node / bun",
             label: "Embedded replica",
-            detail: "url: file:local.db + syncUrl · local reads, writes to primary",
+            detail:
+              "url: file:local.db + syncUrl · local reads, writes to primary",
             tone: "success",
           },
           {
@@ -56,13 +62,14 @@ export default function Page() {
             detail: "url + authToken · no embedded replicas",
           },
         ]}
-        caption="The same createClient() driver serves both modes. Use an embedded replica on Node or Bun for ultra-low-latency local reads, and the remote HTTP client on Cloudflare Workers or Vercel Edge."
+        caption="The same createClient() driver serves both modes. Use an embedded replica on Node or Bun for ultra-low-latency local reads, and the remote HTTP client on Cloudflare Workers or Vercel."
       />
 
       <h2>1. Provision</h2>
       <p>
-        Create a database via the Turso CLI or dashboard, then grab the URL and auth token. Set them as{" "}
-        <code>TURSO_DATABASE_URL</code> and <code>TURSO_AUTH_TOKEN</code>.
+        Create a database via the Turso CLI or dashboard, then grab the URL and
+        auth token. Set them as <code>TURSO_DATABASE_URL</code> and{" "}
+        <code>TURSO_AUTH_TOKEN</code>.
       </p>
 
       <h2>2. Install</h2>
@@ -133,8 +140,9 @@ app.route({
 
       <h2>Embedded replicas (Node, Bun)</h2>
       <p>
-        For ultra-low-latency reads, use an embedded replica that syncs with the primary in the
-        background. Writes still go to the primary; reads are local.
+        For ultra-low-latency reads, use an embedded replica that syncs with the
+        primary in the background. Writes still go to the primary; reads are
+        local.
       </p>
       <CodeBlock
         code={`import { createClient } from "@libsql/client";
@@ -147,7 +155,7 @@ export const db = createClient({
 });`}
       />
 
-      <h2>Cloudflare Workers / Vercel Edge</h2>
+      <h2>Cloudflare Workers / Vercel</h2>
       <p>
         Use the standard HTTP client (no embedded replicas in Workers). Pass{" "}
         <code>env.TURSO_DATABASE_URL</code> instead of <code>process.env</code>.
@@ -170,15 +178,20 @@ export const db = drizzle({ client });`}
       <h2>With Prisma</h2>
       <p>
         Prisma supports Turso through the{" "}
-        <a href="https://www.prisma.io/docs/orm/overview/databases/turso" target="_blank" rel="noreferrer">
+        <a
+          href="https://www.prisma.io/docs/orm/overview/databases/turso"
+          target="_blank"
+          rel="noreferrer"
+        >
           libSQL Driver Adapter
         </a>{" "}
-        in preview. Use Drizzle if you want a stable, production-ready setup today.
+        in preview. Use Drizzle if you want a stable, production-ready setup
+        today.
       </p>
 
       <p>
-        See also <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link> for a SQLite-style
-        option that&apos;s bundled into Workers, or the{" "}
+        See also <Link href="/docs/databases/cloudflare-d1">Cloudflare D1</Link>{" "}
+        for a SQLite-style option that&apos;s bundled into Workers, or the{" "}
         <Link href="/docs/databases">database hosting overview</Link>.
       </p>
     </>

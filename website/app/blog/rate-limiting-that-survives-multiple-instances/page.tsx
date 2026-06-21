@@ -259,7 +259,7 @@ const SERVERLESS_GUIDANCE = `# Where to host the counter, runtime by runtime.
 # - For request-rate clamping at the edge BEFORE your Worker boots, layer
 #   the platform-native rate limiter (Cloudflare Rules) above your app.
 
-# Vercel Edge / Vercel Functions:
+# Vercel / Vercel Functions:
 # - Same story as Workers - Upstash is the obvious pick because it's the
 #   only one that gives sub-50ms p99 over HTTP from every region.
 # - For Functions (Node runtime), a normal managed Redis works if it's
@@ -668,7 +668,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["NOTES.md"]}
             activeFile="NOTES.md"
-            status="long-lived Node · Workers · Vercel Edge · Lambda"
+            status="long-lived Node · Workers · Vercel · Lambda"
           >
             <CodeBlock language="bash" code={SERVERLESS_GUIDANCE} />
           </EditorFrame>

@@ -7,13 +7,13 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Use Neon serverless Postgres with DaloyJS",
   description:
-    "Connect a DaloyJS API to Neon's serverless Postgres using the @neondatabase/serverless HTTP and WebSocket driver. Works on Node, Bun, Deno, Cloudflare Workers, Vercel Edge, and AWS Lambda.",
+    "Connect a DaloyJS API to Neon's serverless Postgres using the @neondatabase/serverless HTTP and WebSocket driver. Works on Node, Bun, Deno, Cloudflare Workers, Vercel, and AWS Lambda.",
   path: "/docs/databases/neon",
   keywords: [
     "Neon DaloyJS",
     "@neondatabase/serverless",
     "Neon Cloudflare Workers",
-    "Neon Vercel Edge",
+    "Neon Vercel",
     "serverless Postgres",
     "Neon Drizzle",
     "Neon Prisma",
@@ -29,9 +29,10 @@ export default function Page() {
         <a href="https://neon.com" target="_blank" rel="noreferrer">
           Neon
         </a>{" "}
-        is a serverless Postgres host with database branching, scale-to-zero, and an HTTP/WebSocket driver
-        that runs in <em>every</em> runtime DaloyJS targets, including Cloudflare Workers and Vercel
-        Edge where raw TCP isn&apos;t available.
+        is a serverless Postgres host with database branching, scale-to-zero,
+        and an HTTP/WebSocket driver that runs in <em>every</em> runtime DaloyJS
+        targets, including Cloudflare Workers and Vercel Edge where raw TCP
+        isn&apos;t available.
       </p>
 
       <BranchDiagram
@@ -45,7 +46,7 @@ export default function Page() {
           {
             eyebrow: "edge-friendly",
             label: "HTTP neon() client",
-            detail: "One-shot queries · Workers · Vercel Edge",
+            detail: "One-shot queries · Workers · Vercel",
             tone: "success",
           },
           {
@@ -59,16 +60,21 @@ export default function Page() {
 
       <h2>1. Provision</h2>
       <p>
-        Create a project at <a href="https://console.neon.tech" target="_blank" rel="noreferrer">console.neon.tech</a> and copy the
-        connection string. Set it as <code>DATABASE_URL</code> in your environment.
+        Create a project at{" "}
+        <a href="https://console.neon.tech" target="_blank" rel="noreferrer">
+          console.neon.tech
+        </a>{" "}
+        and copy the connection string. Set it as <code>DATABASE_URL</code> in
+        your environment.
       </p>
 
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add @neondatabase/serverless`} />
       <p>
-        For a pooled connection on Node, use the <code>Pool</code> export. For one-shot queries on edge
-        runtimes, use the lightweight HTTP <code>neon()</code> client. Neon&apos;s GA driver requires Node.js
-        19 or newer when you run it in Node.
+        For a pooled connection on Node, use the <code>Pool</code> export. For
+        one-shot queries on edge runtimes, use the lightweight HTTP{" "}
+        <code>neon()</code> client. Neon&apos;s GA driver requires Node.js 19 or
+        newer when you run it in Node.
       </p>
 
       <h2>3. HTTP client (edge-friendly)</h2>
@@ -153,9 +159,11 @@ app.route({
 
       <h2>Cloudflare Workers</h2>
       <p>
-        Use the HTTP <code>neon()</code> client and pass the connection string from the worker environment
-        instead of <code>process.env</code>. Because this example reads <code>env</code>, wrap the Worker
-        <code>fetch</code> handler and call <code>app.fetch(req)</code> after decorating state:
+        Use the HTTP <code>neon()</code> client and pass the connection string
+        from the worker environment instead of <code>process.env</code>. Because
+        this example reads <code>env</code>, wrap the Worker
+        <code>fetch</code> handler and call <code>app.fetch(req)</code> after
+        decorating state:
       </p>
       <CodeBlock
         code={`import { neon } from "@neondatabase/serverless";
@@ -182,10 +190,16 @@ export const db = drizzle({ client: sql });`}
 
       <h2>With Prisma</h2>
       <p>
-        Use the <a href="https://www.prisma.io/docs/orm/overview/databases/neon" target="_blank" rel="noreferrer">
+        Use the{" "}
+        <a
+          href="https://www.prisma.io/docs/orm/overview/databases/neon"
+          target="_blank"
+          rel="noreferrer"
+        >
           Neon Driver Adapter
         </a>{" "}
-        so Prisma can run on edge runtimes (GA since Prisma <code>6.16.0</code>):
+        so Prisma can run on edge runtimes (GA since Prisma <code>6.16.0</code>
+        ):
       </p>
       <CodeBlock
         code={`pnpm add @prisma/adapter-neon
@@ -197,16 +211,18 @@ const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
 export const prisma = new PrismaClient({ adapter });`}
       />
       <p>
-        Use Neon&apos;s <strong>pooled</strong> connection string (host ends in <code>-pooler</code>) for{" "}
-        <code>DATABASE_URL</code>, and a separate <code>DIRECT_URL</code> for Prisma CLI commands like{" "}
+        Use Neon&apos;s <strong>pooled</strong> connection string (host ends in{" "}
+        <code>-pooler</code>) for <code>DATABASE_URL</code>, and a separate{" "}
+        <code>DIRECT_URL</code> for Prisma CLI commands like{" "}
         <code>prisma migrate</code> and <code>prisma db pull</code>.
       </p>
 
       <h2>Branching for preview environments</h2>
       <p>
-        Pair Neon&apos;s branching with Vercel preview deployments or GitHub PR previews. Create a branch
-        per PR and pass its connection string to the deployment&apos;s <code>DATABASE_URL</code>. This is
-        a natural fit for the <Link href="/docs/adapters">Vercel adapter</Link>.
+        Pair Neon&apos;s branching with Vercel preview deployments or GitHub PR
+        previews. Create a branch per PR and pass its connection string to the
+        deployment&apos;s <code>DATABASE_URL</code>. This is a natural fit for
+        the <Link href="/docs/adapters">Vercel adapter</Link>.
       </p>
 
       <p>

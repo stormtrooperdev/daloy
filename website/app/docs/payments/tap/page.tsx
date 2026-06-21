@@ -28,11 +28,12 @@ export default function Page() {
         <a href="https://www.tap.company/" target="_blank" rel="noreferrer">
           Tap Payments
         </a>{" "}
-        is the default acquirer for the GCC and wider MENA region, it&apos;s how you accept{" "}
-        <strong>KNET</strong> (Kuwait), <strong>Mada</strong> (Saudi),{" "}
-        <strong>Benefit / BenefitPay</strong> (Bahrain), <strong>STC Pay</strong>, plus
-        cards, Apple Pay, Google Pay, and BNPL methods like Tabby and Tamara. There&apos;s
-        no first-party Node SDK; you integrate against the{" "}
+        is the default acquirer for the GCC and wider MENA region, it&apos;s how
+        you accept <strong>KNET</strong> (Kuwait), <strong>Mada</strong>{" "}
+        (Saudi), <strong>Benefit / BenefitPay</strong> (Bahrain),{" "}
+        <strong>STC Pay</strong>, plus cards, Apple Pay, Google Pay, and BNPL
+        methods like Tabby and Tamara. There&apos;s no first-party Node SDK; you
+        integrate against the{" "}
         <a
           href="https://developers.tap.company/reference/api-endpoint"
           target="_blank"
@@ -47,32 +48,36 @@ export default function Page() {
       <ul>
         <li>
           <strong>Bearer auth, secret key in the backend only.</strong>{" "}
-          <code>Authorization: Bearer sk_test_...</code> or <code>sk_live_...</code>. Public
-          keys (<code>pk_*</code>) are for the frontend SDKs; never send a secret key from
-          the browser.
+          <code>Authorization: Bearer sk_test_...</code> or{" "}
+          <code>sk_live_...</code>. Public keys (<code>pk_*</code>) are for the
+          frontend SDKs; never send a secret key from the browser.
         </li>
         <li>
-          <strong>It&apos;s a redirect flow.</strong> You create a charge, Tap returns{" "}
-          <code>transaction.url</code>, you redirect the customer. They come back via your{" "}
-          <code>redirect.url</code> with <code>?tap_id=chg_xxx</code>: that&apos;s a UX
-          hint, not proof of payment.
+          <strong>It&apos;s a redirect flow.</strong> You create a charge, Tap
+          returns <code>transaction.url</code>, you redirect the customer. They
+          come back via your <code>redirect.url</code> with{" "}
+          <code>?tap_id=chg_xxx</code>: that&apos;s a UX hint, not proof of
+          payment.
         </li>
         <li>
-          <strong>Webhooks come with a <code>hashstring</code>.</strong> Tap sends an
-          HMAC-SHA256 over a specific concatenation of fields, base64-encoded, in the{" "}
-          <code>hashstring</code> header. Verify it on every request; never trust the body
-          alone.
+          <strong>
+            Webhooks come with a <code>hashstring</code>.
+          </strong>{" "}
+          Tap sends an HMAC-SHA256 over a specific concatenation of fields,
+          base64-encoded, in the <code>hashstring</code> header. Verify it on
+          every request; never trust the body alone.
         </li>
         <li>
           <strong>Amounts are decimals.</strong> Tap takes{" "}
-          <code>{`{ amount: 10, currency: "KWD" }`}</code> as a number, but KWD has 3
-          decimals (fils), SAR/AED/QAR/BHD have 2/3, USD 2. Use the right precision per
-          currency or you&apos;ll under/overcharge.
+          <code>{`{ amount: 10, currency: "KWD" }`}</code> as a number, but KWD
+          has 3 decimals (fils), SAR/AED/QAR/BHD have 2/3, USD 2. Use the right
+          precision per currency or you&apos;ll under/overcharge.
         </li>
         <li>
-          <strong>Always re-fetch the charge.</strong> On both webhook and redirect return,
-          GET <code>/v2/charges/{`{id}`}</code> before marking anything paid. The status you
-          want is <code>CAPTURED</code> (or <code>AUTHORIZED</code> for the auth-only flow).
+          <strong>Always re-fetch the charge.</strong> On both webhook and
+          redirect return, GET <code>/v2/charges/{`{id}`}</code> before marking
+          anything paid. The status you want is <code>CAPTURED</code> (or{" "}
+          <code>AUTHORIZED</code> for the auth-only flow).
         </li>
       </ul>
 
@@ -90,17 +95,18 @@ export default function Page() {
           .
         </li>
         <li>
-          Accounts → Operators → MERCHANT to grab your <strong>Merchant ID</strong>, plus{" "}
+          Accounts → Operators → MERCHANT to grab your{" "}
+          <strong>Merchant ID</strong>, plus{" "}
           <strong>Test/Live Secret Keys</strong> (<code>sk_*</code>) and{" "}
           <strong>Public Keys</strong> (<code>pk_*</code>).
         </li>
         <li>
-          Enable the payment methods you need (KNET, Mada, Benefit, etc.), some require
-          contacting Tap support for activation.
+          Enable the payment methods you need (KNET, Mada, Benefit, etc.), some
+          require contacting Tap support for activation.
         </li>
         <li>
-          Configure a webhook URL on your account so Tap can POST events to your DaloyJS
-          server.
+          Configure a webhook URL on your account so Tap can POST events to your
+          DaloyJS server.
         </li>
       </ol>
 
@@ -258,8 +264,8 @@ declare module "@daloyjs/core" {
 }`}
       />
       <p>
-        The field order inside <code>buildHashString</code> is the part Tap is strict about
-, keep it pinned to{" "}
+        The field order inside <code>buildHashString</code> is the part Tap is
+        strict about , keep it pinned to{" "}
         <a
           href="https://developers.tap.company/docs/webhook"
           target="_blank"
@@ -267,8 +273,8 @@ declare module "@daloyjs/core" {
         >
           their webhook docs
         </a>
-        . If they add a new field to the hash, every webhook will fail until you update the
-        function.
+        . If they add a new field to the hash, every webhook will fail until you
+        update the function.
       </p>
 
       <h2>4. Create a hosted charge</h2>
@@ -308,10 +314,10 @@ declare module "@daloyjs/core" {
         caption="Create the charge with src_all for the hosted page, redirect the customer to transaction.url, and treat the ?tap_id on return as a hint only. The webhook plus a refetch is what marks an order paid."
       />
       <p>
-        The simplest integration: <code>source.id: &quot;src_all&quot;</code> gets you Tap&apos;s
-        hosted checkout page with every method you&apos;ve enabled. Use{" "}
-        <code>src_card</code>, <code>src_kw.knet</code>, <code>src_sa.mada</code>, etc. to
-        pin a specific method.
+        The simplest integration: <code>source.id: &quot;src_all&quot;</code>{" "}
+        gets you Tap&apos;s hosted checkout page with every method you&apos;ve
+        enabled. Use <code>src_card</code>, <code>src_kw.knet</code>,{" "}
+        <code>src_sa.mada</code>, etc. to pin a specific method.
       </p>
       <CodeBlock
         code={`import { z } from "zod";
@@ -400,8 +406,9 @@ app.route({
         caption="Recompute the hashstring with the same field order Tap documents, reject mismatches with 401, then refetch the charge so a replayed or out-of-order delivery cannot flip a paid order back to pending."
       />
       <p>
-        Tap POSTs JSON for every charge state change. Verify the <code>hashstring</code>{" "}
-        header, then refetch the charge before doing anything irreversible:
+        Tap POSTs JSON for every charge state change. Verify the{" "}
+        <code>hashstring</code> header, then refetch the charge before doing
+        anything irreversible:
       </p>
       <CodeBlock
         code={`app.route({
@@ -446,57 +453,69 @@ app.route({
 
       <h2>Authorize + capture</h2>
       <p>
-        For an auth-then-capture flow (useful for hotels, marketplaces, anything where the
-        final amount is decided after the customer&apos;s session), use{" "}
-        <code>/v2/authorize</code> instead of <code>/v2/charges</code>, then{" "}
+        For an auth-then-capture flow (useful for hotels, marketplaces, anything
+        where the final amount is decided after the customer&apos;s session),
+        use <code>/v2/authorize</code> instead of <code>/v2/charges</code>, then{" "}
         <code>POST /v2/authorize/{`{id}`}</code> with{" "}
-        <code>{`{ status: "VOID" }`}</code> or a capture body. Not every method supports it
-, confirm with Tap support per scheme before relying on it.
+        <code>{`{ status: "VOID" }`}</code> or a capture body. Not every method
+        supports it , confirm with Tap support per scheme before relying on it.
       </p>
 
       <h2>Runtimes</h2>
       <p>
-        Everything here is plain <code>fetch</code> and <code>node:crypto</code>. Swap{" "}
-        <code>createHmac</code> for <code>crypto.subtle</code> if you&apos;re targeting
-        Cloudflare Workers or Vercel Edge, Tap itself has no runtime requirements beyond a
-        TLS-capable HTTP client.
+        Everything here is plain <code>fetch</code> and <code>node:crypto</code>
+        . Swap <code>createHmac</code> for <code>crypto.subtle</code> if
+        you&apos;re targeting Cloudflare Workers or Vercel, Tap itself has no
+        runtime requirements beyond a TLS-capable HTTP client.
       </p>
 
       <h2>Errors</h2>
       <p>
-        Tap returns JSON like <code>{`{ "errors": [{ "code": "1101", "description": "..." }] }`}</code>{" "}
+        Tap returns JSON like{" "}
+        <code>{`{ "errors": [{ "code": "1101", "description": "..." }] }`}</code>{" "}
         with an HTTP error status. Map them through{" "}
-        <Link href="/docs/errors">problem+json</Link>; the most common ones are 400 (bad
-        body), 401 (wrong key or test/live mismatch), and 404 (asking for a charge that
-        belongs to a different account).
+        <Link href="/docs/errors">problem+json</Link>; the most common ones are
+        400 (bad body), 401 (wrong key or test/live mismatch), and 404 (asking
+        for a charge that belongs to a different account).
       </p>
 
       <h2>Modernisation notes</h2>
       <ul>
         <li>
-          <strong>Use <code>src_all</code> for the hosted page unless you need to pin a
-          method.</strong> Saves you from maintaining a method-picker UI and lets Tap roll
-          out new payment options without you redeploying.
+          <strong>
+            Use <code>src_all</code> for the hosted page unless you need to pin
+            a method.
+          </strong>{" "}
+          Saves you from maintaining a method-picker UI and lets Tap roll out
+          new payment options without you redeploying.
         </li>
         <li>
-          <strong>Always re-fetch on webhook.</strong> The body is signed but webhooks get
-          retried; treating GET <code>/charges/{`{id}`}</code> as the source of truth means
-          out-of-order delivery can&apos;t flip a paid order back to pending.
+          <strong>Always re-fetch on webhook.</strong> The body is signed but
+          webhooks get retried; treating GET <code>/charges/{`{id}`}</code> as
+          the source of truth means out-of-order delivery can&apos;t flip a paid
+          order back to pending.
         </li>
         <li>
-          <strong>Stop using <code>charge_id</code> from the redirect to fulfil orders.</strong>{" "}
-          The <code>?tap_id=</code> on the return URL is for showing the customer
-          &quot;thanks&quot;, never for marking the order paid. Fulfillment belongs in the
-          webhook handler.
+          <strong>
+            Stop using <code>charge_id</code> from the redirect to fulfil
+            orders.
+          </strong>{" "}
+          The <code>?tap_id=</code> on the return URL is for showing the
+          customer &quot;thanks&quot;, never for marking the order paid.
+          Fulfillment belongs in the webhook handler.
         </li>
         <li>
-          <strong>Keep <code>buildHashString</code> in one place.</strong> If Tap changes
-          the hash inputs you want to update one function, not eight call sites.
+          <strong>
+            Keep <code>buildHashString</code> in one place.
+          </strong>{" "}
+          If Tap changes the hash inputs you want to update one function, not
+          eight call sites.
         </li>
       </ul>
 
       <p>
-        See also the <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
+        See also the{" "}
+        <Link href={"/docs/payments" as Route}>payments overview</Link>,{" "}
         <Link href={"/docs/payments/adyen" as Route}>Adyen guide</Link>,{" "}
         <Link href={"/docs/payments/mollie" as Route}>Mollie guide</Link>, and{" "}
         <Link href="/docs/errors">problem+json errors</Link>.

@@ -28,8 +28,8 @@ export default function Page() {
           Drizzle ORM
         </a>{" "}
         is a lightweight, TypeScript-native ORM with a SQL-like API. It runs
-        everywhere DaloyJS does, including Cloudflare Workers and Vercel Edge, 
-        and infers result types directly from your schema.
+        everywhere DaloyJS does, including Cloudflare Workers and Vercel, and
+        infers result types directly from your schema.
       </p>
 
       <FlowDiagram
@@ -37,10 +37,28 @@ export default function Page() {
         title="One request through Drizzle"
         caption="Zod validates the request before your handler runs, Drizzle runs a SQL-like query off state.db with result types inferred from your schema, then the response schema checks the body on the way out."
         steps={[
-          { eyebrow: "client", label: "HTTP request", detail: "GET /users/:id" },
-          { eyebrow: "zod", label: "Validated input", detail: "params.id is a uuid", tone: "accent" },
-          { eyebrow: "drizzle", label: "Typed query", detail: "select().from(users).where(eq(...))" },
-          { eyebrow: "response", label: "Typed body", detail: "200 UserSchema | 404", tone: "success" },
+          {
+            eyebrow: "client",
+            label: "HTTP request",
+            detail: "GET /users/:id",
+          },
+          {
+            eyebrow: "zod",
+            label: "Validated input",
+            detail: "params.id is a uuid",
+            tone: "accent",
+          },
+          {
+            eyebrow: "drizzle",
+            label: "Typed query",
+            detail: "select().from(users).where(eq(...))",
+          },
+          {
+            eyebrow: "response",
+            label: "Typed body",
+            detail: "200 UserSchema | 404",
+            tone: "success",
+          },
         ]}
       />
 

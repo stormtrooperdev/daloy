@@ -28,9 +28,10 @@ export default function Page() {
           Mailtrap
         </a>{" "}
         bundles an <strong>Email Sandbox</strong> (safe test inbox) and an{" "}
-        <strong>Email API/SMTP</strong> for production sending under one SDK. That makes it
-        especially handy for staging environments: dev/staging captures messages, production
-        actually delivers, with the same code path.
+        <strong>Email API/SMTP</strong> for production sending under one SDK.
+        That makes it especially handy for staging environments: dev/staging
+        captures messages, production actually delivers, with the same code
+        path.
       </p>
 
       <BranchDiagram
@@ -59,13 +60,14 @@ export default function Page() {
       <h2>1. Provision</h2>
       <ol>
         <li>
-          For testing, open <strong>Email Sandbox → Inboxes</strong> and copy the inbox{" "}
-          <strong>ID</strong> plus an <strong>API token</strong> scoped to the sandbox.
+          For testing, open <strong>Email Sandbox → Inboxes</strong> and copy
+          the inbox <strong>ID</strong> plus an <strong>API token</strong>{" "}
+          scoped to the sandbox.
         </li>
         <li>
-          For production, open <strong>Email Sending → Sending Domains</strong>, verify a domain
-          via SPF/DKIM/DMARC records, then create an API token with{" "}
-          <em>Email Sending</em> permissions.
+          For production, open <strong>Email Sending → Sending Domains</strong>,
+          verify a domain via SPF/DKIM/DMARC records, then create an API token
+          with <em>Email Sending</em> permissions.
         </li>
       </ol>
 
@@ -175,9 +177,9 @@ app.route({
 
       <h2>Bulk sending</h2>
       <p>
-        Mailtrap exposes a separate <strong>Bulk Sending</strong> stream optimised for marketing
-        volume. Toggle it on the same client by setting <code>bulk: true</code> instead of{" "}
-        <code>sandbox: true</code>:
+        Mailtrap exposes a separate <strong>Bulk Sending</strong> stream
+        optimised for marketing volume. Toggle it on the same client by setting{" "}
+        <code>bulk: true</code> instead of <code>sandbox: true</code>:
       </p>
       <CodeBlock
         code={`const bulkClient = new MailtrapClient({
@@ -188,9 +190,9 @@ app.route({
 
       <h2>Templates</h2>
       <p>
-        Create a template in <strong>Email Sending → Email Templates</strong>, then send it by
-        UUID and provide variables instead of <code>subject</code>/<code>text</code>/
-        <code>html</code>:
+        Create a template in <strong>Email Sending → Email Templates</strong>,
+        then send it by UUID and provide variables instead of{" "}
+        <code>subject</code>/<code>text</code>/<code>html</code>:
       </p>
       <CodeBlock
         code={`await client.send({
@@ -203,12 +205,15 @@ app.route({
 
       <h2>Runtimes</h2>
       <p>
-        The <code>mailtrap</code> SDK targets Node (uses Node&apos;s HTTPS module). For{" "}
-        <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
-        <Link href="/docs/adapters">Vercel Edge</Link>, call the REST API directly with{" "}
-        <code>fetch</code>: <code>POST https://send.api.mailtrap.io/api/send</code> (production)
-        or <code>POST https://sandbox.api.mailtrap.io/api/send/{`{inbox_id}`}</code> (sandbox),
-        with header <code>Authorization: Bearer ${"{token}"}</code>.
+        The <code>mailtrap</code> SDK targets Node (uses Node&apos;s HTTPS
+        module). For <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
+        <Link href="/docs/adapters">Vercel</Link>, call the REST API directly
+        with <code>fetch</code>:{" "}
+        <code>POST https://send.api.mailtrap.io/api/send</code> (production) or{" "}
+        <code>
+          POST https://sandbox.api.mailtrap.io/api/send/{`{inbox_id}`}
+        </code>{" "}
+        (sandbox), with header <code>Authorization: Bearer ${"{token}"}</code>.
       </p>
 
       <p>

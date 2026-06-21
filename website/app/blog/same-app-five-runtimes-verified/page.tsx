@@ -9,7 +9,7 @@ import { buildMetadata, serializeJsonLd, SITE_URL } from "@/lib/seo";
 const POST = {
   slug: "same-app-five-runtimes-verified",
   title:
-    "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel Edge, Verified",
+    "The Same App on Node, Bun, Deno, Cloudflare Workers, and Vercel, Verified",
   description:
     "One Bookstore app, five entry files, five deployments. The Node serve(), the Bun handle.url, the Deno onListen, the Workers ctx.waitUntil, and Vercel's toWebHandler / toRouteHandlers / toFetchHandler, with receipts.",
   date: "2026-05-22",
@@ -28,7 +28,7 @@ export const metadata = buildMetadata({
     "DaloyJS runtimes",
     "Node Bun Deno Cloudflare Vercel",
     "Cloudflare Workers TypeScript",
-    "Vercel Edge handler",
+    "Vercel handler",
     "toFetchHandler",
     "toWebHandler",
     "toRouteHandlers",
@@ -169,7 +169,7 @@ app.use(async (ctx, next) => {
 
 export default toFetchHandler<MyEnv>(app);`;
 
-const VERCEL_THREE = `// 1) Vercel Edge function, runtime: "edge"
+const VERCEL_THREE = `// 1) Vercel function, runtime: "edge"
 // apps/bookstore/api/[...path].ts
 import { toWebHandler } from "@daloyjs/core/vercel";
 import { app } from "../src/app";
@@ -421,7 +421,7 @@ export default function BlogPostPage() {
             on. So when DaloyJS says{" "}
             <em>
               the same app runs on Node, Bun, Deno, Cloudflare Workers, and
-              Vercel Edge
+              Vercel
             </em>
             , I owe you receipts, not slides. This post is the receipts.
           </p>
@@ -682,13 +682,13 @@ export default function BlogPostPage() {
           </EditorFrame>
 
           <p>
-            Yes, Bun polyfills <code>process.env</code>. Yes, Vercel Edge
-            tolerates it for build-time bundling. The reason this rule still
-            matters is that the moment your shared <code>app.ts</code> reads
-            from a globally-mutable environment, your tests need to mock that
-            global, and your Workers deployment needs you to remember which env
-            vars get bundled when. Just hoist the reading. Future-you will
-            apologize to current-you over an expensive Norwegian coffee.
+            Yes, Bun polyfills <code>process.env</code>. Yes, Vercel tolerates
+            it for build-time bundling. The reason this rule still matters is
+            that the moment your shared <code>app.ts</code> reads from a
+            globally-mutable environment, your tests need to mock that global,
+            and your Workers deployment needs you to remember which env vars get
+            bundled when. Just hoist the reading. Future-you will apologize to
+            current-you over an expensive Norwegian coffee.
           </p>
 
           <h2>The adapters at a glance</h2>
@@ -735,7 +735,7 @@ export default function BlogPostPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-2">Vercel Edge</td>
+                  <td className="px-4 py-2">Vercel</td>
                   <td className="px-4 py-2 font-mono">@daloyjs/core/vercel</td>
                   <td className="px-4 py-2 font-mono">toWebHandler()</td>
                   <td className="px-4 py-2">bare fetch handler</td>

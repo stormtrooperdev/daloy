@@ -322,8 +322,8 @@ export default function Page() {
         <li>
           <strong>A.5.23 Information security for use of cloud services</strong>{" "}
           &mdash; runtime-parity audits keep behavior identical across Node,
-          Bun, Deno, Cloudflare Workers, and Vercel Edge so the cloud provider
-          is a deployment choice, not a security trade-off.
+          Bun, Deno, Cloudflare Workers, and Vercel so the cloud provider is a
+          deployment choice, not a security trade-off.
         </li>
         <li>
           <strong>A.5.30 ICT readiness for business continuity</strong> &mdash;
@@ -837,8 +837,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Annex I Part II (2)(4), public disclosure of fixed
-              vulnerabilities
+              Annex I Part II (2)(4), public disclosure of fixed vulnerabilities
             </td>
             <td>
               Every confirmed vulnerability is published as a{" "}
@@ -906,8 +905,7 @@ export default function Page() {
           </tr>
           <tr>
             <td>
-              Article 13(8), declared support period (regulatory floor: 5
-              years)
+              Article 13(8), declared support period (regulatory floor: 5 years)
             </td>
             <td>
               DaloyJS commits to a{" "}

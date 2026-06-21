@@ -27,8 +27,8 @@ export default function Page() {
         <a href="https://aws.amazon.com/ses/" target="_blank" rel="noreferrer">
           Amazon Simple Email Service
         </a>{" "}
-        (SES) is AWS&apos;s pay-as-you-go transactional and bulk email service. This guide uses{" "}
-        <strong>SESv2</strong>: the current API, through the{" "}
+        (SES) is AWS&apos;s pay-as-you-go transactional and bulk email service.
+        This guide uses <strong>SESv2</strong>: the current API, through the{" "}
         <a
           href="https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sesv2/"
           target="_blank"
@@ -36,13 +36,18 @@ export default function Page() {
         >
           AWS SDK for JavaScript v3
         </a>
-        . Best fit when you already run on AWS (Lambda, ECS, Fargate, EC2) or need very low
-        per-message cost.
+        . Best fit when you already run on AWS (Lambda, ECS, Fargate, EC2) or
+        need very low per-message cost.
       </p>
 
       <SequenceDiagram
         title="Send through SESv2, then track events"
-        participants={["Route handler", "SESv2Client", "Amazon SES", "SNS / EventBridge"]}
+        participants={[
+          "Route handler",
+          "SESv2Client",
+          "Amazon SES",
+          "SNS / EventBridge",
+        ]}
         steps={[
           {
             from: "Route handler",
@@ -79,28 +84,29 @@ export default function Page() {
       <h2>1. Provision</h2>
       <ol>
         <li>
-          In the AWS console, open <strong>Amazon SES → Verified identities</strong> and verify
-          either an email address (for development) or your sending domain (for production). Add
-          the SPF, DKIM, and DMARC records SES shows you.
+          In the AWS console, open{" "}
+          <strong>Amazon SES → Verified identities</strong> and verify either an
+          email address (for development) or your sending domain (for
+          production). Add the SPF, DKIM, and DMARC records SES shows you.
         </li>
         <li>
-          New accounts start in the SES <strong>sandbox</strong>: you can only send to verified
-          addresses. Request production access from <strong>Account dashboard</strong> before
-          launching.
+          New accounts start in the SES <strong>sandbox</strong>: you can only
+          send to verified addresses. Request production access from{" "}
+          <strong>Account dashboard</strong> before launching.
         </li>
         <li>
-          Create an IAM principal that can call{" "}
-          <code>ses:SendEmail</code>. Prefer an{" "}
-          <strong>execution role</strong> attached to your Lambda or container, avoid long-lived
-          access keys.
+          Create an IAM principal that can call <code>ses:SendEmail</code>.
+          Prefer an <strong>execution role</strong> attached to your Lambda or
+          container, avoid long-lived access keys.
         </li>
       </ol>
 
       <h2>2. Install</h2>
       <CodeBlock code={`pnpm add @aws-sdk/client-sesv2`} />
       <p>
-        The v3 SDK is modular, install only the SESv2 client. It works on Node 18+ and is
-        compatible with the <Link href="/docs/adapters">Lambda adapter</Link>.
+        The v3 SDK is modular, install only the SESv2 client. It works on Node
+        18+ and is compatible with the{" "}
+        <Link href="/docs/adapters">Lambda adapter</Link>.
       </p>
 
       <h2>3. Environment variables</h2>
@@ -116,8 +122,9 @@ AWS_SECRET_ACCESS_KEY=...`}
 
       <h2>4. Plugin</h2>
       <p>
-        The SDK reads credentials from the standard AWS provider chain (env vars, shared config
-        file, IMDS, IRSA on EKS, Lambda role), so the client itself takes no secrets.
+        The SDK reads credentials from the standard AWS provider chain (env
+        vars, shared config file, IMDS, IRSA on EKS, Lambda role), so the client
+        itself takes no secrets.
       </p>
       <CodeBlock
         code={`// src/plugins/ses.ts
@@ -208,46 +215,57 @@ app.route({
 
       <h2>Templates &amp; attachments</h2>
       <p>
-        SESv2&apos;s <code>SendEmailCommand</code> accepts three content variants:
+        SESv2&apos;s <code>SendEmailCommand</code> accepts three content
+        variants:
       </p>
       <ul>
         <li>
-          <code>Content.Simple</code>: subject + text/HTML body (used above). Also supports an{" "}
-          <code>Attachments</code> array with base64 <code>RawContent</code>,{" "}
-          <code>FileName</code>, and <code>ContentType</code>.
+          <code>Content.Simple</code>: subject + text/HTML body (used above).
+          Also supports an <code>Attachments</code> array with base64{" "}
+          <code>RawContent</code>, <code>FileName</code>, and{" "}
+          <code>ContentType</code>.
         </li>
         <li>
           <code>Content.Raw.Data</code>: a fully MIME-encoded message (use{" "}
-          <a href="https://nodemailer.com/extras/mailcomposer/" target="_blank" rel="noreferrer">
+          <a
+            href="https://nodemailer.com/extras/mailcomposer/"
+            target="_blank"
+            rel="noreferrer"
+          >
             mailcomposer
           </a>{" "}
-          or <code>nodemailer</code>&apos;s composer if you need rich attachments).
+          or <code>nodemailer</code>&apos;s composer if you need rich
+          attachments).
         </li>
         <li>
           <code>Content.Template</code>: render an SES template by{" "}
-          <code>TemplateName</code> with a JSON <code>TemplateData</code> payload. Create
-          templates ahead of time with <code>CreateEmailTemplateCommand</code>.
+          <code>TemplateName</code> with a JSON <code>TemplateData</code>{" "}
+          payload. Create templates ahead of time with{" "}
+          <code>CreateEmailTemplateCommand</code>.
         </li>
       </ul>
 
       <h2>Runtimes</h2>
       <ul>
         <li>
-          <strong>Node / Bun / Deno / AWS Lambda</strong>: works out of the box. On Lambda, omit
-          access keys and let the execution role supply credentials.
+          <strong>Node / Bun / Deno / AWS Lambda</strong>: works out of the box.
+          On Lambda, omit access keys and let the execution role supply
+          credentials.
         </li>
         <li>
-          <strong>Cloudflare Workers / Vercel Edge</strong>: the SDK can run there but uses a
-          Web Crypto signer; pin <code>@aws-sdk/client-sesv2</code> ≥ 3.700 and pass{" "}
-          <code>credentials</code> explicitly (the default provider chain expects Node APIs).
+          <strong>Cloudflare Workers / Vercel</strong>: the SDK can run there
+          but uses a Web Crypto signer; pin <code>@aws-sdk/client-sesv2</code> ≥
+          3.700 and pass <code>credentials</code> explicitly (the default
+          provider chain expects Node APIs).
         </li>
       </ul>
 
       <h2>Observability</h2>
       <p>
-        SES publishes <strong>delivery, bounce, and complaint</strong> events to SNS, EventBridge,
-        or Kinesis Firehose via a <em>configuration set</em>. Add{" "}
-        <code>ConfigurationSetName</code> to <code>SendEmailCommandInput</code> to opt in.
+        SES publishes <strong>delivery, bounce, and complaint</strong> events to
+        SNS, EventBridge, or Kinesis Firehose via a <em>configuration set</em>.
+        Add <code>ConfigurationSetName</code> to{" "}
+        <code>SendEmailCommandInput</code> to opt in.
       </p>
 
       <p>

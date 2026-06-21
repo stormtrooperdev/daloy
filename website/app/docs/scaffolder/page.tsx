@@ -8,14 +8,14 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Scaffold a DaloyJS project",
   description:
-    "Use create-daloy to scaffold a production-ready DaloyJS project with templates for Node.js, Bun, Deno, Cloudflare Workers, and Vercel Edge, plus optional hardened GitHub CI.",
+    "Use create-daloy to scaffold a production-ready DaloyJS project with templates for Node.js, Bun, Deno, Cloudflare Workers, and Vercel, plus optional hardened GitHub CI.",
   path: "/docs/scaffolder",
   keywords: [
     "create-daloy",
     "scaffold DaloyJS",
     "DaloyJS template",
     "Cloudflare Worker template",
-    "Vercel Edge template",
+    "Vercel template",
   ],
   type: "article",
 });
@@ -162,8 +162,8 @@ bun  create daloy           my-api`}
           lockfile-source verification.
         </li>
         <li>
-          <code>--with-deploy</code> / <code>--no-deploy</code>: add or skip
-          the manual-only starter <code>.github/workflows/deploy.yml</code>.
+          <code>--with-deploy</code> / <code>--no-deploy</code>: add or skip the
+          manual-only starter <code>.github/workflows/deploy.yml</code>.
           Defaults to the same value as <code>--with-ci</code>.
         </li>
         <li>
@@ -187,12 +187,19 @@ bun  create daloy           my-api`}
         install link next to the next steps instead of leaving you to hit a{" "}
         <code>command not found</code> on your first command. For example,
         scaffolding the <code>bun-basic</code> template on a machine without Bun
-        surfaces a <a href="https://bun.sh" target="_blank" rel="noreferrer">https://bun.sh</a>{" "}
+        surfaces a{" "}
+        <a href="https://bun.sh" target="_blank" rel="noreferrer">
+          https://bun.sh
+        </a>{" "}
         link, and choosing <code>pnpm</code> without pnpm installed surfaces{" "}
-        <a href="https://pnpm.io/installation" target="_blank" rel="noreferrer">https://pnpm.io/installation</a>.
-        Node-flavored templates (<code>node-basic</code>, <code>vercel</code>,{" "}
+        <a href="https://pnpm.io/installation" target="_blank" rel="noreferrer">
+          https://pnpm.io/installation
+        </a>
+        . Node-flavored templates (<code>node-basic</code>, <code>vercel</code>,{" "}
         <code>cloudflare-worker</code>) point at{" "}
-        <a href="https://nodejs.org" target="_blank" rel="noreferrer">https://nodejs.org</a>{" "}
+        <a href="https://nodejs.org" target="_blank" rel="noreferrer">
+          https://nodejs.org
+        </a>{" "}
         when Node.js is absent. The probe only reads <code>PATH</code> (it never
         executes the binary), and if you asked to install dependencies but the
         chosen package manager is missing, the CLI skips the doomed install and
@@ -244,12 +251,12 @@ bun  create daloy           my-api`}
         A Vercel API on the Node.js runtime (Vercel&apos;s recommended runtime
         for standalone functions) using <code>@daloyjs/core/vercel</code> with a
         single <code>api/index.ts</code> function exporting{" "}
-        <code>toFetchHandler(app)</code> (plus a <code>vercel.json</code> rewrite
-        so DaloyJS routes at the site root), <code>vercel dev</code> /{" "}
+        <code>toFetchHandler(app)</code> (plus a <code>vercel.json</code>{" "}
+        rewrite so DaloyJS routes at the site root), <code>vercel dev</code> /{" "}
         <code>vercel deploy</code> scripts, <code>secureHeaders</code> +{" "}
         <code>requestId</code> enabled by default, smaller serverless-friendly
         body and timeout limits, and the same health and bookstore examples as
-        the Node starter. (The old <code>vercel-edge</code> name still works as a
+        the Node starter. (The old <code>vercel</code> name still works as a
         deprecated alias.)
       </p>
       <p>
@@ -349,10 +356,10 @@ bun  create daloy           my-api`}
       <p>
         Every scaffold ships a <code>.vscode/mcp.json</code> that wires VS Code
         (and other MCP-aware editors) to the DaloyJS documentation MCP server at{" "}
-        <code>https://daloyjs.dev/mcp</code> over HTTP. With it, AI assistants in
-        your editor can pull current DaloyJS docs while you work, with no manual
-        setup. The file is authored as <code>_vscode/mcp.json</code> in the
-        template and renamed to <code>.vscode/mcp.json</code> on copy so it
+        <code>https://daloyjs.dev/mcp</code> over HTTP. With it, AI assistants
+        in your editor can pull current DaloyJS docs while you work, with no
+        manual setup. The file is authored as <code>_vscode/mcp.json</code> in
+        the template and renamed to <code>.vscode/mcp.json</code> on copy so it
         survives npm packing.
       </p>
       <CodeBlock
@@ -417,7 +424,7 @@ bun  create daloy           my-api`}
         and timeout limits.
       </p>
       <p>
-        The CLI itself ships with <strong>zero runtime dependencies</strong>: 
+        The CLI itself ships with <strong>zero runtime dependencies</strong>:
         only Node built-ins, so the supply-chain story stays clean. Templates
         are copied verbatim from the package&apos;s <code>templates/</code>{" "}
         directory and never run scripts during scaffolding. When you choose{" "}

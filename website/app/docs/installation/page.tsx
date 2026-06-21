@@ -8,7 +8,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Installation",
   description:
-    "Install DaloyJS with pnpm, npm, yarn, or bun. Set up the framework on Node.js, Bun, Deno, Cloudflare Workers, or Vercel Edge in minutes.",
+    "Install DaloyJS with pnpm, npm, yarn, or bun. Set up the framework on Node.js, Bun, Deno, Cloudflare Workers, or Vercel in minutes.",
   path: "/docs/installation",
   keywords: [
     "install DaloyJS",
@@ -191,9 +191,8 @@ verify-store-integrity=true
 
       <h2>Verify</h2>
       <p>
-        Run this from the project root after installing, it works the same
-        under pnpm, npm, yarn, or bun because it shells straight to{" "}
-        <code>node</code>:
+        Run this from the project root after installing, it works the same under
+        pnpm, npm, yarn, or bun because it shells straight to <code>node</code>:
       </p>
       <CodeBlock
         language="bash"

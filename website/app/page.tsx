@@ -5,7 +5,7 @@ import {
   FileCodeIcon,
   LightningIcon,
   LockIcon,
-  RobotIcon,
+  SparkleIcon,
   RocketLaunchIcon,
   ShieldCheckIcon,
 } from "@phosphor-icons/react/ssr";
@@ -135,7 +135,7 @@ const DEVELOPER_PITCH = [
     body: "You get a web-standard core that runs on Node, Bun, Deno, Workers, and Edge, plus the production pieces teams expect: request ids, structured logs, plugin encapsulation, graceful shutdown, and first-party middleware.",
   },
   {
-    icon: RobotIcon,
+    icon: SparkleIcon,
     title: "Built for the vibe-coding era",
     body: "When code is vibe-coded and deployed within the hour, the dangerous defaults have to be off when nobody remembered to turn them off. DaloyJS assumes coding agents are in the loop: body limits, prototype-pollution-safe JSON, and path-traversal rejection ship in the constructor, scaffolds carry agent guidance, and installs are source-verified.",
   },
@@ -153,12 +153,12 @@ const FEATURES = [
     body: "Unlike frameworks that leave basic protections to plugins or manual error routing, the DaloyJS core starts with guardrails on: prototype-pollution-safe JSON, built-in load shedding, proper 405 Method Not Allowed responses, automatic 5xx info-disclosure stripping in production, and a rate-limited CSP violation receiver.",
   },
   {
-    icon: RobotIcon,
+    icon: SparkleIcon,
     title: "Hardened against LLM-era attacks",
     body: "Attackers can use LLMs to scale package impersonation, slopsquatting, dependency reconnaissance, and vulnerability hunting. DaloyJS answers with boring but sharp defaults: blocked lifecycle scripts, delayed fresh-package resolution, source-verified lockfiles, and a zero-runtime-dependency core.",
   },
   {
-    icon: RobotIcon,
+    icon: SparkleIcon,
     title: "AI-native scaffolding",
     body: "Every project scaffolded by create-daloy includes an AGENTS.md and context skills. Copilot, Claude, and Cursor automatically understand your framework's conventions, routing rules, and security primitives without a prompt-engineering ritual.",
   },
@@ -170,7 +170,7 @@ const FEATURES = [
   {
     icon: CubeIcon,
     title: "Runtime-portable",
-    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel Edge - same app, same tests, five runtimes.",
+    body: "The core only sees Request → Response. Adapters live at the edge: Node, Bun, Deno, Cloudflare Workers, Vercel - same app, same tests, five runtimes.",
   },
   {
     icon: RocketLaunchIcon,
@@ -570,7 +570,7 @@ export default function HomePage() {
             pnpm, generated CI that blocks install scripts, pinned GitHub
             Actions, Dependabot, CODEOWNERS, and lockfile source verification.
             Then keep the contract as the app grows, the same app runs on Node,
-            Bun, Deno, Cloudflare Workers, and Vercel Edge.
+            Bun, Deno, Cloudflare Workers, and Vercel.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Link
@@ -629,7 +629,7 @@ export default function HomePage() {
             <Card className="flex flex-col border-olive-200/70 bg-olive-50/55 dark:border-olive-900/70 dark:bg-olive-950/18 dim:border-olive-900/60 dim:bg-olive-950/15">
               <CardHeader>
                 <span className="mb-2 inline-flex size-11 items-center justify-center rounded-xl bg-olive-100 text-olive-700 ring-1 ring-olive-200/80 dark:bg-olive-950/40 dark:text-olive-200 dark:ring-olive-800/70 dim:bg-olive-950/35 dim:text-olive-100">
-                  <RobotIcon className="size-6" />
+                  <SparkleIcon className="size-6" />
                 </span>
                 <CardTitle>Endpoint</CardTitle>
                 <CardDescription>

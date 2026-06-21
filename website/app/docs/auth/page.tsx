@@ -103,7 +103,7 @@ export default function Page() {
             <th>Provider</th>
             <th>Node / Bun / Deno</th>
             <th>Cloudflare Workers</th>
-            <th>Vercel Edge</th>
+            <th>Vercel</th>
             <th>AWS Lambda</th>
           </tr>
         </thead>

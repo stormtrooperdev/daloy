@@ -12,7 +12,7 @@ export const metadata = buildMetadata({
   keywords: [
     "DaloyJS Vercel adapter",
     "Vercel Functions",
-    "Vercel Edge Functions",
+    "Vercel Functions",
     "toWebHandler",
     "toFetchHandler",
     "Fluid compute",
@@ -68,7 +68,7 @@ export default function Page() {
         The Vercel starter scaffolds a standalone REST API on the Node.js
         runtime (the <code>toFetchHandler</code> entrypoint shown below), which
         Vercel now recommends for standalone functions. The old{" "}
-        <code>vercel-edge</code> template name still works as a deprecated alias.
+        <code>vercel</code> template name still works as a deprecated alias.
       </p>
       <CodeBlock
         language="bash"
@@ -93,8 +93,8 @@ import { app } from "../src/server.ts";
 export default toFetchHandler(app);`}
       />
       <p>
-        Vercel maps <code>api/index.ts</code> to <code>/api</code>, but a DaloyJS
-        app registers its routes at the <strong>root</strong> (
+        Vercel maps <code>api/index.ts</code> to <code>/api</code>, but a
+        DaloyJS app registers its routes at the <strong>root</strong> (
         <code>/healthz</code>, <code>/docs</code>, …). Add a{" "}
         <strong>rewrite</strong> so every path reaches the function and DaloyJS
         owns routing at the site root, without it the deployed root domain
@@ -108,7 +108,7 @@ export default toFetchHandler(app);`}
 }`}
       />
 
-      <h2>2. Vercel Edge Functions (standalone API)</h2>
+      <h2>2. Vercel Functions (standalone API)</h2>
       <CodeBlock
         language="ts"
         code={`// api/index.ts

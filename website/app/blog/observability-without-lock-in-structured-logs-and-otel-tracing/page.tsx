@@ -11,7 +11,7 @@ const POST = {
   title:
     "Observability Without Lock-In: Structured Logs and OpenTelemetry-Compatible Tracing",
   description:
-    "How DaloyJS gives you per-request structured logs, correlated request IDs, Server-Timing, and OpenTelemetry-shaped spans \u2014 without taking a hard dependency on @opentelemetry/api. The result is a single observability story that runs identically on Node, Bun, Workers, and Vercel Edge, with any tracer you bring.",
+    "How DaloyJS gives you per-request structured logs, correlated request IDs, Server-Timing, and OpenTelemetry-shaped spans \u2014 without taking a hard dependency on @opentelemetry/api. The result is a single observability story that runs identically on Node, Bun, Workers, and Vercel, with any tracer you bring.",
   date: "2026-06-03",
   readingTime: "13 min read",
   author: "Devlin Duldulao",
@@ -353,7 +353,7 @@ const RUNTIME_NOTES = `# Runtime-by-runtime observability checklist.
 # - Inherit traceparent via contextFromRequest - propagation only needs
 #   reading the header; you can do that without the OTel propagator.
 #
-# Vercel Edge / Functions:
+# Vercel / Functions:
 # - Same as Workers for Edge runtime. For Node functions, the standard
 #   @opentelemetry/sdk-node works if the cold-start budget allows.
 # - Vercel's Observability tab already reads structured stdout JSON.
@@ -747,7 +747,7 @@ export default function BlogPostPage() {
           <EditorFrame
             files={["NOTES.md"]}
             activeFile="NOTES.md"
-            status="Node · Workers · Vercel Edge · Lambda"
+            status="Node · Workers · Vercel · Lambda"
           >
             <CodeBlock language="bash" code={RUNTIME_NOTES} />
           </EditorFrame>

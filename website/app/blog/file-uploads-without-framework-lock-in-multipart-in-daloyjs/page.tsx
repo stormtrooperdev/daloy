@@ -184,7 +184,7 @@ const GalleryUpload = multipartObject({
 
 const STREAMING = `// Streaming is the whole point. file.stream() returns a Web standard
 // ReadableStream - the same shape on Node, Bun, Deno, Cloudflare
-// Workers, and Vercel Edge. Pipe it to any compatible writer:
+// Workers, and Vercel. Pipe it to any compatible writer:
 
 // 1) Cloudflare R2 (Workers binding):
 await env.AVATARS.put(key, body.file.stream(), {
@@ -471,7 +471,7 @@ export default function BlogPostPage() {
             DaloyJS treats uploads the way the modern web platform does: you get
             back a <code>File</code> (which is a <code>Blob</code> with a{" "}
             <code>name</code>), which is the same shape on Node, Bun, Deno,
-            Cloudflare Workers, and Vercel Edge. Two helpers,{" "}
+            Cloudflare Workers, and Vercel. Two helpers,{" "}
             <code>fileField()</code> and <code>multipartObject()</code>: give
             you per-file size caps, MIME allowlists, filename predicates, strict
             field validation, and OpenAPI binary schemas, without ever stepping

@@ -38,10 +38,28 @@ export default function Page() {
         title="One request through Prisma"
         caption="Zod validates the request before your handler runs, Prisma runs the typed query off state.db, and the result is checked against the response schema on the way out. Two validation layers guard the wire and the database."
         steps={[
-          { eyebrow: "client", label: "HTTP request", detail: "GET /users/:id" },
-          { eyebrow: "zod", label: "Validated input", detail: "params.id is a uuid", tone: "accent" },
-          { eyebrow: "prisma", label: "Typed query", detail: "state.db.user.findUnique(...)" },
-          { eyebrow: "response", label: "Typed body", detail: "200 UserSchema | 404", tone: "success" },
+          {
+            eyebrow: "client",
+            label: "HTTP request",
+            detail: "GET /users/:id",
+          },
+          {
+            eyebrow: "zod",
+            label: "Validated input",
+            detail: "params.id is a uuid",
+            tone: "accent",
+          },
+          {
+            eyebrow: "prisma",
+            label: "Typed query",
+            detail: "state.db.user.findUnique(...)",
+          },
+          {
+            eyebrow: "response",
+            label: "Typed body",
+            detail: "200 UserSchema | 404",
+            tone: "success",
+          },
         ]}
       />
 
@@ -216,8 +234,8 @@ serve(app, { port: 3000 });`}
 
       <h2>Edge runtimes</h2>
       <p>
-        For Cloudflare Workers and Vercel Edge, set the generated client runtime
-        for your target and use the appropriate{" "}
+        For Cloudflare Workers and Vercel, set the generated client runtime for
+        your target and use the appropriate{" "}
         <a
           href="https://www.prisma.io/docs/orm/overview/databases/database-drivers"
           target="_blank"
@@ -232,7 +250,7 @@ serve(app, { port: 3000 });`}
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
-  runtime  = "vercel-edge" // use "workerd" for Cloudflare Workers
+  runtime  = "vercel" // use "workerd" for Cloudflare Workers
 }
 
 // src/db/prisma-edge.ts

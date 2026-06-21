@@ -27,9 +27,9 @@ export default function Page() {
         <a href="https://developer.okta.com" target="_blank" rel="noreferrer">
           Okta
         </a>{" "}
-        provides workforce and customer identity with granular policies and
-        the API Access Management add-on for issuing custom-scoped access
-        tokens. This guide uses the official{" "}
+        provides workforce and customer identity with granular policies and the
+        API Access Management add-on for issuing custom-scoped access tokens.
+        This guide uses the official{" "}
         <a
           href="https://github.com/okta/okta-jwt-verifier-js"
           target="_blank"
@@ -73,7 +73,8 @@ export default function Page() {
           {
             from: "DaloyJS API",
             to: "DaloyJS API",
-            label: "verifyAccessToken checks issuer, audience, scp & assertClaims",
+            label:
+              "verifyAccessToken checks issuer, audience, scp & assertClaims",
             kind: "note",
           },
           {
@@ -89,10 +90,10 @@ export default function Page() {
       <h2>1. Configure an Okta Authorization Server</h2>
       <ol>
         <li>
-          In the Okta admin console, go to <strong>Security → API →
-          Authorization Servers</strong>. Use the built-in <code>default</code>{" "}
-          server or create a new Custom Authorization Server (requires the API
-          Access Management license).
+          In the Okta admin console, go to{" "}
+          <strong>Security → API → Authorization Servers</strong>. Use the
+          built-in <code>default</code> server or create a new Custom
+          Authorization Server (requires the API Access Management license).
         </li>
         <li>
           Add <strong>scopes</strong> (e.g. <code>items:read</code>,{" "}
@@ -193,10 +194,9 @@ app.route({
 
       <h2>Custom claim assertions</h2>
       <p>
-        The verifier can enforce extra claims at construction time. For
-        example, to require that the token includes both{" "}
-        <code>items:read</code> and <code>items:write</code> in the
-        space-separated <code>scp</code> claim:
+        The verifier can enforce extra claims at construction time. For example,
+        to require that the token includes both <code>items:read</code> and{" "}
+        <code>items:write</code> in the space-separated <code>scp</code> claim:
       </p>
       <CodeBlock
         code={`const verifier = new OktaJwtVerifier({
@@ -232,24 +232,24 @@ app.route({
 
       <h2>Runtimes</h2>
       <p>
-        <code>@okta/jwt-verifier</code> is a <strong>Node-only</strong>{" "}
-        library (it imports Node modules transitively). For Node, Bun, and AWS
-        Lambda it works out of the box; for <Link href="/docs/adapters">Cloudflare
-        Workers</Link> or <Link href="/docs/adapters">Vercel Edge</Link>, use{" "}
-        <code>jose</code>&apos;s <code>createRemoteJWKSet</code> +{" "}
-        <code>jwtVerify</code> against the same issuer (the{" "}
-        <Link href="/docs/auth/auth0">Auth0</Link> page shows that exact
-        pattern, only the issuer URL changes).
+        <code>@okta/jwt-verifier</code> is a <strong>Node-only</strong> library
+        (it imports Node modules transitively). For Node, Bun, and AWS Lambda it
+        works out of the box; for{" "}
+        <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
+        <Link href="/docs/adapters">Vercel</Link>, use <code>jose</code>&apos;s{" "}
+        <code>createRemoteJWKSet</code> + <code>jwtVerify</code> against the
+        same issuer (the <Link href="/docs/auth/auth0">Auth0</Link> page shows
+        that exact pattern, only the issuer URL changes).
       </p>
 
       <h2>Org server vs Custom Authorization Server</h2>
       <p>
         Only tokens from a <strong>Custom Authorization Server</strong> are
         meant to be verified by your app, those issuers look like{" "}
-        <code>https://&#123;domain&#125;/oauth2/&#123;asId&#125;</code>. The
-        Org Authorization Server (<code>https://&#123;domain&#125;</code>)
-        issues opaque tokens that only Okta should consume; validate those via
-        the <code>/introspect</code> endpoint instead.
+        <code>https://&#123;domain&#125;/oauth2/&#123;asId&#125;</code>. The Org
+        Authorization Server (<code>https://&#123;domain&#125;</code>) issues
+        opaque tokens that only Okta should consume; validate those via the{" "}
+        <code>/introspect</code> endpoint instead.
       </p>
 
       <p>

@@ -80,7 +80,7 @@ export default function Page() {
         <code>Retry-After</code>. The sampler is <code>unref()</code>&apos;d so
         it never pins the event loop, and the whole module is a silent no-op on
         runtimes without <code>node:perf_hooks</code> (Cloudflare Workers,
-        Vercel Edge, Fastly Compute) so the same line is portable.
+        Vercel, Fastly Compute) so the same line is portable.
       </p>
 
       <FlowDiagram

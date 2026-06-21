@@ -30,8 +30,7 @@ export default function Page() {
         requests), turn off the burners safely (graceful shutdown with
         <code>Connection: close</code>), and put a &quot;closed&quot; sign on
         the door (<code>healthcheck</code>/<code>readinesscheck</code>) so the
-        next courier knows to come back later, not to hammer on the locked
-        door.
+        next courier knows to come back later, not to hammer on the locked door.
       </blockquote>
       <p>
         Daloy ships the lifecycle & health slice of the secure-by-default
@@ -103,7 +102,7 @@ await app.close(10_000, "SIGTERM");
       <p>
         On the Node adapter, <code>serve(app)</code> registers an
         idle-connection close hook that calls{" "}
-        <code>server.closeIdleConnections()</code> the moment draining begins, 
+        <code>server.closeIdleConnections()</code> the moment draining begins,
         keep-alive sockets without an in-flight request are killed immediately,
         without affecting sockets that are still serving a request. Custom
         adapters can register the same hook via{" "}
@@ -141,7 +140,7 @@ await app.close(10_000, "SIGTERM");
         A process-wide latch ensures the listeners are installed exactly once
         even when multiple <code>App</code> instances boot in the same process.
         No-op on runtimes without <code>process.on</code> (Cloudflare Workers,
-        Vercel Edge, Fastly Compute).
+        Vercel, Fastly Compute).
       </p>
 
       <h2>

@@ -10,7 +10,7 @@ const POST = {
   slug: "introducing-daloyjs",
   title: "Introducing DaloyJS: One Route, Many Runtimes, Zero Ceremony",
   description:
-    "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel Edge.",
+    "The launch post. One app.route({...}) becomes your validation, types, OpenAPI, typed client, and contract tests, and the same app runs on Node, Bun, Deno, Workers, and Vercel.",
   date: "2026-05-19",
   readingTime: "11 min read",
   author: "Devlin Duldulao",
@@ -29,7 +29,7 @@ export const metadata = buildMetadata({
     "TypeScript framework",
     "contract-first framework",
     "OpenAPI TypeScript",
-    "Node Bun Deno Cloudflare Workers Vercel Edge",
+    "Node Bun Deno Cloudflare Workers Vercel",
     "typed client SDK",
   ],
   type: "article",
@@ -124,7 +124,7 @@ serve(app, { port: 3000 });
 import { toFetch } from "@daloyjs/core/fetch";
 export default { fetch: toFetch(app) };
 
-// vercel edge / any Web Fetch runtime
+// Vercel / any Web Fetch runtime
 import { toFetch } from "@daloyjs/core/fetch";
 export const GET = toFetch(app);`;
 
@@ -306,8 +306,8 @@ export default function BlogPostPage() {
             for <em>validation</em>, <em>TypeScript types</em>,<em> OpenAPI</em>
             , the <em>typed client</em>, and your <em>contract tests</em>. And
             that same <code>app</code> runs on Node, Bun, Deno, Cloudflare
-            Workers, and Vercel Edge, the same file, no rewrites, no &quot;works
-            on my Node version&quot; magic.
+            Workers, and Vercel, the same file, no rewrites, no &quot;works on
+            my Node version&quot; magic.
           </p>
 
           <p>

@@ -27,8 +27,8 @@ export default function Page() {
         <a href="https://postmarkapp.com" target="_blank" rel="noreferrer">
           Postmark
         </a>{" "}
-        is a transactional-first email provider known for very high inbox placement and detailed
-        delivery analytics. This guide uses the official{" "}
+        is a transactional-first email provider known for very high inbox
+        placement and detailed delivery analytics. This guide uses the official{" "}
         <a
           href="https://github.com/ActiveCampaign/postmark.js"
           target="_blank"
@@ -41,7 +41,12 @@ export default function Page() {
 
       <SequenceDiagram
         title="Send through the postmark SDK"
-        participants={["Route handler", "ServerClient", "Postmark API", "Webhooks"]}
+        participants={[
+          "Route handler",
+          "ServerClient",
+          "Postmark API",
+          "Webhooks",
+        ]}
         steps={[
           {
             from: "Route handler",
@@ -61,7 +66,8 @@ export default function Page() {
             from: "Postmark API",
             to: "Route handler",
             label: "{ ErrorCode, MessageID }",
-            detail: "throw unless ErrorCode === 0, else return { id: MessageID }",
+            detail:
+              "throw unless ErrorCode === 0, else return { id: MessageID }",
             kind: "response",
           },
           {
@@ -78,12 +84,14 @@ export default function Page() {
       <h2>1. Provision</h2>
       <ol>
         <li>
-          Create a Postmark server under <strong>Servers → New server</strong>, then open it and
-          copy the <strong>Server API Token</strong> from <strong>API Tokens</strong>.
+          Create a Postmark server under <strong>Servers → New server</strong>,
+          then open it and copy the <strong>Server API Token</strong> from{" "}
+          <strong>API Tokens</strong>.
         </li>
         <li>
-          Add a <strong>Sender Signature</strong> (single address) or, for production,
-          configure a full <strong>Sender Domain</strong> with DKIM and Return-Path records.
+          Add a <strong>Sender Signature</strong> (single address) or, for
+          production, configure a full <strong>Sender Domain</strong> with DKIM
+          and Return-Path records.
         </li>
         <li>
           Decide which <strong>Message Stream</strong> you&apos;ll use:
@@ -92,7 +100,8 @@ export default function Page() {
               <code>outbound</code>: default transactional stream
             </li>
             <li>
-              <code>broadcast</code>: bulk/marketing (must be enabled on the server)
+              <code>broadcast</code>: bulk/marketing (must be enabled on the
+              server)
             </li>
           </ul>
         </li>
@@ -193,8 +202,8 @@ app.route({
 
       <h2>Server-side templates</h2>
       <p>
-        Create a template in <strong>Templates</strong> (Mustachio syntax), then send it by{" "}
-        <code>TemplateAlias</code>:
+        Create a template in <strong>Templates</strong> (Mustachio syntax), then
+        send it by <code>TemplateAlias</code>:
       </p>
       <CodeBlock
         code={`await client.sendEmailWithTemplate({
@@ -213,18 +222,19 @@ app.route({
       <h2>Batch sending</h2>
       <p>
         Use <code>client.sendEmailBatch([...])</code> or{" "}
-        <code>client.sendEmailBatchWithTemplates([...])</code> to send up to 500 messages per
-        request, the response is an array with one result per message so you can inspect
-        per-recipient errors.
+        <code>client.sendEmailBatchWithTemplates([...])</code> to send up to 500
+        messages per request, the response is an array with one result per
+        message so you can inspect per-recipient errors.
       </p>
 
       <h2>Runtimes</h2>
       <p>
-        The <code>postmark</code> SDK currently uses <code>axios</code> under the hood, so it
-        targets Node and Node-compatible runtimes (Bun, Deno&apos;s Node-compat, AWS Lambda).
-        For <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
-        <Link href="/docs/adapters">Vercel Edge</Link>, call the REST endpoint directly with{" "}
-        <code>fetch</code>:
+        The <code>postmark</code> SDK currently uses <code>axios</code> under
+        the hood, so it targets Node and Node-compatible runtimes (Bun,
+        Deno&apos;s Node-compat, AWS Lambda). For{" "}
+        <Link href="/docs/adapters">Cloudflare Workers</Link> or{" "}
+        <Link href="/docs/adapters">Vercel</Link>, call the REST endpoint
+        directly with <code>fetch</code>:
         <code>POST https://api.postmarkapp.com/email</code> with the header{" "}
         <code>X-Postmark-Server-Token</code>.
       </p>

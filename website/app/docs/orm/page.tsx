@@ -55,12 +55,29 @@ export default function Page() {
           detail: 'app.decorate("db", client)',
         }}
         branches={[
-          { eyebrow: "schema-first", label: "Prisma", detail: "@prisma/client" },
+          {
+            eyebrow: "schema-first",
+            label: "Prisma",
+            detail: "@prisma/client",
+          },
           { eyebrow: "ts-first", label: "Drizzle ORM", detail: "drizzle-orm" },
           { eyebrow: "decorators", label: "TypeORM", detail: "DataSource" },
-          { eyebrow: "unit of work", label: "MikroORM", detail: "EntityManager" },
-          { eyebrow: "active record", label: "Sequelize", detail: "Sequelize models" },
-          { eyebrow: "platform", label: "Supabase", detail: "@supabase/supabase-js", tone: "muted" },
+          {
+            eyebrow: "unit of work",
+            label: "MikroORM",
+            detail: "EntityManager",
+          },
+          {
+            eyebrow: "active record",
+            label: "Sequelize",
+            detail: "Sequelize models",
+          },
+          {
+            eyebrow: "platform",
+            label: "Supabase",
+            detail: "@supabase/supabase-js",
+            tone: "muted",
+          },
         ]}
         caption="DaloyJS is database-agnostic. The same decorate plus onClose pattern wires any SQL client (or the Supabase platform client) onto every handler's state, so the choice of data layer stays a swappable detail."
       />
@@ -149,8 +166,8 @@ app.route({
           entities for object-oriented teams.
         </li>
         <li>
-          <Link href="/docs/orm/mikro-orm">MikroORM</Link>: Data Mapper, Unit
-          of Work, and Identity Map with first-class TypeScript.
+          <Link href="/docs/orm/mikro-orm">MikroORM</Link>: Data Mapper, Unit of
+          Work, and Identity Map with first-class TypeScript.
         </li>
         <li>
           <Link href="/docs/orm/sequelize">Sequelize</Link>: mature Active
@@ -191,7 +208,7 @@ app.route({
             <th>Bun</th>
             <th>Deno</th>
             <th>Cloudflare Workers</th>
-            <th>Vercel Edge</th>
+            <th>Vercel</th>
           </tr>
         </thead>
         <tbody>
@@ -246,7 +263,7 @@ app.route({
         </tbody>
       </table>
       <p>
-        For edge runtimes (Cloudflare Workers, Vercel Edge), prefer Drizzle or
+        For edge runtimes (Cloudflare Workers, Vercel), prefer Drizzle or
         Supabase, or use Prisma with{" "}
         <a
           href="https://www.prisma.io/docs/orm/overview/databases/database-drivers"

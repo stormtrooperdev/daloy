@@ -27,9 +27,10 @@ export default function Page() {
         <a href="https://ottomanjs.com" target="_blank" rel="noreferrer">
           Ottoman
         </a>{" "}
-        is an ODM for Couchbase. Use it when your application stores JSON documents in Couchbase buckets,
-        scopes, and collections and you want model definitions, validation, query helpers, and indexes around
-        that document layer.
+        is an ODM for Couchbase. Use it when your application stores JSON
+        documents in Couchbase buckets, scopes, and collections and you want
+        model definitions, validation, query helpers, and indexes around that
+        document layer.
       </p>
 
       <FlowDiagram
@@ -38,9 +39,17 @@ export default function Page() {
         steps={[
           { label: "Install", detail: "pnpm add ottoman couchbase" },
           { label: "Schema & model", detail: "new Schema · model('User')" },
-          { label: "Plugin", detail: "connect · start · decorate('db')", tone: "accent" },
+          {
+            label: "Plugin",
+            detail: "connect · start · decorate('db')",
+            tone: "accent",
+          },
           { label: "Augment state", detail: "interface AppState { db }" },
-          { label: "Use in routes", detail: "state.db.User.findById()", tone: "success" },
+          {
+            label: "Use in routes",
+            detail: "state.db.User.findById()",
+            tone: "success",
+          },
         ]}
         caption="Ottoman connects once and runs ottoman.start() to build indexes before traffic arrives. Handlers then read the decorated state.db model surface."
       />
@@ -73,8 +82,9 @@ export const db = { ottoman, User };`}
 
       <h2>3. Create an Ottoman plugin</h2>
       <p>
-        Connect once during app startup, build indexes with <code>ottoman.start()</code>, decorate the app with
-        the models you want handlers to use, and close the connection on shutdown.
+        Connect once during app startup, build indexes with{" "}
+        <code>ottoman.start()</code>, decorate the app with the models you want
+        handlers to use, and close the connection on shutdown.
       </p>
       <CodeBlock
         code={`// src/db/plugin.ts
@@ -162,8 +172,9 @@ serve(app, { port: 3000 });`}
 
       <h2>Indexes and queries</h2>
       <p>
-        Define indexes next to the schema and run <code>ottoman.start()</code> during startup so query helpers are
-        ready before the server accepts traffic. Keep index creation out of request handlers.
+        Define indexes next to the schema and run <code>ottoman.start()</code>{" "}
+        during startup so query helpers are ready before the server accepts
+        traffic. Keep index creation out of request handlers.
       </p>
       <CodeBlock
         code={`app.route({
@@ -184,20 +195,25 @@ serve(app, { port: 3000 });`}
 
       <h2>Transactions</h2>
       <p>
-        Ottoman is best for model-centric Couchbase document access. If a workflow requires Couchbase
-        distributed transactions, expose the Couchbase SDK objects you need through the same plugin and keep
-        that transaction boundary inside the handler that owns the unit of work.
+        Ottoman is best for model-centric Couchbase document access. If a
+        workflow requires Couchbase distributed transactions, expose the
+        Couchbase SDK objects you need through the same plugin and keep that
+        transaction boundary inside the handler that owns the unit of work.
       </p>
 
       <h2>Runtime constraints</h2>
       <p>
-        Ottoman depends on the Couchbase Node.js SDK, so it is a Node.js-first ODM. It is not a fit for
-        Cloudflare Workers or Vercel Edge. For edge-compatible data access, use the{" "}
-        <Link href="/docs/orm">SQL ORM overview</Link> and choose a compatible client.
+        Ottoman depends on the Couchbase Node.js SDK, so it is a Node.js-first
+        ODM. It is not a fit for Cloudflare Workers or Vercel. For
+        edge-compatible data access, use the{" "}
+        <Link href="/docs/orm">SQL ORM overview</Link> and choose a compatible
+        client.
       </p>
 
       <p>
-        Compare with <Link href="/docs/odm/mongoose">Mongoose</Link> for MongoDB, <Link href="/docs/orm/prisma">Prisma</Link> for SQL, or return to the <Link href="/docs/odm">ODM overview</Link>.
+        Compare with <Link href="/docs/odm/mongoose">Mongoose</Link> for
+        MongoDB, <Link href="/docs/orm/prisma">Prisma</Link> for SQL, or return
+        to the <Link href="/docs/odm">ODM overview</Link>.
       </p>
     </>
   );
