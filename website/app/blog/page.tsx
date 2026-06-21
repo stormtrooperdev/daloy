@@ -13,6 +13,15 @@ export const metadata = buildMetadata({
 
 const POSTS = [
   {
+    slug: "daloyjs-1-0-0-beta-is-here",
+    title: "DaloyJS 1.0.0-beta.0 Is Here (and Nothing Broke, On Purpose)",
+    description:
+      "After a long 0.x preview line, DaloyJS enters its 1.0.0 beta. The funny part: the most important line in this changelog is that nothing changed. Here is what the beta means, how to install it, and what we need from you before the 1.0.0 GA.",
+    date: "2026-06-21",
+    readingTime: "6 min read",
+    author: "Devlin Duldulao",
+  },
+  {
     slug: "why-daloyjs-is-the-rest-api-framework-you-should-use-today",
     title: "Why DaloyJS Is the REST API Framework You Should Use Today",
     description:

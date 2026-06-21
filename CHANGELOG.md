@@ -8,9 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 For the forward-looking plan and the full thematic release log, see
 [`ROADMAP.md`](ROADMAP.md).
 
-> Pre-1.0: minor versions may contain breaking changes. `@daloyjs/core` and
-> `create-daloy` are published together — a new core release always ships a
-> matching scaffolder so generated projects pin the latest peer.
+> Now in the **1.0.0 beta**. The public API is feature-complete and stable for
+> the 1.0 line; from 1.0 onward, breaking changes follow semver. `@daloyjs/core`
+> and `create-daloy` ship together, so every release publishes a matching
+> scaffolder and generated projects pin the latest peer.
+
+## [1.0.0-beta.0] - 2026-06-21
+
+The first public **1.0.0 beta**. After the `0.x` preview line, the public API is
+now feature-complete and considered stable for the 1.0 release. This is the build
+we want people to test in anger and report back on before the `1.0.0` GA. There
+are no functional code changes from `0.44.0`: every guardrail, adapter, and
+helper that shipped across `0.x` is here, unchanged. What changed is the promise.
+From 1.0 onward, breaking changes follow SemVer (no breaking change in a `1.x`
+minor).
+
+### Changed
+
+- **Version milestone: `0.44.0` → `1.0.0-beta.0`.** `@daloyjs/core`,
+  `create-daloy`, and the JSR package `@daloyjs/daloy` all move to
+  `1.0.0-beta.0` in lockstep, and every `create-daloy` template now pins
+  `@daloyjs/core@^1.0.0-beta.0`. Published to the npm `latest` tag (and JSR), so
+  `pnpm create daloy@latest` and a plain `npm i @daloyjs/core` resolve the beta.
+- Workshop, README status, and website version references synced to
+  `1.0.0-beta.0`.
+
+### Notes
+
+- **No API changes from `0.44.0`.** If you are on `^0.44.0` today, nothing
+  breaks; the upgrade is a version bump.
+- Still pre-GA: small adjustments are possible before `1.0.0` final if beta
+  feedback surfaces something. Once `1.0.0` ships, deprecations follow the
+  one-minor-cycle policy.
 
 ## [0.44.0] — 2026-06-21
 
@@ -1383,7 +1412,8 @@ scaffolded projects pin the latest peer.
   publish with provenance, `pnpm create daloy` scaffolder (`node-basic`,
   `vercel-edge`, `cloudflare-worker`), docs metadata + ORM guides.
 
-[Unreleased]: https://github.com/daloyjs/daloy/compare/v0.44.0...HEAD
+[Unreleased]: https://github.com/daloyjs/daloy/compare/v1.0.0-beta.0...HEAD
+[1.0.0-beta.0]: https://github.com/daloyjs/daloy/compare/v0.44.0...v1.0.0-beta.0
 [0.44.0]: https://github.com/daloyjs/daloy/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/daloyjs/daloy/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/daloyjs/daloy/compare/v0.41.0...v0.42.0
