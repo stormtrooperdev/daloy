@@ -230,6 +230,10 @@ export default function HomePage() {
     "https://jsr.io/@daloyjs/daloy",
     "https://x.com/daloyjs",
     "https://bsky.app/profile/daloyjs.dev",
+    "https://www.instagram.com/daloyjs",
+    "https://daloyjs.substack.com",
+    "https://dev.to/daloyjs",
+    "https://opencollective.com/daloyjs",
   ];
 
   const jsonLd = [
