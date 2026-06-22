@@ -23,6 +23,7 @@ import { ContractFlowVisual } from "../components/contract-flow-visual";
 import { FlowHeroScene } from "../components/flow-hero-scene";
 import {
   buildMetadata,
+  CORE_PACKAGE_VERSION,
   HOME_DESCRIPTION,
   HOME_TITLE,
   serializeJsonLd,
@@ -214,11 +215,50 @@ const FEATURE_ACCENTS = [
 ] as const;
 
 export default function HomePage() {
+  // Connected entity graph for search engines. The goal is entity
+  // *disambiguation*: explicit `alternateName` spellings plus `sameAs` links to
+  // the canonical GitHub/npm/JSR/social profiles tell Google that "DaloyJS" is a
+  // distinct named entity, not a misspelling of the similarly named "dayjs".
+  // `@id` references connect the Organization, WebSite, and SoftwareApplication
+  // into one graph rather than three unrelated nodes.
+  const orgId = `${SITE_URL}/#organization`;
+  const siteId = `${SITE_URL}/#website`;
+  const brandAlternateNames = ["DaloyJS", "Daloy.js", "Daloy JS", "Daloy"];
+  const brandProfiles = [
+    "https://github.com/daloyjs/daloy",
+    "https://www.npmjs.com/package/@daloyjs/core",
+    "https://jsr.io/@daloyjs/daloy",
+    "https://x.com/daloyjs",
+    "https://bsky.app/profile/daloyjs.dev",
+  ];
+
   const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": orgId,
+      name: "DaloyJS",
+      alternateName: brandAlternateNames,
+      url: SITE_URL,
+      logo: `${SITE_URL}/opengraph-image`,
+      description: HOME_DESCRIPTION,
+      sameAs: brandProfiles,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": siteId,
+      name: "DaloyJS",
+      alternateName: brandAlternateNames,
+      url: SITE_URL,
+      inLanguage: "en",
+      publisher: { "@id": orgId },
+    },
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       name: "DaloyJS",
+      alternateName: brandAlternateNames,
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Cross-platform",
       description: HOME_DESCRIPTION,
@@ -226,12 +266,12 @@ export default function HomePage() {
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       programmingLanguage: "TypeScript",
       license: "https://opensource.org/licenses/MIT",
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "DaloyJS",
-      url: SITE_URL,
+      softwareVersion: CORE_PACKAGE_VERSION,
+      downloadUrl: "https://www.npmjs.com/package/@daloyjs/core",
+      codeRepository: "https://github.com/daloyjs/daloy",
+      author: { "@id": orgId },
+      publisher: { "@id": orgId },
+      sameAs: brandProfiles,
     },
   ];
 
